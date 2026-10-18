@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PresentCraft - Control Center</title>
+    <style>
+      [hidden] { display: none !important; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #121212; color: #e0e0e0; overflow: hidden; font-size: 13px;
+      }
+      #app { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; height: 100vh; }
+
+      /* ---------- menu bar ---------- */
+      #menubar { display: flex; height: 30px; background: #1b1b1b; border-bottom: 1px solid #2a2a2a; user-select: none; }
+      .menu { position: relative; }
+      .menu-btn { background: none; border: 0; color: #ddd; padding: 0 12px; height: 30px; font: inherit; cursor: default; }
+      .menu-btn:hover, .menu.open .menu-btn { background: #333; }
+      .dropdown {
+        display: none; position: absolute; top: 30px; left: 0; min-width: 250px; z-index: 100;
+        background: #252526; border: 1px solid #454545; box-shadow: 0 6px 16px rgba(0,0,0,.6); padding: 4px 0;
+      }
+      .menu.open .dropdown { display: block; }
+      .dd-item {
+        position: relative; display: flex; justify-content: space-between; gap: 24px; width: 100%;
+        background: none; border: 0; color: #ddd; font: inherit; text-align: left; padding: 5px 16px 5px 28px;
+      }
+      .dd-item:hover:not(:disabled) { background: #bb86fc; color: #121212; }
+      .dd-item:disabled { color: #777; }
+      .dd-item .chk { position: absolute; left: 10px; }
+      .dd-key { color: #999; }
+      .dd-sep { height: 1px; background: #454545; margin: 4px 0; }
+
+      /* ---------- workspace: pustaka | slide | properties ---------- */
+      #workspace {
+        --lib: 230px; --props: 300px;
+        display: grid; grid-template-columns: var(--lib) minmax(0, 1fr) var(--props); min-height: 0;
+      }
+      #workspace.no-lib { --lib: 0px; }
+      #workspace.no-props { --props: 0px; }
+      #library { grid-column: 1; grid-row: 1; }
+      #sorter  { grid-column: 2; grid-row: 1; }
+      #props   { grid-column: 3; grid-row: 1; }
+
+      .pane-title {
+        display: flex; align-items: center; gap: 12px; padding: 6px 14px; background: #1b1b1b;
+        border-bottom: 1px solid #2a2a2a; color: #bb86fc; font-weight: 600; flex-shrink: 0;
+      }
+      .pane-title .sp { flex: 1; }
+      .pane-title label { color: #999; font-weight: 400; display: flex; gap: 6px; align-items: center; }
+      .small-btn { background: #3a3a3a; color: #e0e0e0; border: 0; border-radius: 3px; padding: 3px 10px; font: inherit; cursor: pointer; }
+      .small-btn:hover { background: #4a4a4a; }
+
+      /* ---------- pustaka media (kiri) ---------- */
+      #library { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-right: 1px solid #2a2a2a; overflow: hidden; }
+      #lib-body { flex: 1; overflow: auto; padding: 0 8px 10px; }
+      #lib-body h4 { margin: 12px 0 6px; color: #03dac6; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+      .lib-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .lib-item { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 4px; padding: 4px; min-width: 0; }
+      .lib-item.active { border-color: #03dac6; }
+      .lib-thumb { aspect-ratio: 16 / 9; background: #000; overflow: hidden; border-radius: 2px; }
+      .lib-thumb img, .lib-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
+      .lib-name { font-size: 11px; color: #bbb; margin: 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .lib-btns { display: flex; gap: 3px; }
+      .lib-btns button { flex: 1; background: #2d2d2d; color: #ccc; border: 0; border-radius: 3px; padding: 3px 0; font: inherit; font-size: 11px; cursor: pointer; }
+      .lib-btns button:hover { background: #bb86fc; color: #121212; }
+      .lib-btns button.x { flex: 0 0 24px; }
+
+      /* ---------- slide sorter (tengah) ---------- */
+      #sorter { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+      #slide-grid {
+        flex: 1; overflow: auto; padding: 12px; align-content: start; gap: 12px;
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--thumb, 200px), 1fr));
+      }
+      #slide-grid > .empty { grid-column: 1 / -1; color: #888; font-style: italic; }
+      #warn-slot details.warnings { background: #2b2417; border-left: 5px solid #ffb74d; padding: 8px 14px; color: #ffcc80; font-size: 12px; }
+      #warn-slot summary { cursor: pointer; font-weight: 600; }
+      #warn-slot ul { margin: 6px 0 0; padding-left: 20px; }
+
+      .card { cursor: pointer; border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #1e1e1e; }
+      .card:hover { background: #2a2a2a; }
+      .card.active { border-color: #03dac6; }
+      .thumb {
+        position: relative; width: 100%; overflow: hidden; isolation: isolate;
+        background: repeating-conic-gradient(#2c2c2c 0 25%, #1c1c1c 0 50%) 0 0 / 16px 16px;
+      }
+      .cap {
+        margin-top: 4px; padding-left: 6px; border-left: 4px solid #555; font-size: 11px; color: #bbb;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+
+      /* ---------- properties + preview (kanan) ---------- */
+      #props { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-left: 1px solid #2a2a2a; overflow: hidden; }
+      #props-scroll { flex: 1; overflow: auto; min-height: 0; padding: 10px 0 14px; }
+      #props .body { padding: 0 14px; }
+      #props h4 { margin: 16px 0 8px; color: #03dac6; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+      #props .body > .f:first-child + h4 { margin-top: 14px; }
+      .f { display: grid; grid-template-columns: 86px 1fr; gap: 6px 8px; align-items: center; }
+      .f label { color: #aaa; }
+      .f input[type=number], .f select, #p-layer {
+        width: 100%; box-sizing: border-box; background: #2d2d2d; color: #e0e0e0;
+        border: 1px solid #3a3a3a; border-radius: 3px; padding: 4px 6px; font: inherit;
+      }
+      .f input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
+      .f input[type=range] { width: 100%; }
+      .btnrow { display: flex; gap: 4px; }
+      .tg { flex: 1; background: #2d2d2d; color: #ccc; border: 1px solid #3a3a3a; border-radius: 3px; padding: 4px 0; font: inherit; cursor: pointer; }
+      .tg:hover { background: #3a3a3a; }
+      .tg.on { background: #bb86fc; color: #121212; border-color: #bb86fc; }
+      .tg:disabled { opacity: .4; pointer-events: none; }
+      .muted { color: #888; font-style: italic; padding: 0 14px; }
+
+      #preview { flex-shrink: 0; border-top: 2px solid #bb86fc; padding: 8px 14px 12px; background: #1b1b1b; }
+      .pv-title { color: #bb86fc; font-weight: 600; margin-bottom: 6px; }
+      #pv-host { background: #000; }
+      .pv-bar { display: flex; gap: 4px; margin-top: 8px; }
+      .pv-scrub { display: flex; gap: 8px; align-items: center; margin-top: 6px; color: #aaa; font-size: 11px; }
+      .pv-scrub input { flex: 1; min-width: 0; }
+      #pv-time { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+      /* ---------- bar tombol ---------- */
+      #toolbar { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; background: #1b1b1b; border-top: 1px solid #2a2a2a; }
+      #toolbar .sp { flex: 1; }
+      .tb { background: #2d2d2d; color: #ddd; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 12px; font: inherit; cursor: pointer; }
+      .tb:hover { background: #3a3a3a; }
+      .tb.on { background: #bb86fc; color: #121212; border-color: #bb86fc; }
+      .tb kbd { color: #888; font: inherit; margin-left: 4px; }
+      .tb.on kbd { color: #333; }
+      #tb-status { color: #03dac6; font-size: 12px; }
+
+      /* ---------- panel background (bawah) ---------- */
+      #media-panel { background: #1e1e1e; border-top: 2px solid #bb86fc; padding: 8px 16px; }
+      .mp-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      .mp-row button, .mp-row select { background: #3a3a3a; color: #e0e0e0; border: 0; border-radius: 4px; padding: 5px 12px; cursor: pointer; font: inherit; }
+      .mp-row button:hover { background: #4a4a4a; }
+      #bg-clear { background: #5c2330 !important; color: #ff9aa9 !important; }
+      .mp-row input[type=color] { width: 34px; height: 26px; border: 0; background: none; padding: 0; }
+      .mp-row label { display: flex; gap: 4px; align-items: center; }
+      .mp-row [disabled], .mp-row label.off { opacity: .4; pointer-events: none; }
+      .mp-empty { color: #888; font-style: italic; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <nav id="menubar"></nav>
+
+      <main id="workspace">
+        <!-- kiri: pustaka media -->
+        <aside id="library">
+          <div class="pane-title">
+            <span>Media</span><span class="sp"></span>
+            <button class="small-btn" id="lib-add">+ Tambah</button>
+          </div>
+          <div id="lib-body"></div>
+        </aside>
+
+        <!-- tengah: slide sorter -->
+        <section id="sorter">
+          <div class="pane-title">
+            <span>Slide</span><span id="slide-count" style="color:#888;font-weight:400"></span>
+            <span class="sp"></span>
+            <label>Ukuran <input type="range" id="zoom" min="120" max="380" value="200" /></label>
+          </div>
+          <div id="warn-slot"></div>
+          <div id="slide-grid">
+            <p class="empty">Belum ada file. Pilih File → Import file… (Ctrl+O)</p>
+          </div>
+        </section>
+
+        <!-- kanan: properties + preview -->
+        <aside id="props">
+          <div class="pane-title">Properties</div>
+          <div id="props-scroll">
+            <p class="muted" id="props-empty">Pilih sebuah slide.</p>
+
+            <div class="body" id="props-body" hidden>
+              <div class="f"><label for="p-layer">Layer</label><select id="p-layer"></select></div>
+
+              <h4>Transform</h4>
+              <div class="f">
+                <label for="p-opacity">Opasitas</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="range" id="p-opacity" min="0" max="1" step="0.01" />
+                  <span id="p-opacity-v" style="width:36px;text-align:right"></span>
+                </div>
+                <label for="p-rotation">Rotasi °</label><input type="number" id="p-rotation" step="0.1" />
+                <label for="p-x">X (%)</label><input type="number" id="p-x" step="0.1" />
+                <label for="p-y">Y (%)</label><input type="number" id="p-y" step="0.1" />
+                <label for="p-w">Lebar (%)</label><input type="number" id="p-w" step="0.1" min="0.1" />
+                <label for="p-h">Tinggi (%)</label><input type="number" id="p-h" step="0.1" min="0.1" />
+              </div>
+
+              <div id="text-props">
+                <h4>Teks</h4>
+                <div class="f">
+                  <label for="p-font">Font</label>
+                  <select id="p-font">
+                    <option value="Arial, sans-serif">Arial</option>
+                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                    <option value="Verdana, sans-serif">Verdana</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Impact, sans-serif">Impact</option>
+                  </select>
+                  <label for="p-size">Ukuran (px)</label><input type="number" id="p-size" min="1" step="1" />
+                  <label for="p-color">Warna</label><input type="color" id="p-color" />
+                  <label>Gaya</label>
+                  <div class="btnrow">
+                    <button class="tg" id="p-bold" title="Tebal"><b>B</b></button>
+                    <button class="tg" id="p-italic" title="Miring"><i>I</i></button>
+                  </div>
+                  <label>Rata</label>
+                  <div class="btnrow" id="p-align">
+                    <button class="tg" data-align="left" title="Kiri">⯇</button>
+                    <button class="tg" data-align="center" title="Tengah">≡</button>
+                    <button class="tg" data-align="right" title="Kanan">⯈</button>
+                    <button class="tg" data-align="justify" title="Rata kiri-kanan">☰</button>
+                  </div>
+                  <label>Vertikal</label>
+                  <div class="btnrow" id="p-valign">
+                    <button class="tg" data-valign="top">Atas</button>
+                    <button class="tg" data-valign="middle">Tengah</button>
+                    <button class="tg" data-valign="bottom">Bawah</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="preview">
+            <div class="pv-title">Preview</div>
+            <div id="pv-host" class="thumb" hidden></div>
+            <p class="muted" id="pv-empty" style="padding:0">Pilih sebuah slide.</p>
+            <div class="pv-bar">
+              <button class="tg" id="pv-rev" title="Putar mundur">◀ Mundur</button>
+              <button class="tg" id="pv-pause" title="Jeda">⏸</button>
+              <button class="tg" id="pv-play" title="Putar maju">Maju ▶</button>
+            </div>
+            <div class="pv-scrub">
+              <input type="range" id="pv-seek" min="0" max="1000" value="0" />
+              <span id="pv-time">0:00 / 0:00</span>
+            </div>
+          </div>
+        </aside>
+      </main>
+
+      <!-- bar tombol: di antara panel slide dan panel background -->
+      <div id="toolbar">
+        <button class="tb" id="tb-bible" title="Alkitab">📖 Alkitab</button>
+        <button class="tb" id="tb-blank" title="Kosongkan / tampilkan layar">⬛ Kosongkan layar <kbd>B</kbd></button>
+        <span class="sp"></span>
+        <span id="tb-status"></span>
+      </div>
+
+      <div id="media-panel">
+        <div class="mp-row">
+          <strong style="color:#bb86fc">Background</strong>
+          <button id="bg-add">Pilih file…</button>
+          <input type="color" id="bg-color" value="#000000" title="Warna polos" />
+          <button id="bg-clear">Bersihkan background</button>
+          <label id="lbl-loop"><input type="checkbox" id="bg-loop" checked /> Ulang</label>
+          <label id="lbl-mute"><input type="checkbox" id="bg-mute" checked /> Bisu</label>
+          <select id="bg-scale"><option value="fill">Fill</option><option value="fit">Fit</option></select>
+          <label>Opasitas <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1" /></label>
+        </div>
+      </div>
+    </div>
+
+    <script src="slide-renderer.js"></script>
+    <script type="module">
+      import {
+        loadBackground, setBackground, patchBackground, clearBackground, onBackgroundChange,
+      } from './background-state.js';
+
+      const { invoke, convertFileSrc } = window.__TAURI__.core;
+      const SR = window.SlideRenderer;
+      const $ = (id) => document.getElementById(id);
+      const baseName = (p) => p.split(/[\\/]/).pop();
+      const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+      const round = (v, n = 2) => Math.round(v * 10 ** n) / 10 ** n;
+      const debounce = (fn, ms = 150) => {
+        let t;
+        return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+      };
+
+      // ================= state =================
+      let currentSlides = [];
+      let cards = [];            // [{ card, thumb }]
+      let activeIndex = -1;
+      let selectedLayer = -1;
+      let blanked = false;
+      let currentBg = null;
+      let showBgInThumbs = true;
+      let bundleMedia = [];      // [{ path, kind }] dari bundel yang dimuat
+
+      let statusTimer;
+      function setStatus(msg) {
+        $('tb-status').textContent = msg;
+        clearTimeout(statusTimer);
+        statusTimer = setTimeout(() => ($('tb-status').textContent = ''), 4000);
+      }
+
+      // ================= event ke audience =================
+      function emitPayload(payload) {
+        window.__TAURI__.event
+          .emit('update-slide-event', payload)
+          .catch((err) => console.error('Gagal memperbarui audience display:', err));
+      }
+
+      function toPayload(slide) {
+        const layers = [...(slide.layers || [])]
+          .sort((a, b) => a.z - b.z)
+          .map((l) => ({ ...l, src: l.path && l.status === 'OK' ? convertFileSrc(l.path) : null }));
+        const firstMedia = layers.find((l) => l.src);
+        return {
+          content: slide.content,
+          mediaPath: firstMedia ? firstMedia.src : null,
+          width: slide.slide_width || 1366,
+          height: slide.slide_height || 768,
+          layers,
+        };
+      }
+
+      function setBlanked(v) {
+        blanked = v;
+        $('tb-blank').classList.toggle('on', v);
+      }
+
+      function emitBlank() {
+        setBlanked(true);
+        emitPayload({ content: '', mediaPath: null, width: 1366, height: 768, layers: [] });
+      }
+
+      function toggleBlank() {
+        if (!blanked) return emitBlank();
+        if (activeIndex >= 0) showSlide(activeIndex);
+        else setBlanked(false);
+      }
+
+      let emitTimer;
+      function scheduleEmit(i) {
+        clearTimeout(emitTimer);
+        emitTimer = setTimeout(() => {
+          if (i === activeIndex && !blanked) emitPayload(toPayload(currentSlides[i]));
+        }, 250);
+      }
+
+      // ================= menu bar =================
+      function togglePane(id, cls) {
+        const el = $(id);
+        el.hidden = !el.hidden;
+        $('workspace').classList.toggle(cls, el.hidden);
+      }
+
+      const MENUS = [
+        {
+          label: 'File',
+          items: [
+            { label: 'Import file…', key: 'Ctrl+O', run: () => importFile() },
+            { sep: true },
+            { label: 'Impor sesi…', disabled: true },
+            { label: 'Ekspor sesi…', disabled: true },
+          ],
+        },
+        {
+          label: 'View',
+          items: [
+            { label: 'Pustaka Media', checked: () => !$('library').hidden, run: () => togglePane('library', 'no-lib') },
+            { label: 'Panel Properties', checked: () => !$('props').hidden, run: () => togglePane('props', 'no-props') },
+            { label: 'Panel Background', checked: () => !$('media-panel').hidden, run: () => { $('media-panel').hidden = !$('media-panel').hidden; } },
+            { label: 'Bar tombol', checked: () => !$('toolbar').hidden, run: () => { $('toolbar').hidden = !$('toolbar').hidden; } },
+            { sep: true },
+            { label: 'Background di thumbnail', checked: () => showBgInThumbs,
+              run: () => { showBgInThumbs = !showBgInThumbs; refreshThumbBackgrounds(); } },
+          ],
+        },
+      ];
+
+      const bar = $('menubar');
+      const wraps = [];
+      let openMenu = -1;
+
+      function fillDropdown(dd, menu) {
+        dd.replaceChildren();
+        for (const it of menu.items) {
+          if (it.sep) {
+            const s = document.createElement('div');
+            s.className = 'dd-sep';
+            dd.appendChild(s);
+            continue;
+          }
+          const b = document.createElement('button');
+          b.className = 'dd-item';
+          b.disabled = !!it.disabled;
+          const chk = document.createElement('span');
+          chk.className = 'chk';
+          chk.textContent = it.checked && it.checked() ? '✓' : '';
+          const lab = document.createElement('span');
+          lab.textContent = it.label;
+          const key = document.createElement('span');
+          key.className = 'dd-key';
+          key.textContent = it.key || '';
+          b.append(chk, lab, key);
+          b.addEventListener('click', () => { setOpen(-1); if (it.run) it.run(); });
+          dd.appendChild(b);
+        }
+      }
+
+      function setOpen(mi) {
+        openMenu = mi;
+        wraps.forEach((w, i) => {
+          w.classList.toggle('open', i === mi);
+          if (i === mi) fillDropdown(w.querySelector('.dropdown'), MENUS[i]);
+        });
+      }
+
+      MENUS.forEach((m, mi) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'menu';
+        const btn = document.createElement('button');
+        btn.className = 'menu-btn';
+        btn.textContent = m.label;
+        const dd = document.createElement('div');
+        dd.className = 'dropdown';
+        wrap.append(btn, dd);
+        bar.appendChild(wrap);
+        wraps.push(wrap);
+        btn.addEventListener('click', () => setOpen(openMenu === mi ? -1 : mi));
+        btn.addEventListener('mouseenter', () => { if (openMenu >= 0) setOpen(mi); });
+      });
+      document.addEventListener('mousedown', (e) => { if (!e.target.closest('.menu')) setOpen(-1); });
+
+      // ================= bar tombol =================
+      // Hook Alkitab: ganti isi fungsi ini saat fitur Alkitab dibuat.
+      function openBible() {
+        setStatus('Fitur Alkitab belum dibuat. Tombolnya sudah siap dihubungkan.');
+      }
+      $('tb-bible').addEventListener('click', openBible);
+      $('tb-blank').addEventListener('click', toggleBlank);
+
+      // ================= keyboard =================
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') setOpen(-1);
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
+          e.preventDefault();
+          importFile();
+          return;
+        }
+        if (e.target.closest('input, select, button, textarea')) return;
+        if (currentSlides.length === 0) return;
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+          e.preventDefault();
+          showSlide(activeIndex + 1);
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          showSlide(activeIndex - 1);
+        } else if (e.key === 'b' || e.key === 'B') {
+          toggleBlank();
+        }
+      });
+
+      // ================= slide sorter =================
+      const grid = $('slide-grid');
+
+      function renderThumb(i) {
+        const c = cards[i];
+        if (c) SR.renderThumbnail(c.thumb, toPayload(currentSlides[i]));
+      }
+
+      function refreshThumbBackgrounds() {
+        for (const c of cards) {
+          if (c.thumb._bg) SR.renderBackground(c.thumb._bg, showBgInThumbs ? currentBg : null, { preview: true });
+        }
+      }
+
+      function makeCard(slide, i) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        const thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        const cap = document.createElement('div');
+        cap.className = 'cap';
+        if (slide.group_color) cap.style.borderLeftColor = slide.group_color;
+        cap.textContent = `${slide.slide_number}${slide.group_name ? ' · ' + slide.group_name : ''}`;
+        card.append(thumb, cap);
+        card.addEventListener('click', () => showSlide(i));
+        cards[i] = { card, thumb };
+        return card;
+      }
+
+      function showSlide(i) {
+        if (i < 0 || i >= currentSlides.length) return;
+        const changed = i !== activeIndex;
+        activeIndex = i;
+        setBlanked(false);
+        cards.forEach((c, idx) => c.card.classList.toggle('active', idx === i));
+        cards[i].card.scrollIntoView({ block: 'nearest' });
+        if (changed) rebuildLayerSelect();
+        renderPreview();
+        emitPayload(toPayload(currentSlides[i]));
+      }
+
+      $('zoom').addEventListener('input', (e) => grid.style.setProperty('--thumb', e.target.value + 'px'));
+
+      function renderWarnings(warnings) {
+        const slot = $('warn-slot');
+        slot.replaceChildren();
+        if (!warnings || warnings.length === 0) return;
+        const d = document.createElement('details');
+        d.className = 'warnings';
+        const sum = document.createElement('summary');
+        sum.textContent = `${warnings.length} peringatan saat memuat`;
+        const ul = document.createElement('ul');
+        warnings.forEach((w) => {
+          const li = document.createElement('li');
+          li.textContent = w;
+          ul.appendChild(li);
+        });
+        d.append(sum, ul);
+        slot.appendChild(d);
+      }
+
+      function showMessage(text, color) {
+        grid.replaceChildren();
+        const p = document.createElement('p');
+        p.className = 'empty';
+        p.style.color = color;
+        p.textContent = text;
+        grid.appendChild(p);
+      }
+
+      async function importFile() {
+        const filePath = await window.__TAURI__.dialog.open({
+          multiple: false,
+          filters: [{ name: 'ProPresenter', extensions: ['probundle', 'zip', 'pro'] }],
+        });
+        if (!filePath) return;
+
+        showMessage('Mengekstrak dan memuat bundel...', '#03dac6');
+        $('warn-slot').replaceChildren();
+
+        try {
+          const result = await invoke('load_presentation_bundle', { filePath });
+          currentSlides = (result && result.slides) || [];
+          const warnings = (result && result.warnings) || [];
+
+          cards = [];
+          activeIndex = -1;
+          selectedLayer = -1;
+          clearTimeout(emitTimer);
+          $('slide-count').textContent = currentSlides.length ? `(${currentSlides.length})` : '';
+          bundleMedia = collectBundleMedia(currentSlides);
+          renderLibrary();
+          renderWarnings(warnings);
+          fillProps();
+          renderPreview();
+
+          if (currentSlides.length === 0) {
+            showMessage('Tidak ada slide ditemukan di file ini.', '#ffb74d');
+            return;
+          }
+
+          grid.replaceChildren();
+          currentSlides.forEach((slide, i) => grid.appendChild(makeCard(slide, i)));
+          currentSlides.forEach((_, i) => renderThumb(i)); // setelah masuk DOM agar lebar terukur
+          refreshThumbBackgrounds();
+        } catch (error) {
+          showMessage('Gagal memuat: ' + String(error), '#ff6b6b');
+        }
+      }
+
+      // ================= preview + kontrol transport =================
+      const pv = { dir: 0, raf: 0, last: 0 }; // dir: 1 maju, -1 mundur, 0 jeda
+      const pvHost = $('pv-host');
+      const pvVideos = () => [...pvHost.querySelectorAll('video')];
+      const pvMain = () =>
+        pvVideos()
+          .filter((v) => Number.isFinite(v.duration))
+          .sort((a, b) => b.duration - a.duration)[0];
+      const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+      function pvUi() {
+        const has = pvVideos().length > 0;
+        for (const id of ['pv-rev', 'pv-pause', 'pv-play']) $(id).disabled = !has;
+        $('pv-seek').disabled = !has;
+        $('pv-rev').classList.toggle('on', pv.dir < 0);
+        $('pv-play').classList.toggle('on', pv.dir > 0);
+        $('pv-pause').classList.toggle('on', has && pv.dir === 0);
+        pvScrubUi();
+      }
+
+      function pvScrubUi() {
+        const m = pvMain();
+        if (!m) {
+          $('pv-seek').value = 0;
+          $('pv-time').textContent = '0:00 / 0:00';
+          return;
+        }
+        $('pv-seek').value = String(Math.round((m.currentTime / m.duration) * 1000));
+        $('pv-time').textContent = `${fmt(m.currentTime)} / ${fmt(m.duration)}`;
+      }
+
+      function pvStop() {
+        cancelAnimationFrame(pv.raf);
+        pv.raf = 0;
+        pv.dir = 0;
+        pvVideos().forEach((v) => v.pause());
+        pvUi();
+      }
+
+      function pvTick(now) {
+        const dt = Math.min(0.1, (now - pv.last) / 1000);
+        pv.last = now;
+        const vs = pvVideos();
+
+        if (pv.dir < 0) {
+          // Chromium/WebView2 tidak mendukung playbackRate negatif: mundur disimulasikan dengan seek.
+          let moving = false;
+          for (const v of vs) {
+            if (!Number.isFinite(v.duration)) continue;
+            let t = v.currentTime - dt;
+            if (t <= 0) {
+              if (v.loop) t += v.duration;
+              else t = 0;
+            }
+            if (t > 0 || v.loop) moving = true;
+            v.currentTime = t;
+          }
+          if (!moving) return pvStop();
+        } else if (vs.every((v) => v.ended || v.paused)) {
+          return pvStop();
+        }
+
+        pvScrubUi();
+        pv.raf = requestAnimationFrame(pvTick);
+      }
+
+      function pvPlay() {
+        cancelAnimationFrame(pv.raf);
+        pv.dir = 1;
+        for (const v of pvVideos()) {
+          if (v.ended) v.currentTime = 0;
+          v.playbackRate = 1;
+          v.play().catch(() => {});
+        }
+        pv.last = performance.now();
+        pv.raf = requestAnimationFrame(pvTick);
+        pvUi();
+      }
+
+      function pvReverse() {
+        cancelAnimationFrame(pv.raf);
+        pv.dir = -1;
+        for (const v of pvVideos()) {
+          v.pause();
+          if (!v.loop && Number.isFinite(v.duration) && v.currentTime < 0.05) v.currentTime = v.duration;
+        }
+        pv.last = performance.now();
+        pv.raf = requestAnimationFrame(pvTick);
+        pvUi();
+      }
+
+      function renderPreview() {
+        cancelAnimationFrame(pv.raf);
+        pv.raf = 0;
+        pv.dir = 0;
+        const slide = currentSlides[activeIndex];
+        pvHost.hidden = !slide;
+        $('pv-empty').hidden = !!slide;
+        if (slide) {
+          SR.renderThumbnail(pvHost, toPayload(slide), { manual: true });
+          SR.renderBackground(pvHost._bg, currentBg, { preview: true, manual: true });
+        }
+        pvUi();
+      }
+      const renderPreviewSoon = debounce(renderPreview, 150);
+
+      pvHost.addEventListener('loadedmetadata', pvScrubUi, true);
+      $('pv-play').addEventListener('click', pvPlay);
+      $('pv-rev').addEventListener('click', pvReverse);
+      $('pv-pause').addEventListener('click', pvStop);
+      $('pv-seek').addEventListener('input', (e) => {
+        pvStop();
+        const f = Number(e.target.value) / 1000;
+        for (const v of pvVideos()) if (Number.isFinite(v.duration)) v.currentTime = f * v.duration;
+        pvScrubUi();
+      });
+
+      // ================= properties =================
+      const curLayer = () => {
+        const s = currentSlides[activeIndex];
+        return s && s.layers ? s.layers[selectedLayer] : undefined;
+      };
+
+      function layerLabel(l, k) {
+        let detail = '';
+        if (l.kind === 'text') detail = (l.text || '').replace(/\s+/g, ' ').slice(0, 20);
+        else if (l.path) detail = baseName(l.path);
+        else if (l.kind === 'color') detail = l.color || '';
+        return `${k + 1}. ${l.kind}${detail ? ' — ' + detail : ''}`;
+      }
+
+      function fillProps() {
+        const slide = currentSlides[activeIndex];
+        const has = !!slide && (slide.layers || []).length > 0;
+        $('props-empty').hidden = has;
+        $('props-body').hidden = !has;
+        $('props-empty').textContent = slide ? 'Slide ini tidak punya layer.' : 'Pilih sebuah slide.';
+        if (!has) return;
+        fillFields();
+      }
+
+      function rebuildLayerSelect(want) {
+        const slide = currentSlides[activeIndex];
+        const sel = $('p-layer');
+        sel.replaceChildren();
+        const layers = (slide && slide.layers) || [];
+        layers.forEach((l, k) => {
+          const o = document.createElement('option');
+          o.value = String(k);
+          o.textContent = layerLabel(l, k);
+          sel.appendChild(o);
+        });
+        const firstText = layers.findIndex((l) => l.kind === 'text');
+        selectedLayer = layers.length ? (want != null ? want : firstText >= 0 ? firstText : 0) : -1;
+        sel.value = String(selectedLayer);
+        fillProps();
+      }
+
+      function fillFields() {
+        const l = curLayer();
+        if (!l) return;
+        $('p-opacity').value = l.opacity;
+        $('p-opacity-v').textContent = Math.round(l.opacity * 100) + '%';
+        $('p-rotation').value = round(l.rotation || 0);
+        $('p-x').value = round(l.rect.x);
+        $('p-y').value = round(l.rect.y);
+        $('p-w').value = round(l.rect.w);
+        $('p-h').value = round(l.rect.h);
+
+        const isText = l.kind === 'text';
+        $('text-props').hidden = !isText;
+        if (!isText) return;
+        const st = { ...SR.TEXT_DEFAULTS, ...(l.style || {}) };
+        $('p-font').value = st.fontFamily;
+        $('p-size').value = st.fontSize;
+        $('p-color').value = st.color;
+        $('p-bold').classList.toggle('on', !!st.bold);
+        $('p-italic').classList.toggle('on', !!st.italic);
+        document.querySelectorAll('[data-align]').forEach((b) => b.classList.toggle('on', b.dataset.align === st.align));
+        document.querySelectorAll('[data-valign]').forEach((b) => b.classList.toggle('on', b.dataset.valign === st.valign));
+      }
+
+      // Setiap perubahan: thumbnail (langsung), preview (ditunda 150 ms), audience (ditunda 250 ms).
+      function touched() {
+        renderThumb(activeIndex);
+        refreshThumbBackgrounds();
+        renderPreviewSoon();
+        scheduleEmit(activeIndex);
+      }
+
+      function bind(id, fn) {
+        $(id).addEventListener('input', (e) => {
+          const l = curLayer();
+          if (!l) return;
+          const v = e.target.type === 'number' || e.target.type === 'range' ? e.target.valueAsNumber : e.target.value;
+          if (typeof v === 'number' && !Number.isFinite(v)) return;
+          fn(l, v);
+          touched();
+        });
+      }
+      const style = (l) => (l.style = l.style || {});
+
+      bind('p-opacity', (l, v) => { l.opacity = clamp(v, 0, 1); $('p-opacity-v').textContent = Math.round(l.opacity * 100) + '%'; });
+      bind('p-rotation', (l, v) => { l.rotation = v; });
+      bind('p-x', (l, v) => { l.rect.x = v; });
+      bind('p-y', (l, v) => { l.rect.y = v; });
+      bind('p-w', (l, v) => { l.rect.w = Math.max(0.1, v); });
+      bind('p-h', (l, v) => { l.rect.h = Math.max(0.1, v); });
+      bind('p-font', (l, v) => { style(l).fontFamily = v; });
+      bind('p-size', (l, v) => { style(l).fontSize = Math.max(1, v); });
+      bind('p-color', (l, v) => { style(l).color = v; });
+
+      function toggleStyle(key, btnId) {
+        $(btnId).addEventListener('click', () => {
+          const l = curLayer();
+          if (!l) return;
+          const st = style(l);
+          st[key] = !st[key];
+          fillFields();
+          touched();
+        });
+      }
+      toggleStyle('bold', 'p-bold');
+      toggleStyle('italic', 'p-italic');
+
+      $('props').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-align],[data-valign]');
+        const l = curLayer();
+        if (!b || !l) return;
+        if (b.dataset.align) style(l).align = b.dataset.align;
+        if (b.dataset.valign) style(l).valign = b.dataset.valign;
+        fillFields();
+        touched();
+      });
+
+      $('p-layer').addEventListener('change', (e) => {
+        selectedLayer = Number(e.target.value);
+        fillFields();
+      });
+
+      // ================= media: konstanta, pustaka, tambah ke slide =================
+      const VIDEO_EXT = ['mp4', 'mov', 'm4v', 'webm', 'mkv'];
+      const IMAGE_EXT = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'];
+      const MEDIA_FILTER = [{ name: 'Media', extensions: [...VIDEO_EXT, ...IMAGE_EXT] }];
+
+      function kindOf(path) {
+        const ext = path.split('.').pop().toLowerCase();
+        if (VIDEO_EXT.includes(ext)) return 'video';
+        if (IMAGE_EXT.includes(ext)) return 'image';
+        return null;
+      }
+
+      const LIB_KEY = 'pc.library';
+      let library = (() => {
+        try { return JSON.parse(localStorage.getItem(LIB_KEY)) || []; } catch { return []; }
+      })().filter((p) => typeof p === 'string' && kindOf(p));
+      const saveLibrary = () => {
+        try { localStorage.setItem(LIB_KEY, JSON.stringify(library)); } catch { /* abaikan */ }
+      };
+
+      function collectBundleMedia(slides) {
+        const seen = new Set();
+        const out = [];
+        for (const s of slides) {
+          for (const l of s.layers || []) {
+            if ((l.kind !== 'video' && l.kind !== 'image') || l.status !== 'OK') continue;
+            if (!l.path || seen.has(l.path)) continue;
+            seen.add(l.path);
+            out.push({ path: l.path, kind: l.kind });
+          }
+        }
+        return out;
+      }
+
+      // Layer baru ditaruh paling belakang (z paling kecil) agar tidak menutupi teks.
+      function addLayerToSlide(path, kind) {
+        const slide = currentSlides[activeIndex];
+        if (!slide) return setStatus('Pilih slide dulu.');
+        slide.layers = slide.layers || [];
+        const z = slide.layers.reduce((m, l) => Math.min(m, l.z), 0) - 1;
+        slide.layers.push({
+          kind, z,
+          rect: { x: 0, y: 0, w: 100, h: 100 },
+          rotation: 0, opacity: 1,
+          path, status: 'OK', inner: null,
+          scale: 'SCALE_BEHAVIOR_FIT',
+          muted: true, looped: true, stop_on_clear: null,
+          color: null, text: null,
+        });
+        rebuildLayerSelect(slide.layers.length - 1);
+        touched();
+        setStatus(`${baseName(path)} ditambahkan ke slide ${slide.slide_number}.`);
+      }
+
+      function libTile(path, kind, removable) {
+        const url = convertFileSrc(path);
+        const tile = document.createElement('div');
+        tile.className = 'lib-item';
+        tile.dataset.src = path;
+        tile.title = path;
+
+        const th = document.createElement('div');
+        th.className = 'lib-thumb';
+        const m = document.createElement(kind === 'video' ? 'video' : 'img');
+        if (kind === 'video') {
+          m.muted = true;
+          m.preload = 'metadata';
+          m.src = url + '#t=0.1';
+        } else {
+          m.src = url;
+        }
+        m.addEventListener('error', () => m.remove());
+        th.appendChild(m);
+
+        const name = document.createElement('div');
+        name.className = 'lib-name';
+        name.textContent = (kind === 'video' ? '🎞 ' : '🖼 ') + baseName(path);
+
+        const btns = document.createElement('div');
+        btns.className = 'lib-btns';
+        const mk = (label, title, fn, cls) => {
+          const b = document.createElement('button');
+          b.textContent = label;
+          b.title = title;
+          if (cls) b.className = cls;
+          b.addEventListener('click', fn);
+          btns.appendChild(b);
+        };
+        mk('BG', 'Jadikan background', () => pick(path, kind));
+        mk('+ Slide', 'Tambahkan ke slide aktif', () => addLayerToSlide(path, kind));
+        if (removable) {
+          mk('✕', 'Hapus dari pustaka', () => {
+            library = library.filter((p) => p !== path);
+            saveLibrary();
+            renderLibrary();
+          }, 'x');
+        }
+        tile.append(th, name, btns);
+        return tile;
+      }
+
+      function renderLibrary() {
+        const body = $('lib-body');
+        body.replaceChildren();
+        const section = (title, items, removable, emptyText) => {
+          const h = document.createElement('h4');
+          h.textContent = title;
+          body.appendChild(h);
+          if (!items.length) {
+            const p = document.createElement('p');
+            p.className = 'mp-empty';
+            p.textContent = emptyText;
+            body.appendChild(p);
+            return;
+          }
+          const g = document.createElement('div');
+          g.className = 'lib-grid';
+          items.forEach((it) => g.appendChild(libTile(it.path, it.kind, removable)));
+          body.appendChild(g);
+        };
+        section('Media saya', library.map((p) => ({ path: p, kind: kindOf(p) })), true, 'Klik “+ Tambah” untuk memasukkan file.');
+        section('Dari bundel', bundleMedia, false, 'Belum ada bundel dimuat.');
+        syncPanel(currentBg);
+      }
+
+      $('lib-add').addEventListener('click', async () => {
+        const r = await window.__TAURI__.dialog.open({ multiple: true, filters: MEDIA_FILTER });
+        if (!r) return;
+        for (const p of Array.isArray(r) ? r : [r]) {
+          if (kindOf(p) && !library.includes(p)) library.push(p);
+        }
+        saveLibrary();
+        renderLibrary();
+      });
+
+      // ================= panel background =================
+      function getOpts() {
+        return {
+          loop: $('bg-loop').checked,
+          mute: $('bg-mute').checked,
+          scale: $('bg-scale').value,
+          opacity: Number($('bg-opacity').value),
+        };
+      }
+
+      const pick = (src, kind) => setBackground({ src, kind, ...getOpts() });
+
+      function syncPanel(bg) {
+        const has = !!bg;
+        const isMedia = has && bg.kind !== 'color';
+        const isVideo = has && bg.kind === 'video';
+        if (has) {
+          $('bg-loop').checked = bg.loop;
+          $('bg-mute').checked = bg.mute;
+          $('bg-scale').value = bg.scale;
+          $('bg-opacity').value = bg.opacity;
+          if (bg.kind === 'color') $('bg-color').value = bg.src;
+        }
+        $('bg-clear').disabled = !has;
+        $('bg-opacity').disabled = !has;
+        $('bg-scale').disabled = !isMedia;
+        $('lbl-loop').classList.toggle('off', !isVideo);
+        $('lbl-mute').classList.toggle('off', !isVideo);
+        document.querySelectorAll('.lib-item').forEach((el) =>
+          el.classList.toggle('active', isMedia && el.dataset.src === bg.src));
+      }
+
+      $('bg-add').addEventListener('click', async () => {
+        const path = await window.__TAURI__.dialog.open({ multiple: false, filters: MEDIA_FILTER });
+        if (!path) return;
+        const kind = kindOf(path);
+        if (!kind) return alert('Tipe file tidak didukung.');
+        pick(path, kind);
+      });
+      $('bg-clear').addEventListener('click', () => clearBackground());
+      $('bg-color').addEventListener('change', (e) => setBackground({ src: e.target.value, kind: 'color', ...getOpts() }));
+      $('bg-loop').addEventListener('change', (e) => patchBackground({ loop: e.target.checked }));
+      $('bg-mute').addEventListener('change', (e) => patchBackground({ mute: e.target.checked }));
+      $('bg-scale').addEventListener('change', (e) => patchBackground({ scale: e.target.value }));
+      $('bg-opacity').addEventListener('input', debounce((e) => patchBackground({ opacity: Number(e.target.value) })));
+
+      // ================= startup =================
+      await onBackgroundChange((bg) => {
+        currentBg = bg;
+        syncPanel(bg);
+        refreshThumbBackgrounds();
+        if (pvHost._bg && !pvHost.hidden) {
+          SR.renderBackground(pvHost._bg, bg, { preview: true, manual: true });
+          pvUi();
+        }
+      });
+      currentBg = await loadBackground();
+      renderLibrary();
+      renderPreview();
+    </script>
+  </body>
+</html>

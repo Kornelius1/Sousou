@@ -1,0 +1,859 @@
+use prost_reflect::{DescriptorPool, DynamicMessage, Kind, ReflectMessage, Value};
+use serde::Serialize;
+use std::collections::{HashMap, HashSet};
+use std::path::{Component, Path, PathBuf};
+use std::sync::OnceLock;
+use std::ffi::OsStr;
+
+static DESCRIPTORS: &[u8] = include_bytes!("../pp_descriptors.bin");
+
+fn pool() -> &'static DescriptorPool {
+    static POOL: OnceLock<DescriptorPool> = OnceLock::new();
+    POOL.get_or_init(|| DescriptorPool::decode(DESCRIPTORS).expect("descriptor tidak valid"))
+}
+
+// ====================== model keluaran ======================
+
+/// Persegi dalam persen (0..100).
+#[derive(Serialize, Debug, Clone)]
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+/// Satu lapisan visual. `kind`: "video" | "image" | "color" | "text".
+/// Field Option bernilai None bila tidak relevan / tidak ada di data.
+#[derive(Serialize, Debug, Clone)]
+pub struct Layer {
+    pub kind: String,
+    /// Urutan tumpukan (indeks elemen); makin besar makin di depan.
+    pub z: usize,
+    /// Kotak elemen, persen terhadap ukuran slide.
+    pub rect: Rect,
+    pub rotation: f32,
+    pub opacity: f32,
+    // media
+    pub path: Option<String>,
+    pub status: Option<String>,
+    /// Area gambar di dalam kotak (custom_image_bounds), persen terhadap kotak.
+    pub inner: Option<Rect>,
+    /// Nama enum scale_behavior mentah, mis. "SCALE_BEHAVIOR_FIT".
+    pub scale: Option<String>,
+    // khusus video
+    pub muted: Option<bool>,
+    pub looped: Option<bool>,
+    pub stop_on_clear: Option<bool>,
+    // fill warna (CSS rgba)
+    pub color: Option<String>,
+    // teks
+    pub text: Option<String>,
+}
+
+impl Layer {
+    fn new(kind: &str, z: usize, rect: Rect, rotation: f32, opacity: f32) -> Self {
+        Layer {
+            kind: kind.into(),
+            z,
+            rect,
+            rotation,
+            opacity,
+            path: None,
+            status: None,
+            inner: None,
+            scale: None,
+            muted: None,
+            looped: None,
+            stop_on_clear: None,
+            color: None,
+            text: None,
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct Slide {
+    pub slide_number: usize,
+    /// Gabungan semua teks pada slide (sudah tanpa RTF).
+    pub content: String,
+    pub group_name: String,
+    pub group_color: String,
+    pub song: String,
+    /// Path lapisan media pertama (kompatibilitas dengan frontend lama).
+    pub background_media: Option<String>,
+    pub media_status: Option<String>,
+    pub slide_width: f32,
+    pub slide_height: f32,
+    pub layers: Vec<Layer>,
+}
+
+#[derive(Serialize, Debug)]
+pub struct ParsedPro {
+    pub slides: Vec<Slide>,
+    pub warnings: Vec<String>,
+}
+
+// ====================== helper akses field ======================
+
+fn field(m: &DynamicMessage, name: &str) -> Option<Value> {
+    m.get_field_by_name(name).map(|c| c.into_owned())
+}
+
+/// Pesan anak; None bila field tidak di-set (bukan pesan kosong default).
+fn msg(m: &DynamicMessage, name: &str) -> Option<DynamicMessage> {
+    if !m.has_field_by_name(name) {
+        return None;
+    }
+    match field(m, name)? {
+        Value::Message(x) => Some(x),
+        _ => None,
+    }
+}
+
+fn list(m: &DynamicMessage, name: &str) -> Vec<DynamicMessage> {
+    match field(m, name) {
+        Some(Value::List(v)) => v
+            .into_iter()
+            .filter_map(|x| if let Value::Message(m) = x { Some(m) } else { None })
+            .collect(),
+        _ => vec![],
+    }
+}
+
+fn string(m: &DynamicMessage, name: &str) -> String {
+    match field(m, name) {
+        Some(Value::String(s)) => s,
+        _ => String::new(),
+    }
+}
+
+fn num(m: &DynamicMessage, name: &str) -> f32 {
+    match field(m, name) {
+        Some(Value::F32(v)) => v,
+        Some(Value::F64(v)) => v as f32,
+        _ => 0.0,
+    }
+}
+
+fn flag(m: &DynamicMessage, name: &str) -> bool {
+    matches!(field(m, name), Some(Value::Bool(true)))
+}
+
+fn rtf_bytes(m: &DynamicMessage, name: &str) -> Vec<u8> {
+    match field(m, name) {
+        Some(Value::Bytes(b)) => b.to_vec(),
+        Some(Value::String(s)) => s.into_bytes(),
+        _ => vec![],
+    }
+}
+
+fn uuid_of(m: &DynamicMessage) -> String {
+    msg(m, "uuid").map(|u| string(&u, "string")).unwrap_or_default()
+}
+
+fn enum_name(m: &DynamicMessage, name: &str) -> String {
+    let Some(fd) = m.descriptor().get_field_by_name(name) else {
+        return String::new();
+    };
+    let Kind::Enum(ed) = fd.kind() else {
+        return String::new();
+    };
+    match field(m, name) {
+        Some(Value::EnumNumber(n)) => ed
+            .get_value(n)
+            .map(|v| v.name().to_string())
+            .unwrap_or_default(),
+        _ => String::new(),
+    }
+}
+
+fn to_byte(v: f32) -> u8 {
+    (v.clamp(0.0, 1.0) * 255.0).round() as u8
+}
+
+fn hex_color(c: &DynamicMessage) -> String {
+    format!(
+        "#{:02x}{:02x}{:02x}",
+        to_byte(num(c, "red")),
+        to_byte(num(c, "green")),
+        to_byte(num(c, "blue"))
+    )
+}
+
+fn css_color(c: &DynamicMessage) -> String {
+    format!(
+        "rgba({},{},{},{:.3})",
+        to_byte(num(c, "red")),
+        to_byte(num(c, "green")),
+        to_byte(num(c, "blue")),
+        num(c, "alpha").clamp(0.0, 1.0)
+    )
+}
+
+/// Untuk debugging skema: cetak semua field sebuah pesan.
+#[allow(dead_code)]
+pub fn dump_fields(name: &str) {
+    match pool().get_message_by_name(name) {
+        Some(d) => {
+            for f in d.fields() {
+                println!("{}.{}: {:?}", name, f.name(), f.kind());
+            }
+        }
+        None => println!("{name}: tidak ada di skema"),
+    }
+}
+
+// ====================== RTF → teks ======================
+
+fn cp1252(b: u8) -> char {
+    match b {
+        0x80 => '\u{20AC}',
+        0x85 => '\u{2026}',
+        0x91 => '\u{2018}',
+        0x92 => '\u{2019}',
+        0x93 => '\u{201C}',
+        0x94 => '\u{201D}',
+        0x95 => '\u{2022}',
+        0x96 => '\u{2013}',
+        0x97 => '\u{2014}',
+        0x99 => '\u{2122}',
+        _ => b as char,
+    }
+}
+
+/// Ekstraktor RTF sederhana: melewati header (fonttbl, colortbl, {\* ...}),
+/// menangani \'XX, \uN dengan \ucN, \par, \line, \tab, dan backslash+newline.
+fn rtf_to_text(s: &[u8]) -> String {
+    let (mut i, mut depth) = (0usize, 0i32);
+    let mut skip: Option<i32> = None;
+    let mut uc = 1usize;
+    let mut pending_hi: Option<u32> = None;
+    let mut out = String::new();
+
+    while i < s.len() {
+        match s[i] {
+            b'{' => {
+                depth += 1;
+                i += 1;
+                let rest = &s[i..];
+                if skip.is_none()
+                    && [
+                        &b"\\*"[..],
+                        b"\\fonttbl",
+                        b"\\colortbl",
+                        b"\\stylesheet",
+                        b"\\info",
+                    ]
+                    .iter()
+                    .any(|p| rest.starts_with(p))
+                {
+                    skip = Some(depth);
+                }
+            }
+            b'}' => {
+                if skip == Some(depth) {
+                    skip = None;
+                }
+                depth -= 1;
+                i += 1;
+            }
+            b'\r' | b'\n' => i += 1,
+            b'\\' => {
+                i += 1;
+                if i >= s.len() {
+                    break;
+                }
+                match s[i] {
+                    b'\\' | b'{' | b'}' => {
+                        if skip.is_none() {
+                            out.push(s[i] as char);
+                        }
+                        i += 1;
+                    }
+                    b'\n' | b'\r' => {
+                        if skip.is_none() {
+                            out.push('\n');
+                        }
+                        i += 1;
+                    }
+                    b'~' => {
+                        if skip.is_none() {
+                            out.push('\u{00A0}');
+                        }
+                        i += 1;
+                    }
+                    b'\'' => {
+                        if i + 2 < s.len() {
+                            if let Ok(h) = std::str::from_utf8(&s[i + 1..i + 3]) {
+                                if let Ok(b) = u8::from_str_radix(h, 16) {
+                                    if skip.is_none() {
+                                        out.push(cp1252(b));
+                                    }
+                                }
+                            }
+                        }
+                        i += 3;
+                    }
+                    c if c.is_ascii_alphabetic() => {
+                        let st = i;
+                        while i < s.len() && s[i].is_ascii_alphabetic() {
+                            i += 1;
+                        }
+                        let word = &s[st..i];
+                        let ns = i;
+                        if i < s.len() && s[i] == b'-' {
+                            i += 1;
+                        }
+                        while i < s.len() && s[i].is_ascii_digit() {
+                            i += 1;
+                        }
+                        let param = std::str::from_utf8(&s[ns..i])
+                            .ok()
+                            .and_then(|p| p.parse::<i32>().ok());
+                        if i < s.len() && s[i] == b' ' {
+                            i += 1;
+                        }
+                        if skip.is_none() {
+                            match word {
+                                b"par" | b"line" => out.push('\n'),
+                                b"tab" => out.push('\t'),
+                                b"uc" => {
+                                    if let Some(n) = param {
+                                        uc = n.max(0) as usize;
+                                    }
+                                }
+                                b"u" => {
+                                    if let Some(n) = param {
+                                        let cp = if n < 0 { (n + 65536) as u32 } else { n as u32 };
+                                        match cp {
+                                            0xD800..=0xDBFF => pending_hi = Some(cp),
+                                            0xDC00..=0xDFFF => {
+                                                if let Some(hi) = pending_hi.take() {
+                                                    let full =
+                                                        0x10000 + ((hi - 0xD800) << 10) + (cp - 0xDC00);
+                                                    if let Some(ch) = char::from_u32(full) {
+                                                        out.push(ch);
+                                                    }
+                                                }
+                                            }
+                                            _ => {
+                                                if let Some(ch) = char::from_u32(cp) {
+                                                    out.push(ch);
+                                                }
+                                            }
+                                        }
+                                        // lewati `uc` unit fallback
+                                        for _ in 0..uc {
+                                            if i + 3 < s.len() && s[i] == b'\\' && s[i + 1] == b'\'' {
+                                                i += 4;
+                                            } else if i < s.len() {
+                                                i += 1;
+                                            }
+                                        }
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => i += 1,
+                }
+            }
+            c => {
+                if skip.is_none() && depth >= 1 {
+                    out.push(cp1252(c));
+                }
+                i += 1;
+            }
+        }
+    }
+    out.trim().to_string()
+}
+
+// ====================== geometri & media ======================
+
+fn element_box(e: &DynamicMessage, sw: f32, sh: f32) -> Option<(Rect, (f32, f32))> {
+    let b = msg(e, "bounds")?;
+    let size = msg(&b, "size")?;
+    let (x, y) = msg(&b, "origin")
+        .map(|o| (num(&o, "x"), num(&o, "y")))
+        .unwrap_or((0.0, 0.0));
+    let (w, h) = (num(&size, "width"), num(&size, "height"));
+    if w <= 0.0 || h <= 0.0 || sw <= 0.0 || sh <= 0.0 {
+        return None;
+    }
+    Some((
+        Rect {
+            x: x / sw * 100.0,
+            y: y / sh * 100.0,
+            w: w / sw * 100.0,
+            h: h / sh * 100.0,
+        },
+        (w, h),
+    ))
+}
+
+/// Tolak path absolut / berisi `..` agar file .pro jahat tidak keluar dari root.
+fn safe_relative(rel: &str) -> bool {
+    let p = Path::new(rel);
+    !p.has_root()
+        && p.components()
+            .all(|c| matches!(c, Component::Normal(_) | Component::CurDir))
+}
+
+/// Cari file bernama `name` di bawah `dir` (maks `depth` tingkat), tanpa membedakan huruf besar/kecil.
+fn find_by_name(dir: &Path, name: &OsStr, depth: u32) -> Option<PathBuf> {
+    if depth == 0 {
+        return None;
+    }
+    let mut subdirs = Vec::new();
+    for e in std::fs::read_dir(dir).ok()?.flatten() {
+        let p = e.path();
+        if p.is_dir() {
+            subdirs.push(p);
+        } else if p.file_name().map(|n| n.eq_ignore_ascii_case(name)) == Some(true) {
+            return Some(p);
+        }
+    }
+    subdirs.into_iter().find_map(|d| find_by_name(&d, name, depth - 1))
+}
+
+fn resolve_media(root: &Path, rel: &str) -> (PathBuf, bool) {
+    // 1. path persis seperti di file .pro
+    let primary = root.join(rel);
+    if primary.exists() {
+        return (primary, true);
+    }
+    // 2. cari berdasarkan nama file di dalam folder root
+    if let Some(name) = Path::new(rel).file_name() {
+        if let Some(found) = find_by_name(root, name, 4) {
+            return (found, true);
+        }
+    }
+    (primary, false)
+}
+
+/// Ubah `base` (kerangka lapisan) menjadi lapisan video/gambar dari pesan Media.
+fn media_layer(
+    media: &DynamicMessage,
+    mut layer: Layer,
+    box_px: (f32, f32),
+    root: &Path,
+    warnings: &mut Vec<String>,
+) -> Option<Layer> {
+    let is_video = media.has_field_by_name("video");
+    let is_image = media.has_field_by_name("image");
+    if !is_video && !is_image {
+        warnings.push(format!(
+            "elemen z={}: tipe media tidak dikenal (bukan video/gambar)",
+            layer.z
+        ));
+        return None;
+    }
+    let sub = msg(media, if is_video { "video" } else { "image" });
+
+    let local_path = |u: DynamicMessage| {
+        msg(&u, "local")
+            .map(|l| string(&l, "path"))
+            .filter(|p| !p.is_empty())
+    };
+    let rel = msg(media, "url").and_then(local_path).or_else(|| {
+        sub.as_ref()
+            .and_then(|s| msg(s, "file"))
+            .and_then(|f| msg(&f, "local_url"))
+            .and_then(local_path)
+    });
+    let Some(rel) = rel else {
+        warnings.push(format!(
+            "elemen z={}: media tanpa path lokal (mungkin URL eksternal)",
+            layer.z
+        ));
+        return None;
+    };
+    if !safe_relative(&rel) {
+        warnings.push(format!("elemen z={}: path media tidak aman ditolak: {rel}", layer.z));
+        return None;
+    }
+
+    let (full, exists) = resolve_media(root, &rel);
+    layer.kind = if is_video { "video" } else { "image" }.into();
+    layer.path = Some(full.to_string_lossy().replace('\\', "/"));
+    layer.status = Some(if exists { "OK" } else { "File media tidak ditemukan" }.into());
+
+    // drawing: area gambar kustom & mode skala
+    if let Some(drawing) = sub.as_ref().and_then(|s| msg(s, "drawing")) {
+        if let Some(c) = msg(&drawing, "custom_image_bounds") {
+            if let Some(s) = msg(&c, "size") {
+                let (ix, iy) = msg(&c, "origin")
+                    .map(|o| (num(&o, "x"), num(&o, "y")))
+                    .unwrap_or((0.0, 0.0));
+                layer.inner = Some(Rect {
+                    x: ix / box_px.0 * 100.0,
+                    y: iy / box_px.1 * 100.0,
+                    w: num(&s, "width") / box_px.0 * 100.0,
+                    h: num(&s, "height") / box_px.1 * 100.0,
+                });
+            }
+        }
+        let sc = enum_name(&drawing, "scale_behavior");
+        if !sc.is_empty() {
+            layer.scale = Some(sc);
+        }
+    }
+
+    if is_video {
+        let v = sub.as_ref();
+        // mute: semua channel audio ber-muted (None bila tak ada info channel)
+        layer.muted = v.and_then(|v| msg(v, "audio")).and_then(|a| {
+            let ch = list(&a, "audio_channels");
+            if ch.is_empty() {
+                None
+            } else {
+                Some(ch.iter().all(|c| flag(c, "muted")))
+            }
+        });
+        layer.looped = v
+            .and_then(|v| msg(v, "transport"))
+            .map(|t| enum_name(&t, "playback_behavior").ends_with("LOOP"));
+        layer.stop_on_clear = v
+            .and_then(|v| msg(v, "video"))
+            .map(|x| enum_name(&x, "end_behavior").ends_with("STOP_ON_CLEAR"));
+    }
+    Some(layer)
+}
+
+// ====================== pengumpulan lapisan per cue ======================
+
+struct Acc {
+    layers: Vec<Layer>,
+    texts: Vec<String>,
+    w: f32,
+    h: f32,
+    z: usize,
+}
+
+fn collect_base_slide(
+    base: &DynamicMessage,
+    root: &Path,
+    warnings: &mut Vec<String>,
+    acc: &mut Acc,
+) {
+    if let Some(sz) = msg(base, "size") {
+        let (w, h) = (num(&sz, "width"), num(&sz, "height"));
+        if w > 0.0 && h > 0.0 {
+            acc.w = w;
+            acc.h = h;
+        }
+    }
+
+    for el in list(base, "elements") {
+        let z = acc.z;
+        acc.z += 1;
+        let Some(e) = msg(&el, "element") else { continue };
+        let Some((rect, box_px)) = element_box(&e, acc.w, acc.h) else {
+            warnings.push(format!("elemen z={z}: bounds tidak valid, dilewati"));
+            continue;
+        };
+        // Catatan: proto3 menghilangkan nilai 0. ProPresenter menulis opacity: 1
+        // secara eksplisit, jadi opacity yang hilang berarti 0 (tak terlihat).
+        let rotation = num(&e, "rotation");
+        let opacity = num(&e, "opacity");
+        let skeleton = |kind: &str| Layer::new(kind, z, rect.clone(), rotation, opacity);
+
+        // Fill hanya dihitung bila enable: true
+        if let Some(fill) = msg(&e, "fill").filter(|f| flag(f, "enable")) {
+            if let Some(media) = msg(&fill, "media") {
+                if let Some(l) = media_layer(&media, skeleton("video"), box_px, root, warnings) {
+                    acc.layers.push(l);
+                }
+            } else if let Some(c) = msg(&fill, "color") {
+                let mut l = skeleton("color");
+                l.color = Some(css_color(&c));
+                acc.layers.push(l);
+            } else {
+                warnings.push(format!(
+                    "elemen z={z}: tipe fill belum didukung (gradient/lainnya)"
+                ));
+            }
+        }
+
+        if let Some(t) = msg(&e, "text") {
+            let txt = rtf_to_text(&rtf_bytes(&t, "rtf_data"));
+            if !txt.is_empty() {
+                let mut l = skeleton("text");
+                l.text = Some(txt.clone());
+                acc.layers.push(l);
+                acc.texts.push(txt);
+            }
+        }
+    }
+}
+
+fn collect_cue(cue: &DynamicMessage, root: &Path, warnings: &mut Vec<String>) -> Acc {
+    let mut acc = Acc {
+        layers: vec![],
+        texts: vec![],
+        w: 1366.0,
+        h: 768.0,
+        z: 0,
+    };
+    for action in list(cue, "actions") {
+        let ty = enum_name(&action, "type");
+        match ty.as_str() {
+            "ACTION_TYPE_PRESENTATION_SLIDE" => {
+                let base = msg(&action, "slide")
+                    .and_then(|s| msg(&s, "presentation"))
+                    .and_then(|p| msg(&p, "base_slide"));
+                match base {
+                    Some(b) => collect_base_slide(&b, root, warnings, &mut acc),
+                    None => warnings.push("action slide tanpa base_slide".into()),
+                }
+            }
+            "ACTION_TYPE_MEDIA" => {
+                let media = msg(&action, "media").and_then(|m| msg(&m, "element"));
+                match media {
+                    Some(m) => {
+                        let z = acc.z;
+                        acc.z += 1;
+                        let full = Rect { x: 0.0, y: 0.0, w: 100.0, h: 100.0 };
+                        let skeleton = Layer::new("video", z, full, 0.0, 1.0);
+                        if let Some(l) = media_layer(&m, skeleton, (acc.w, acc.h), root, warnings) {
+                            acc.layers.push(l);
+                        }
+                    }
+                    None => warnings.push("action media tanpa elemen media terbaca".into()),
+                }
+            }
+            "" => warnings.push("action tanpa tipe terbaca".into()),
+            other => warnings.push(format!("tipe action belum didukung: {other}")),
+        }
+    }
+    acc
+}
+
+fn build_slide(
+    number: usize,
+    cue: &DynamicMessage,
+    group_name: &str,
+    group_color: &str,
+    song: &str,
+    root: &Path,
+    warnings: &mut Vec<String>,
+) -> Option<Slide> {
+    let acc = collect_cue(cue, root, warnings);
+    if acc.layers.is_empty() {
+        return None; // tak ada teks maupun visual
+    }
+    let first_media = acc
+        .layers
+        .iter()
+        .find(|l| l.kind == "video" || l.kind == "image");
+    Some(Slide {
+        slide_number: number,
+        content: acc.texts.join("\n"),
+        group_name: group_name.to_string(),
+        group_color: group_color.to_string(),
+        song: song.to_string(),
+        background_media: first_media.and_then(|l| l.path.clone()),
+        media_status: Some(
+            first_media
+                .and_then(|l| l.status.clone())
+                .unwrap_or_else(|| "No media".into()),
+        ),
+        slide_width: acc.w,
+        slide_height: acc.h,
+        layers: acc.layers,
+    })
+}
+
+// ====================== urutan: arrangement terpilih ======================
+
+fn ordered_groups<'a>(
+    pres: &DynamicMessage,
+    groups: &'a [DynamicMessage],
+) -> Vec<&'a DynamicMessage> {
+    let by_uuid: HashMap<String, &'a DynamicMessage> = groups
+        .iter()
+        .filter_map(|g| msg(g, "group").map(|x| (uuid_of(&x), g)))
+        .collect();
+    let selected = msg(pres, "selected_arrangement")
+        .map(|u| string(&u, "string"))
+        .unwrap_or_default();
+
+    let mut result: Vec<&'a DynamicMessage> = Vec::new();
+    if let Some(arr) = list(pres, "arrangements")
+        .into_iter()
+        .find(|a| uuid_of(a) == selected)
+    {
+        let ids = list(&arr, "group_identifiers");
+        for id in &ids {
+            if let Some(g) = by_uuid.get(&string(id, "string")) {
+                result.push(*g);
+            }
+        }
+    }
+    if result.is_empty() {
+        groups.iter().collect() // tanpa arrangement: urutan cue_groups
+    } else {
+        result
+    }
+}
+
+// ====================== parser utama ======================
+
+pub fn parse_pro_file(path: &Path, media_root: &Path) -> Result<ParsedPro, String> {
+    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    let desc = pool()
+        .get_message_by_name("rv.data.Presentation")
+        .ok_or("rv.data.Presentation tidak ada di skema")?;
+    let pres = DynamicMessage::decode(desc, bytes.as_slice())
+        .map_err(|e| format!("decode gagal: {e}"))?;
+
+    let song = msg(&pres, "ccli")
+        .map(|c| string(&c, "song_title"))
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| string(&pres, "name"));
+
+    let all_cues = list(&pres, "cues");
+    let cues: HashMap<String, &DynamicMessage> =
+        all_cues.iter().map(|c| (uuid_of(c), c)).collect();
+
+    let mut warnings: Vec<String> = Vec::new();
+    let mut slides: Vec<Slide> = Vec::new();
+
+    let groups = list(&pres, "cue_groups");
+    if groups.is_empty() {
+        // Tanpa grup: pakai urutan cue apa adanya
+        for cue in &all_cues {
+            if let Some(s) = build_slide(slides.len() + 1, cue, "", "", &song, media_root, &mut warnings) {
+                slides.push(s);
+            }
+        }
+    } else {
+        for g in ordered_groups(&pres, &groups) {
+            let group = msg(g, "group");
+            let name = group
+                .as_ref()
+                .map(|x| string(x, "name"))
+                .unwrap_or_default();
+            let color = group
+                .as_ref()
+                .and_then(|x| msg(x, "color"))
+                .map(|c| hex_color(&c))
+                .unwrap_or_default();
+
+            for id in list(g, "cue_identifiers") {
+                let key = string(&id, "string");
+                let Some(cue) = cues.get(&key) else {
+                    warnings.push(format!("cue {key} dirujuk grup '{name}' tapi tidak ada"));
+                    continue;
+                };
+                if let Some(s) = build_slide(
+                    slides.len() + 1,
+                    cue,
+                    &name,
+                    &color,
+                    &song,
+                    media_root,
+                    &mut warnings,
+                ) {
+                    slides.push(s);
+                }
+            }
+        }
+    }
+
+    let mut seen = HashSet::new();
+    warnings.retain(|w| seen.insert(w.clone()));
+    Ok(ParsedPro { slides, warnings })
+}
+
+// ====================== tes ======================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resolves_media_by_filename() {
+        let root = std::env::temp_dir().join("pc_resolve_test");
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("Media")).unwrap();
+        std::fs::write(root.join("Media/clip.mov"), b"x").unwrap();
+
+        let (p, ok) = resolve_media(&root, "Media/Assets/CLIP.mov");
+        assert!(ok);
+        assert!(p.ends_with("Media/clip.mov") || p.ends_with("Media\\clip.mov"));
+
+        let (_, missing) = resolve_media(&root, "Media/Assets/none.mov");
+        assert!(!missing);
+    }
+
+    #[test]
+    fn header_only_is_empty() {
+        let rtf = br"{\rtf0\ansi\ansicpg1252{\fonttbl\f0\fnil ArialMT;}{\colortbl;\red0\green0\blue0;}{\*\expandedcolortbl;\csgenericrgb\c0\c0\c0\c100000;}{\*\listtable}{\*\listoverridetable}\uc1\paperw12240\margl0\pard\li0\ql\f0\fs100\cf1\cb3}";
+        assert_eq!(rtf_to_text(rtf), "");
+    }
+
+    #[test]
+    fn hex_escape_and_par() {
+        let rtf = br"{\rtf0\ansi{\fonttbl\f0 Arial;}\f0\fs100 Caf\'e9 pagi\par Baris dua}";
+        assert_eq!(rtf_to_text(rtf), "Café pagi\nBaris dua");
+    }
+
+    #[test]
+    fn backslash_newline_is_line_break() {
+        assert_eq!(rtf_to_text(b"{\\rtf0 Satu\\\nDua}"), "Satu\nDua");
+    }
+
+    #[test]
+    fn unicode_with_fallback() {
+        assert_eq!(rtf_to_text(b"{\\rtf0\\uc1 a\\u225?b}"), "aáb");
+        assert_eq!(rtf_to_text(b"{\\rtf0\\uc2 a\\u233\\'e9\\'e9b}"), "aéb");
+    }
+
+    #[test]
+    fn unicode_surrogate_pair() {
+        // U+1F600 = D83D DE00 → -10179 -8704
+        assert_eq!(rtf_to_text(b"{\\rtf0\\uc1 \\u-10179?\\u-8704?}"), "😀");
+    }
+
+    #[test]
+    fn rejects_unsafe_paths() {
+        assert!(safe_relative("Media/Assets/a.mov"));
+        assert!(!safe_relative("../x.mov"));
+        assert!(!safe_relative("/etc/passwd"));
+    }
+
+    /// Menguji invarian umum untuk setiap *.pro di tests/fixtures/,
+    /// tanpa mengandalkan isi satu file tertentu.
+    #[test]
+    fn fixtures_invariants() {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        let Ok(rd) = std::fs::read_dir(&dir) else { return };
+        for e in rd.flatten() {
+            let p = e.path();
+            if p.extension().and_then(|x| x.to_str()) != Some("pro") {
+                continue;
+            }
+            let r = parse_pro_file(&p, &dir).unwrap_or_else(|err| panic!("{p:?}: {err}"));
+            for (i, s) in r.slides.iter().enumerate() {
+                assert_eq!(s.slide_number, i + 1, "{p:?}");
+                for l in &s.layers {
+                    assert!(l.rect.w > 0.0 && l.rect.h > 0.0, "{p:?}: rect tak valid");
+                    assert!(l.rect.x.is_finite() && l.rect.y.is_finite());
+                    match l.kind.as_str() {
+                        "video" | "image" => assert!(l.path.is_some(), "{p:?}"),
+                        "color" => assert!(l.color.is_some(), "{p:?}"),
+                        "text" => assert!(l.text.is_some(), "{p:?}"),
+                        k => panic!("{p:?}: kind tak dikenal {k}"),
+                    }
+                    if l.kind != "video" {
+                        assert!(l.muted.is_none() && l.looped.is_none());
+                    }
+                }
+            }
+        }
+    }
+}

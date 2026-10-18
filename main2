@@ -1,0 +1,56 @@
+use std::fs;
+
+// 1. Definisikan fungsi parse_native_pro_file di bagian atas
+fn parse_native_pro_file(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Membaca file .pro secara native: {}", file_path);
+    
+    // Baca seluruh byte file .pro
+    let content = fs::read(file_path)?;
+    
+    // Cari potongan teks/string yang valid di dalam biner
+    let mut valid_strings = Vec::new();
+    let mut current_string = String::new();
+
+    for &byte in &content {
+        // Rentang karakter ASCII yang dapat dibaca (printable characters)
+        if (0x20..=0x7E).contains(&byte) {
+            current_string.push(byte as char);
+        } else {
+            if current_string.len() >= 4 {
+                valid_strings.push(current_string.clone());
+            }
+            current_string.clear();
+        }
+    }
+
+    println!("Berhasil memindai {} potongan teks dari file .pro native!", valid_strings.len());
+
+    // Tampilkan 10 potongan teks pertama
+    for (i, s) in valid_strings.iter().take(10).enumerate() {
+        println!("  [{}] {}", i + 1, s);
+    }
+
+    Ok(())
+}
+
+fn main() {
+    println!("=== PresentCraft Native Engine (Rust) ===");
+
+    let cache_dir = "./extracted_cache";
+    
+    // Pindai folder cache untuk mencari file .pro
+    if let Ok(entries) = fs::read_dir(cache_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if let Some(ext) = path.extension() {
+                if ext == "pro" {
+                    if let Some(path_str) = path.to_str() {
+                        let _ = parse_native_pro_file(path_str);
+                    }
+                }
+            }
+        }
+    } else {
+        println!("Folder cache belum ditemukan. Pastikan ekstraksi bundel dijalankan.");
+    }
+}

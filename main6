@@ -1,0 +1,159 @@
+use std::fs::{self, File};
+use std::io::{self, BufReader};
+use std::path::{Path, PathBuf};
+
+#[derive(Debug)]
+struct Slide {
+    slide_number: usize,
+    content: String,
+    background_media: Option<String>,
+    media_status: Option<String>, // Status apakah file ditemukan atau hilang
+}
+
+// Fungsi Asset Resolver dengan Pengecekan Berlapis
+fn resolve_media_path(raw_path_str: &str, cache_dir: &str, pro_file_dir: &str) -> (Option<String>, String) {
+    if raw_path_str.is_empty() {
+        return (None, "None".to_string());
+    }
+
+    let raw_path = Path::new(raw_path_str);
+
+    // 1. Cek 1: Apakah file ada di path absolut aslinya?
+    if raw_path.exists() && raw_path.is_file() {
+        return (Some(raw_path_str.to_string()), "Found (Absolute)".to_string());
+    }
+
+    // Ambil nama file saja dari path mentah (misal: "video1.mp4" dari "C:/Download/video1.mp4")
+    if let Some(file_name) = raw_path.file_name() {
+        
+        // 2. Cek 2: Apakah file ada di dalam folder cache bundel (.probundle)?
+        let cache_path = Path::new(cache_dir).join(file_name);
+        if cache_path.exists() && cache_path.is_file() {
+            return (cache_path.to_str().map(|s| s.to_string()), "Found (In Bundle Cache)".to_string());
+        }
+
+        // 3. Cek 3: Apakah file berada di folder lokal yang sama dengan file .pro?
+        let local_path = Path::new(pro_file_dir).join(file_name);
+        if local_path.exists() && local_path.is_file() {
+            return (local_path.to_str().map(|s| s.to_string()), "Found (Local Directory)".to_string());
+        }
+    }
+
+    // 4. Jika semuanya gagal -> Berkas Hilang (Missing Asset)
+    (None, "MISSING (Broken Link)".to_string())
+}
+
+fn parse_native_pro_file(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Membaca dan memparsing file .pro secara native: {}", file_path);
+    
+    let pro_dir = Path::new(file_path).parent().unwrap_or_else(|| Path::new(".")).to_str().unwrap();
+    let cache_dir = "./extracted_cache";
+
+    let content = fs::read(file_path)?;
+    let content_str = String::from_utf8_lossy(&content);
+
+    let mut slides = Vec::new();
+    let parts: Vec<&str> = content_str.split("{\\rtf1").collect();
+
+    for (i, part) in parts.iter().enumerate() {
+        if i == 0 { continue; }
+        
+        let mut clean_end = part.len();
+        for (idx, byte) in part.bytes().enumerate() {
+            if byte < 0x09 && byte != 0x0A && byte != 0x0D {
+                clean_end = idx;
+                break;
+            }
+        }
+        
+        let sub_part = &part[..clean_end];
+        let cleaned = clean_rtf_lyrics(sub_part);
+
+        if cleaned.len() > 1 && !cleaned.starts_with('*') && !cleaned.contains(';') && !cleaned.chars().all(|c| c.is_ascii_digit()) {
+            
+            // Simulasi mendeteksi path media mentah dari biner (bisa berupa path absolut atau nama file)
+            let mut raw_media_path = "";
+            for word in sub_part.split(|c: char| c.is_control() || c.is_whitespace()) {
+                let lower = word.to_lowercase();
+                if lower.ends_with(".mp4") || lower.ends_with(".mov") || lower.ends_with(".png") || lower.ends_with(".jpg") {
+                    raw_media_path = word;
+                    break;
+                }
+            }
+
+            // Jalankan Asset Resolver Berlapis
+            let (resolved_path, status) = resolve_media_path(raw_media_path, cache_dir, pro_dir);
+
+            if !raw_media_path.is_empty() {
+                println!(" -> Media mentah terdeteksi di biner: {}", raw_media_path);
+                println!(" -> Status Resolver: {} => Path: {:?}", status, resolved_path);
+            }
+
+            slides.push(Slide {
+                slide_number: slides.len() + 1,
+                content: cleaned,
+                background_media: resolved_path,
+                media_status: Some(status),
+            });
+        }
+    }
+
+    println!("Berhasil mengekstrak {} slide dengan sistem Asset Resolver di Rust!", slides.len());
+    Ok(())
+}
+
+fn clean_rtf_lyrics(rtf_text: &str) -> String {
+    let mut text = rtf_text.to_string();
+    if let Some(pos) = text.find("strokec2") {
+        text = text[pos + 8..].to_string();
+    }
+    text = text.replace("\\'92", "'").replace("\\'91", "'").replace("\\'3f", "?");
+    text = text.replace('\\', "").replace('{', "").replace('}', "");
+    if text.ends_with("0B") { text.truncate(text.len() - 2); }
+    if text.ends_with('0') { text.pop(); }
+    text.trim().to_string()
+}
+
+fn extract_probundle(bundle_path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::open(bundle_path)?;
+    let reader = BufReader::new(file);
+    let mut archive = zip::ZipArchive::new(reader)?;
+    fs::create_dir_all(output_dir)?;
+
+    for i in 0..archive.len() {
+        let mut file_in_zip = archive.by_index(i)?;
+        let outpath = match file_in_zip.enclosed_name() {
+            Some(path) => Path::new(output_dir).join(path),
+            None => continue,
+        };
+        if file_in_zip.name().ends_with('/') {
+            fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() { if !p.exists() { fs::create_dir_all(p)?; } }
+            let mut outfile = File::create(&outpath)?;
+            io::copy(&mut file_in_zip, &mut outfile)?;
+        }
+    }
+    Ok(())
+}
+
+fn main() {
+    println!("=== PresentCraft Native Engine with Asset Resolver (Rust) ===");
+    let bundle_file = "perfection.probundle"; 
+    let cache_dir = "./extracted_cache";
+
+    if Path::new(bundle_file).exists() {
+        let _ = extract_probundle(bundle_file, cache_dir);
+    }
+
+    if let Ok(entries) = fs::read_dir(cache_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("pro") {
+                if let Some(path_str) = path.to_str() {
+                    let _ = parse_native_pro_file(path_str);
+                }
+            }
+        }
+    }
+}
