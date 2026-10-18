@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PresentCraft - Audience Display</title>
+    <style>
+      html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        cursor: none;
+      }
+      #bg-layer { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+      #stage    { position: absolute; z-index: 1; }
+    </style>
+  </head>
+  <body>
+    <div id="bg-layer"></div>
+    <div id="stage"></div>
+
+    <script src="slide-renderer.js"></script>
+    <script type="module">
+      import { loadBackground, onBackgroundChange } from './background-state.js';
+
+      const { renderSlide, fitStage, renderBackground } = window.SlideRenderer;
+      const stage = document.getElementById('stage');
+      const layer = document.getElementById('bg-layer');
+
+      // Slide dulu: layar hitam awal, lalu listener, supaya tidak ada event yang terlewat.
+      renderSlide(stage, { width: 1366, height: 768, layers: [] });
+      window.addEventListener('resize', () => fitStage(stage));
+      await window.__TAURI__.event.listen('update-slide-event', (e) => renderSlide(stage, e.payload));
+
+      // Background: pasang listener sebelum membaca disk, agar perubahan yang
+      // datang saat startup tidak tertimpa hasil baca yang lebih lama.
+      let gotEvent = false;
+      await onBackgroundChange((bg) => { gotEvent = true; renderBackground(layer, bg); });
+      const saved = await loadBackground();
+      if (!gotEvent) renderBackground(layer, saved);
+    </script>
+  </body>
+</html>

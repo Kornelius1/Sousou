@@ -1,0 +1,131 @@
+use std::fs::{self, File};
+use std::io::{self, BufReader};
+use std::path::{Path};
+use serde::{Serialize, Deserialize};
+
+#[derive(Deserialize, Debug)]
+pub struct BundleArgs {
+    pub file_path: String,
+}
+
+#[derive(Serialize, Debug)]
+pub struct Slide {
+    pub slide_number: usize,
+    pub content: String,
+    pub background_media: Option<String>,
+    pub media_status: Option<String>,
+}
+
+fn clean_rtf_lyrics(rtf_text: &str) -> String {
+    let mut text = rtf_text.to_string();
+    if let Some(pos) = text.find("strokec2") {
+        text = text[pos + 8..].to_string();
+    }
+    text = text.replace("\\'92", "'").replace("\\'91", "'").replace("\\'3f", "?");
+    text = text.replace('\\', "").replace('{', "").replace('}', "");
+    if text.ends_with("0B") { text.truncate(text.len() - 2); }
+    if text.ends_with('0') { text.pop(); }
+    text.trim().to_string()
+}
+
+fn extract_probundle(bundle_path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::open(bundle_path)?;
+    let reader = BufReader::new(file);
+    let mut archive = zip::ZipArchive::new(reader)?;
+    fs::create_dir_all(output_dir)?;
+
+    for i in 0..archive.len() {
+        let mut file_in_zip = archive.by_index(i)?;
+        let outpath = match file_in_zip.enclosed_name() {
+            Some(path) => Path::new(output_dir).join(path),
+            None => continue,
+        };
+        if file_in_zip.name().ends_with('/') {
+            fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() { if !p.exists() { fs::create_dir_all(p)?; } }
+            let mut outfile = File::create(&outpath)?;
+            io::copy(&mut file_in_zip, &mut outfile)?;
+        }
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn load_presentation_bundle(file_path: String) -> Result<Vec<Slide>, String> {
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let base_path = Path::new(manifest_dir);
+    let parent_dir = base_path.parent().unwrap_or(base_path);
+    let cache_dir = parent_dir.join("extracted_cache");
+
+    if let Err(e) = extract_probundle(&file_path, cache_dir.to_str().unwrap()) {
+        return Err(format!("Gagal mengekstrak bundel: {}", e));
+    }
+
+    let mut all_slides = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(&cache_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|s| s.to_str()) == Some("pro") {
+                if let Some(path_str) = path.to_str() {
+                    if let Ok(content) = fs::read(path_str) {
+                        let content_str = String::from_utf8_lossy(&content);
+                        let parts: Vec<&str> = content_str.split("{\\rtf1").collect();
+
+                        for (i, part) in parts.iter().enumerate() {
+                            if i == 0 { continue; }
+
+                            let mut clean_end = part.len();
+                            for (idx, byte) in part.bytes().enumerate() {
+                                if byte < 0x09 && byte != 0x0A && byte != 0x0D {
+                                    clean_end = idx;
+                                    break;
+                                }
+                            }
+
+                            let sub_part = &part[..clean_end];
+                            let cleaned = clean_rtf_lyrics(sub_part);
+
+                            if cleaned.len() > 1 && !cleaned.starts_with('*') && !cleaned.contains(';') && !cleaned.chars().all(|c| c.is_ascii_digit()) {
+                                all_slides.push(Slide {
+                                    slide_number: all_slides.len() + 1,
+                                    content: cleaned,
+                                    background_media: None,
+                                    media_status: Some("Loaded".to_string()),
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if all_slides.is_empty() {
+        return Err("Tidak ada slide .pro valid yang ditemukan di dalam bundel ini.".to_string());
+    }
+
+    Ok(all_slides)
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            let _audience_window = tauri::WebviewWindowBuilder::new(
+                app,
+                "audience",
+                tauri::WebviewUrl::App("audience.html".into())
+            )
+            .title("PresentCraft - Audience Display")
+            .inner_size(1280.0, 720.0)
+            .build()?;
+
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![load_presentation_bundle])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

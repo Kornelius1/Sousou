@@ -1,0 +1,168 @@
+use std::fs::{self, File};
+use std::io::{self, BufReader};
+use std::path::Path;
+
+
+// Tambahkan struct untuk melacak aset media
+#[derive(Debug)]
+struct MediaAsset {
+    file_name: String,
+    asset_type: String, // "Video" atau "Image"
+}
+
+// Struktur data untuk menyimpan slide yang bersih
+#[derive(Debug)]
+struct Slide {
+    slide_number: usize,
+    content: String,
+    background_media: Option<String>,
+}
+
+// Fungsi sederhana untuk membersihkan tag RTF di Rust
+fn clean_rtf_lyrics(rtf_text: &str) -> String {
+    let mut text = rtf_text.to_string();
+
+    if let Some(pos) = text.find("strokec2") {
+        text = text[pos + 8..].to_string();
+    }
+
+    // Bersihkan escape karakter dan kontrol RTF
+    text = text.replace("\\'92", "'");
+    text = text.replace("\\'91", "'");
+    text = text.replace("\\'3f", "?");
+    
+    text = text.replace('\\', "");
+    text = text.replace('{', "");
+    text = text.replace('}', "");
+    
+    // Hapus angka '0' atau sisa karakter kontrol biner di ujung string
+    if text.ends_with("0B") {
+        text.truncate(text.len() - 2);
+    }
+    if text.ends_with('0') {
+        text.pop();
+    }
+
+    text.trim().to_string()
+}
+
+// Fungsi untuk membaca dan memparsing file .pro secara native
+fn parse_native_pro_file(file_path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Membaca dan memparsing file .pro secara native: {}", file_path);
+    
+    let content = fs::read(file_path)?;
+    let content_str = String::from_utf8_lossy(&content);
+
+    let mut slides = Vec::new();
+    
+    // Gunakan pemisahan berdasarkan pola awal RTF yang bersih
+    let parts: Vec<&str> = content_str.split("{\\rtf1").collect();
+
+    for (i, part) in parts.iter().enumerate() {
+        if i == 0 { continue; }
+        
+        // Ambil teks hanya sampai sebelum byte kontrol biner muncul (seperti \x00 sampai \x08)
+        let mut clean_end = part.len();
+        for (idx, byte) in part.bytes().enumerate() {
+            if byte < 0x09 && byte != 0x0A && byte != 0x0D {
+                clean_end = idx;
+                break;
+            }
+        }
+        
+        let sub_part = &part[..clean_end];
+        let cleaned = clean_rtf_lyrics(sub_part);
+
+        if cleaned.len() > 1 && !cleaned.starts_with('*') && !cleaned.contains(';') && !cleaned.chars().all(|c| c.is_ascii_digit()) {
+            
+            let mut detected_media = None;
+            for word in sub_part.split(|c: char| c.is_control() || c.is_whitespace()) {
+                let lower_word = word.to_lowercase();
+                if lower_word.ends_with(".mp4") || lower_word.ends_with(".mov") || lower_word.ends_with(".png") || lower_word.ends_with(".jpg") {
+                    detected_media = Some(word.to_string());
+                    break;
+                }
+            }
+
+            slides.push(Slide {
+                slide_number: slides.len() + 1,
+                content: cleaned,
+                background_media: detected_media,
+            });
+        }
+    }
+
+    println!("Berhasil mengekstrak {} slide bersih tanpa sisa artefak di Rust!", slides.len());
+
+    for slide in slides.iter().take(5) {
+        println!("\n[Slide {}]\n{}", slide.slide_number, slide.content);
+    }
+
+    Ok(())
+}
+
+// Fungsi untuk mengekstrak file .probundle (ZIP) secara otomatis
+fn extract_probundle(bundle_path: &str, output_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Membaca bundel: {}", bundle_path);
+    
+    let file = File::open(bundle_path)?;
+    let reader = BufReader::new(file);
+    let mut archive = zip::ZipArchive::new(reader)?;
+
+    fs::create_dir_all(output_dir)?;
+
+    for i in 0..archive.len() {
+        let mut file_in_zip = archive.by_index(i)?;
+        let outpath = match file_in_zip.enclosed_name() {
+            Some(path) => Path::new(output_dir).join(path),
+            None => continue,
+        };
+
+        if file_in_zip.name().ends_with('/') {
+            fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                if !p.exists() {
+                    fs::create_dir_all(p)?;
+                }
+            }
+            let mut outfile = File::create(&outpath)?;
+            io::copy(&mut file_in_zip, &mut outfile)?;
+        }
+    }
+
+    println!("Ekstraksi bundel selesai!");
+    Ok(())
+}
+
+fn main() {
+    println!("=== PresentCraft Native Engine (Rust) ===");
+
+    let bundle_file = "perfection.probundle"; 
+    let cache_dir = "./extracted_cache";
+
+    // 1. Ekstrak bundel jika file ada
+    if Path::new(bundle_file).exists() {
+        if let Err(e) = extract_probundle(bundle_file, cache_dir) {
+            eprintln!("Gagal mengekstrak bundel: {}", e);
+        }
+    } else {
+        println!("File bundel '{}' tidak ditemukan, mencoba membaca cache yang ada...", bundle_file);
+    }
+
+    // 2. Pindai folder cache untuk mencari file .pro dan memparsिंगnya secara native
+    if let Ok(entries) = fs::read_dir(cache_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if let Some(ext) = path.extension() {
+                if ext == "pro" {
+                    if let Some(path_str) = path.to_str() {
+                        let _ = parse_native_pro_file(path_str);
+                    }
+                }
+            }
+        }
+    } else {
+        println!("Folder cache belum ditemukan.");
+    }
+}

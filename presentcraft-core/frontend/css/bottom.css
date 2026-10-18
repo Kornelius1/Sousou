@@ -1,0 +1,107 @@
+/* ---------- bar tombol ---------- */
+#toolbar { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; background: #1b1b1b; border-top: 1px solid #2a2a2a; }
+#toolbar .sp { flex: 1; }
+.tb { background: #2d2d2d; color: #ddd; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 12px; font: inherit; cursor: pointer; }
+.tb:hover { background: #3a3a3a; }
+.tb.on { background: #bb86fc; color: #121212; border-color: #bb86fc; }
+.tb kbd { color: #888; font: inherit; margin-left: 4px; }
+.tb.on kbd { color: #333; }
+#tb-bible { background: #1f3a5f; border-color: #3d6fa8; color: #9cc9ff; }
+#tb-bible:hover { background: #28507f; }
+#tb-blank { background: #4a2430; border-color: #8a3d50; color: #ff9aa9; }
+#tb-blank:hover { background: #5e2d3c; }
+#tb-blank.on { background: #ff5370; border-color: #ff5370; color: #121212; }
+#tb-blank.on kbd { color: #5a1020; }
+#tb-status { color: #03dac6; font-size: 12px; }
+
+/* ---------- panel background (bawah): explorer | detail ---------- */
+.mp-empty { color: #888; font-style: italic; font-size: 12px; }
+#media-panel {
+  display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr);
+  height: 190px; background: #1e1e1e; border-top: 2px solid #bb86fc;
+}
+
+/* kiri: explorer */
+#bg-explorer { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-right: 1px solid #2a2a2a; }
+.ex-head {
+  display: flex; align-items: center; gap: 2px; height: 24px; padding: 0 6px 0 4px; flex-shrink: 0;
+  font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #ccc;
+  cursor: pointer; user-select: none;
+}
+.ex-head .sp { flex: 1; }
+.ex-head .chev { width: 16px; height: 16px; fill: currentColor; transition: transform .1s; transform: rotate(90deg); }
+.ex-head.collapsed .chev { transform: none; }
+#ex-count { margin-left: 6px; font-weight: 400; color: #888; }
+.ex-act { display: grid; place-items: center; width: 20px; height: 20px; padding: 0; background: none; color: #bbb; border: 0; border-radius: 3px; cursor: pointer; }
+.ex-act svg { width: 14px; height: 14px; fill: currentColor; }
+.ex-act:hover:not(:disabled) { background: #3a3a3a; color: #fff; }
+.ex-act:disabled { opacity: .35; cursor: default; }
+#ex-list { flex: 1; overflow: auto; outline: none; padding-bottom: 6px; }
+.ex-row { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px 0 22px; color: #ccc; cursor: pointer; white-space: nowrap; }
+.ex-row:hover { background: #2a2d2e; }
+.ex-row.active { background: #37373d; color: #fff; }
+#ex-list:focus .ex-row.active { background: #094771; }
+.ex-ico { display: grid; place-items: center; flex: none; }
+.ex-ico svg { width: 14px; height: 14px; fill: currentColor; opacity: .8; }
+.ex-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+.ex-del { visibility: hidden; }
+.ex-row:hover .ex-del, .ex-row.active .ex-del { visibility: visible; }
+#ex-list .mp-empty { padding: 6px 22px; }
+
+/* kanan: background aktif / drop zone + kontrol */
+#bg-detail { display: flex; gap: 16px; padding: 10px 14px; min-width: 0; min-height: 0; }
+#bg-media video, #bg-media img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+#bg-drop svg { width: 28px; height: 28px; fill: currentColor; margin-bottom: 2px; }
+#bg-drop b { font-size: 12px; font-weight: 600; color: #bbb; }
+#bg-drop:hover, #bg-drop:focus-visible, #media-panel.dragover #bg-drop { border-color: #ccc; color: #ddd; background: #242424; }
+#bg-stage:hover #bg-replace { opacity: 1; }
+#media-panel.dragover #bg-stage { outline: 2px dashed #ccc; outline-offset: -2px; }
+
+
+#media-panel {
+  display: grid; grid-template-columns: 220px minmax(0, 1fr) 250px;
+  height: 210px; padding: 0; gap: 0;
+}
+#media-panel.dragover { outline: 2px dashed #03dac6; outline-offset: -4px; }
+#bg-explorer { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #2a2a2a; }
+#ex-list { flex: 1; min-height: 0; overflow: auto; outline: none; }
+
+#bg-detail { min-width: 0; min-height: 0; display: flex; }
+#bg-slides { flex: 1; min-width: 0; overflow: auto; padding: 10px; outline: none; }
+#bg-slides:focus-visible { box-shadow: inset 0 0 0 1px #3a3a3a; }
+#bg-grid {
+  display: grid; gap: 10px; align-content: start;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+.bgt { border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #1e1e1e; cursor: pointer; }
+.bgt:hover { background: #2a2a2a; }
+.bgt.sel { border-color: #03dac6; }
+.bgt-thumb { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; isolation: isolate; }
+.bgt-layer { position: absolute; inset: 0; overflow: hidden; }
+.bgt.live .bgt-thumb::after {
+  content: 'TAYANG'; position: absolute; top: 4px; left: 4px; z-index: 5;
+  background: #cf6679; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
+}
+.bgt-cap { margin-top: 3px; font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+#bg-drop {
+  height: 100%; min-height: 130px; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 2px dashed #3a3a3a; border-radius: 6px; color: #888; cursor: pointer;
+}
+#bg-drop:hover { border-color: #bb86fc; color: #bbb; }
+#bg-drop svg { width: 28px; height: 28px; fill: currentColor; }
+
+#bg-settings {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-content: start;
+  padding: 8px 12px; overflow: auto; border-left: 1px solid #2a2a2a;
+}
+.bgc { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bgc.wide { grid-column: 1 / -1; }
+.bgc.checks { flex-direction: row; gap: 14px; }
+.bgc label { color: #aaa; font-size: 12px; }
+.bgc select { background: #2d2d2d; color: #e0e0e0; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 6px; font: inherit; }
+.bgc input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
+.bgs-title { color: #03dac6; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#bg-settings .off, #bg-settings [disabled] { opacity: .4; pointer-events: none; }
