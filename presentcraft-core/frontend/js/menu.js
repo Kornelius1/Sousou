@@ -1,6 +1,7 @@
-import { $ } from './utils.js';
+import { $, setStatus } from './utils.js';
 import { state } from './state.js';
 import { importFile, refreshThumbBackgrounds } from './sorter.js';
+import { resetConfirmations } from './confirm.js';
 
 function togglePane(id, cls) {
   const el = $(id);
@@ -28,6 +29,8 @@ const MENUS = [
       { sep: true },
       { label: 'Background di thumbnail', checked: () => state.showBgInThumbs,
         run: () => { state.showBgInThumbs = !state.showBgInThumbs; refreshThumbBackgrounds(); } },
+      { sep: true },
+      { label: 'Reset confirmation dialogs', run: () => { resetConfirmations(); setStatus('Confirmations enabled again.'); } },
     ],
   },
 ];

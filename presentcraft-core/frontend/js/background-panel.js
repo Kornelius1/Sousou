@@ -7,6 +7,7 @@ import { openDialog, listen } from './tauri.js';
 import { MEDIA_FILTER } from './media.js';
 import { setBackground, patchBackground, clearBackground } from '../background-state.js';
 import * as G from './groups.js';
+import { askConfirm } from './confirm.js';
 
 const SR = window.SlideRenderer;
 
@@ -193,7 +194,13 @@ export function initBackgroundPanel() {
     } else if (k === 'Delete') {
       const g = G.selectedGroup();
       const it = G.selectedItem();
-      if (g && it) G.removeItem(g.id, it.id);
+      if (g && it) {
+        askConfirm({
+          key: 'delete',
+          title: 'Delete item',
+          message: `Remove “${label(it)}” from “${g.name}”?\nThe original file on disk is not deleted.`,
+        }).then((ok) => { if (ok) G.removeItem(g.id, it.id); });
+      }
     }
   });
 
