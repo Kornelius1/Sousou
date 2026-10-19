@@ -1,6 +1,3 @@
-// Panel background (bawah): explorer grup | area slide background | pengaturan item.
-// Explorer hanya memilih. Menayangkan ke audience hanya lewat area slide background.
-import { state as S } from './state.js';
 import { on } from './bus.js';
 import { $, debounce, baseName } from './utils.js';
 import { openDialog, listen } from './tauri.js';
@@ -8,13 +5,22 @@ import { MEDIA_FILTER } from './media.js';
 import { setBackground, patchBackground, clearBackground } from '../background-state.js';
 import * as G from './groups.js';
 import { askConfirm } from './confirm.js';
+import { createGroupManager } from './group-factory.js';
+import { state } from './state.js';
 
 const SR = window.SlideRenderer;
 
 let cur = null;            // background yang sedang tayang
 const tiles = new Map();   // itemId -> { tile, layer, cap }
 let gridSig = '';
-let lastSel = null;
+let tileSel = null;
+
+const tileItem = () => {
+  const g = G.selectedGroup();
+  return g && tileSel ? g.items.find((i) => String(i.id) === String(tileSel)) || null : null;
+};
+
+const selectTile = (it) => { tileSel = it.id; refreshArea(); syncSettings(); };
 
 const toBg = (it) => ({
   src: it.src, kind: it.kind, loop: it.loop, mute: it.mute, scale: it.scale, opacity: it.opacity,
@@ -71,29 +77,24 @@ function refreshArea() {
   }
   for (const it of items) {
     const t = tiles.get(it.id);
-    t.tile.classList.toggle('sel', S.selectedItem === it.id);
+    t.tile.classList.toggle('sel', tileSel === it.id);
     t.tile.classList.toggle('live', isLive(it));
-  }
-  if (S.selectedItem !== lastSel) {
-    lastSel = S.selectedItem;
-    const t = tiles.get(S.selectedItem);
-    if (t) t.tile.scrollIntoView({ block: 'nearest' });
   }
 }
 
 function step(dir) {
   const g = G.selectedGroup();
   if (!g || !g.items.length) return;
-  let i = g.items.findIndex((x) => x.id === S.selectedItem);
+  let i = g.items.findIndex((x) => x.id === tileSel);
   i = i < 0 ? 0 : Math.min(g.items.length - 1, Math.max(0, i + dir));
   const it = g.items[i];
-  G.selectItem(g.id, it.id);
+  selectTile(it);
   air(it);
 }
 
 // ---------- kolom pengaturan ----------
 function syncSettings() {
-  const it = G.selectedItem();
+  const it = tileItem();
   const has = !!it;
   const isMedia = has && it.kind !== 'color';
   const isVideo = has && it.kind === 'video';
@@ -128,7 +129,7 @@ function edit(patch) {
 function dropFiles(paths) {
   const g = G.selectedGroup() || G.createGroup('Umum');
   const n = G.addFiles(g.id, paths);
-  if (n) G.selectItem(g.id, g.items[g.items.length - n].id); // hanya memilih, tidak menayangkan
+  if (n) selectTile(g.items[g.items.length - n]); // hanya memilih, tidak menayangkan
 }
 
 async function chooseFiles() {
@@ -142,7 +143,7 @@ export function pick(src, kind) {
   G.addFiles(g.id, [src]);
   const it = g.items.find((i) => i.src === src);
   if (!it) return;
-  G.selectItem(g.id, it.id);
+  selectTile(it);
   air(it);
 }
 
@@ -163,20 +164,14 @@ export function initBackgroundPanel() {
   on('selection-changed', refresh);
   on('item-updated', (it) => applyTile(it));
 
-  $('ex-head').addEventListener('click', () => {
-    const collapsed = $('ex-head').classList.toggle('collapsed');
-    $('ex-list').hidden = collapsed;
-  });
-
   // klik thumbnail = pilih + tayangkan
   $('bg-grid').addEventListener('click', (e) => {
     const tile = e.target.closest('.bgt');
     const g = G.selectedGroup();
     if (!tile || !g) return;
-    const it = g.items.find((i) => i.id === tile.dataset.iid);
+    const it = g.items.find((i) => String(i.id) === tile.dataset.iid);
     if (!it) return;
-    $('bg-slides').focus();
-    G.selectItem(g.id, it.id);
+    selectTile(it);
     air(it);
   });
 
@@ -222,11 +217,11 @@ export function initBackgroundPanel() {
   $('bg-opacity').addEventListener('input', (e) => setOpacity(Number(e.target.value)));
   $('bg-color').addEventListener('change', (e) => {
     const v = e.target.value;
-    const it = G.selectedItem();
+    const it = tileItem();
     if (it && it.kind === 'color') return edit({ src: v });
     const g = G.selectedGroup() || G.createGroup('Umum');
     const n = G.addColor(g.id, v);
-    if (n) G.selectItem(g.id, n.id);
+    if (n) selectTile(n);
   });
 
   // Drag & drop dari OS: di Tauri v2 path file hanya tersedia lewat event ini.
@@ -249,3 +244,8 @@ export function initBackgroundPanel() {
 
   refresh();
 }
+
+export const bgGroups = createGroupManager({
+  getState: () => state.bg,
+  eventPrefix: 'bg'
+});

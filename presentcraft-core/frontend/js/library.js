@@ -1,135 +1,146 @@
-// Pustaka media (kiri): "Media saya" (disimpan di localStorage) + "Dari bundel".
-import { $, baseName, setStatus } from './utils.js';
 import { state } from './state.js';
-import { on, emit } from './events.js';
-import { convertFileSrc, openDialog } from './tauri.js';
-import { kindOf, MEDIA_FILTER } from './media.js';
-import { pick, syncPanel } from './background-panel.js';
+import { emit, on } from './bus.js';
+import { setStatus } from './utils.js';
+import { LIB_FILTER, libKindOf } from './media.js';
+import { createStore, itemName } from './store.js';
+import { createTree } from './tree.js';
+import { pick } from './background-panel.js';
+import { createGroupManager } from './group-factory.js';
 
-const LIB_KEY = 'pc.library';
-let library = (() => {
-  try { return JSON.parse(localStorage.getItem(LIB_KEY)) || []; } catch { return []; }
-})().filter((p) => typeof p === 'string' && kindOf(p));
-const saveLibrary = () => {
-  try { localStorage.setItem(LIB_KEY, JSON.stringify(library)); } catch { /* abaikan */ }
-};
+export const lib = createStore({ name: 'lib', loadCmd: 'load_library', saveCmd: 'save_library' });
 
-function collectBundleMedia(slides) {
+
+let tree = null;
+
+/** Salin isi bundel yang baru dimuat ke grup permanen (nama = nama file). */
+function syncBundle() {
+  if (!state.slides.length) return;
+  const g = lib.ensureGroup(state.bundleName || 'Bundle');
   const seen = new Set();
-  const out = [];
-  for (const s of slides) {
+  for (const s of state.slides) {
+    const text = (s.content || '').trim();
+    if (text) {
+      const first = text.split('\n')[0].slice(0, 40);
+      lib.copyIn(g.id, {
+        kind: 'text', text, src: '',
+        label: `${s.slide_number}${s.group_name ? ' · ' + s.group_name : ''} — ${first}`,
+      });
+    }
     for (const l of s.layers || []) {
       if ((l.kind !== 'video' && l.kind !== 'image') || l.status !== 'OK') continue;
       if (!l.path || seen.has(l.path)) continue;
       seen.add(l.path);
-      out.push({ path: l.path, kind: l.kind });
+      lib.copyIn(g.id, { kind: l.kind, src: l.path });
     }
   }
-  return out;
+  tree.openGroup(g.id);
+  lib.s.gid = g.id;
+  lib.s.iid = null;
+  renderLibrary();
 }
 
-// Layer baru ditaruh paling belakang (z paling kecil) agar tidak menutupi teks.
-function addLayerToSlide(path, kind) {
-  const slide = state.slides[state.activeIndex];
-  if (!slide) return setStatus('Pilih slide dulu.');
+// ---------- aksi pada slide ----------
+const curSlide = () => state.slides[state.activeIndex];
+const syncContent = (slide) => {
+  slide.content = slide.layers.filter((l) => l.kind === 'text' && l.text).map((l) => l.text).join('\n');
+};
+
+function addMediaLayer(it) {
+  const slide = curSlide();
+  if (!slide) return setStatus('Select a slide first.');
+  if (it.kind !== 'image' && it.kind !== 'video') return setStatus('Only images and videos can be added to a slide.');
   slide.layers = slide.layers || [];
-  const z = slide.layers.reduce((m, l) => Math.min(m, l.z), 0) - 1;
+  const z = slide.layers.reduce((m, l) => Math.min(m, l.z), 0) - 1; // paling belakang
   slide.layers.push({
-    kind, z,
-    rect: { x: 0, y: 0, w: 100, h: 100 },
-    rotation: 0, opacity: 1,
-    path, status: 'OK', inner: null,
-    scale: 'SCALE_BEHAVIOR_FIT',
-    muted: true, looped: true, stop_on_clear: null,
-    color: null, text: null,
+    kind: it.kind, z, rect: { x: 0, y: 0, w: 100, h: 100 }, rotation: 0, opacity: 1,
+    path: it.src, status: 'OK', inner: null, scale: 'SCALE_BEHAVIOR_FIT',
+    muted: true, looped: true, stop_on_clear: null, color: null, text: null,
   });
   emit('layer:added', slide.layers.length - 1);
-  setStatus(`${baseName(path)} ditambahkan ke slide ${slide.slide_number}.`);
+  setStatus(`Added to slide ${slide.slide_number}.`);
 }
 
-function libTile(path, kind, removable) {
-  const url = convertFileSrc(path);
-  const tile = document.createElement('div');
-  tile.className = 'lib-item';
-  tile.dataset.src = path;
-  tile.title = path;
-
-  const th = document.createElement('div');
-  th.className = 'lib-thumb';
-  const m = document.createElement(kind === 'video' ? 'video' : 'img');
-  if (kind === 'video') {
-    m.muted = true;
-    m.preload = 'metadata';
-    m.src = url + '#t=0.1';
-  } else {
-    m.src = url;
-  }
-  m.addEventListener('error', () => m.remove());
-  th.appendChild(m);
-
-  const name = document.createElement('div');
-  name.className = 'lib-name';
-  name.textContent = (kind === 'video' ? '🎞 ' : '🖼 ') + baseName(path);
-
-  const btns = document.createElement('div');
-  btns.className = 'lib-btns';
-  const mk = (label, title, fn, cls) => {
-    const b = document.createElement('button');
-    b.textContent = label;
-    b.title = title;
-    if (cls) b.className = cls;
-    b.addEventListener('click', fn);
-    btns.appendChild(b);
-  };
-  mk('BG', 'Jadikan background', () => pick(path, kind));
-  mk('+ Slide', 'Tambahkan ke slide aktif', () => addLayerToSlide(path, kind));
-  if (removable) {
-    mk('✕', 'Hapus dari pustaka', () => {
-      library = library.filter((p) => p !== path);
-      saveLibrary();
-      renderLibrary();
-    }, 'x');
-  }
-  tile.append(th, name, btns);
-  return tile;
+function addTextLayer(text) {
+  const slide = curSlide();
+  if (!slide) return setStatus('Select a slide first.');
+  slide.layers = slide.layers || [];
+  const z = slide.layers.reduce((m, l) => Math.max(m, l.z), 0) + 1; // paling depan
+  slide.layers.push({
+    kind: 'text', z, rect: { x: 10, y: 25, w: 80, h: 50 }, rotation: 0, opacity: 1,
+    path: null, status: null, inner: null, scale: null,
+    muted: null, looped: null, stop_on_clear: null, color: null, text, style: null,
+  });
+  syncContent(slide);
+  emit('layer:added', slide.layers.length - 1);
+  setStatus(`Text added to slide ${slide.slide_number}.`);
 }
+
+function replaceSelectedText(text) {
+  const slide = curSlide();
+  const l = slide && slide.layers ? slide.layers[state.selectedLayer] : null;
+  if (!l || l.kind !== 'text') return setStatus('Select a text layer in Properties first.');
+  l.text = text;
+  syncContent(slide);
+  emit('layer:added', state.selectedLayer);
+  setStatus('Text replaced.');
+}
+
 
 export function renderLibrary() {
-  const body = $('lib-body');
-  body.replaceChildren();
-  const section = (title, items, removable, emptyText) => {
-    const h = document.createElement('h4');
-    h.textContent = title;
-    body.appendChild(h);
-    if (!items.length) {
-      const p = document.createElement('p');
-      p.className = 'mp-empty';
-      p.textContent = emptyText;
-      body.appendChild(p);
-      return;
-    }
-    const g = document.createElement('div');
-    g.className = 'lib-grid';
-    items.forEach((it) => g.appendChild(libTile(it.path, it.kind, removable)));
-    body.appendChild(g);
-  };
-  section('Media saya', library.map((p) => ({ path: p, kind: kindOf(p) })), true, 'Klik “+ Tambah” untuk memasukkan file.');
-  section('Dari bundel', state.bundleMedia, false, 'Belum ada bundel dimuat.');
-  syncPanel(state.bg);
+  if (tree) tree.render();
 }
 
 export function initLibrary() {
-  $('lib-add').addEventListener('click', async () => {
-    const r = await openDialog({ multiple: true, filters: MEDIA_FILTER });
-    if (!r) return;
-    for (const p of Array.isArray(r) ? r : [r]) {
-      if (kindOf(p) && !library.includes(p)) library.push(p);
-    }
-    saveLibrary();
-    renderLibrary();
+  tree = createTree({
+    ids: { list: 'lib-list', count: 'lib-count', new: 'lib-new', add: 'lib-add', sort: 'lib-sort', del: 'lib-del' },
+    events: ['lib-changed', 'lib-selection'],
+    openByDefault: [],
+    groups: () => lib.s.groups,
+    readOnly: () => false,
+    sel: () => ({ gid: lib.s.gid, iid: lib.s.iid }),
+    itemName,
+    filters: LIB_FILTER,
+    kindOf: libKindOf,
+    api: {
+      selectGroup: lib.selectGroup,
+      selectItem: (gid, iid) => {
+        lib.selectItem(gid, iid);
+        const g = lib.s.groups.find((x) => x.id === gid);
+        const it = g && g.items.find((x) => x.id === iid);
+        if (it && it.kind === 'text') setStatus(it.text.replace(/\s+/g, ' ').slice(0, 120));
+      },
+      createGroup: lib.createGroup,
+      renameGroup: lib.renameGroup,
+      deleteGroup: lib.deleteGroup,
+      removeItem: lib.removeItem,
+      sortGroup: lib.sortGroup,
+      addFiles: (gid, paths) => lib.addFiles(gid, paths, libKindOf),
+      moveItem: lib.moveItem,
+    },
+    onActivate: (g, it) => {
+      if (it.kind === 'text') addTextLayer(it.text);
+      else addMediaLayer(it);
+    },
+    contextMenu: (g, it) => {
+      if (it.kind === 'text') {
+        return [
+          { label: 'Add as new text layer', run: () => addTextLayer(it.text) },
+          { label: 'Replace selected text', run: () => replaceSelectedText(it.text) },
+        ];
+      }
+      if (it.kind === 'image' || it.kind === 'video') {
+        return [
+          { label: 'Use as background', run: () => pick(it.src, it.kind) },
+          { label: 'Add to slide', run: () => addMediaLayer(it) },
+        ];
+      }
+      return [{ label: 'No actions for this type', disabled: true }];
+    },
   });
-  on('slides:loaded', () => {
-    state.bundleMedia = collectBundleMedia(state.slides);
-    renderLibrary();
-  });
+  on('slides:loaded', syncBundle);
 }
+
+export const mediaGroups = createGroupManager({
+  getState: () => state.media,
+  eventPrefix: 'media'
+});

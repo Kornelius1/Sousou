@@ -13,11 +13,23 @@
 
       <main id="workspace">
         <aside id="library">
-          <div class="pane-title">
-            <span>Media</span><span class="sp"></span>
-            <button class="small-btn" id="lib-add">+ Tambah</button>
+          <div class="ex-head">
+            <span>Media</span><span id="lib-count"></span>
+            <span class="sp"></span>
+            <button class="ex-act" id="lib-new" title="Grup baru" aria-label="Grup baru">
+              <svg viewBox="0 0 16 16"><path d="M1 3h5l1.5 1.5H15V13H1z"/></svg>
+            </button>
+            <button class="ex-act" id="lib-add" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
+              <svg viewBox="0 0 16 16"><path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z"/></svg>
+            </button>
+            <button class="ex-act" id="lib-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
+              <svg viewBox="0 0 16 16"><path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z"/></svg>
+            </button>
+            <button class="ex-act" id="lib-del" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
+              <svg viewBox="0 0 16 16"><path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z"/></svg>
+            </button>
           </div>
-          <div id="lib-body"></div>
+          <div id="lib-list" tabindex="0"></div>
         </aside>
 
         <section id="sorter">
@@ -122,8 +134,7 @@
       <div id="media-panel">
         <!-- kiri: daftar layer background (gaya explorer) -->
         <section id="bg-explorer">
-          <div class="ex-head" id="ex-head">
-            <svg class="chev" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4z"/></svg>
+          <div class="ex-head">
             <span>Background</span><span id="ex-count"></span>
             <span class="sp"></span>
             <button class="ex-act" id="ex-new" title="Grup baru" aria-label="Grup baru">

@@ -12,7 +12,7 @@
 //! slide. Yang belum dikenali dicatat di `warnings`, bukan dibuang diam-diam.
 
 mod layers;
-mod media;
+pub(crate) mod media;
 mod model;
 mod reflect;
 mod rtf;

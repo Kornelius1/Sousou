@@ -1,5 +1,5 @@
-// Event bus kecil supaya modul tidak saling import (hindari dependensi melingkar).
+// Satu bus untuk seluruh aplikasi. Implementasinya ada di bus.js.
 // Event: 'slides:loaded' | 'slide:shown' (changed) | 'layer:added' (index)
-const handlers = {};
-export const on = (name, fn) => (handlers[name] ??= []).push(fn);
-export const emit = (name, ...args) => (handlers[name] || []).forEach((fn) => fn(...args));
+//        'groups-changed' | 'selection-changed' | 'item-updated'
+//        'lib-changed' | 'lib-selection'
+export { on, emit } from './bus.js';

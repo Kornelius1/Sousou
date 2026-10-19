@@ -10,6 +10,10 @@ pub struct Item {
     pub id: String,
     pub src: String,
     pub kind: String, // "video" | "image" | "color"
+    #[serde(default)]
+    pub text: String,
+    #[serde(default)]
+    pub label: String,
     #[serde(rename = "loop", default = "yes")]
     pub looped: bool,
     #[serde(default = "yes")]
@@ -36,23 +40,22 @@ pub struct Store {
     pub groups: Vec<Group>,
 }
 
-/// None bila file belum ada (pertama kali) atau rusak (dipindah ke groups.json.bad).
-pub fn load(dir: &Path) -> Option<Store> {
-    let p = dir.join("groups.json");
+pub fn load(dir: &Path, file: &str) -> Option<Store> {
+    let p = dir.join(file);
     let s = fs::read_to_string(&p).ok()?;
     match serde_json::from_str(&s) {
         Ok(v) => Some(v),
         Err(_) => {
-            let _ = fs::rename(&p, dir.join("groups.json.bad"));
+            let _ = fs::rename(&p, dir.join(format!("{file}.bad")));
             None
         }
     }
 }
 
-pub fn save(dir: &Path, store: &Store) -> Result<(), String> {
+pub fn save(dir: &Path, file: &str, store: &Store) -> Result<(), String> {
     fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-    let p = dir.join("groups.json");
-    let tmp = dir.join("groups.json.tmp");
+    let p = dir.join(file);
+    let tmp = dir.join(format!("{file}.tmp"));
     fs::write(&tmp, serde_json::to_vec_pretty(store).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
     fs::rename(&tmp, &p).map_err(|e| e.to_string())

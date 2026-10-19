@@ -1,4 +1,4 @@
-use crate::session_pack::{self, ExportRequest, ImportedSession, Background};
+use crate::session_pack::{self, ExportRequest, Background};
 use crate::groups::{self, Store};
 use std::path::PathBuf;
 use tauri::Manager;
@@ -7,13 +7,25 @@ use std::fs;
 #[tauri::command]
 pub fn load_groups(app: tauri::AppHandle) -> Result<Option<Store>, String> {
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    Ok(groups::load(&dir))
+    Ok(groups::load(&dir, "groups.json"))
 }
 
 #[tauri::command]
 pub fn save_groups(app: tauri::AppHandle, store: Store) -> Result<(), String> {
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
-    groups::save(&dir, &store)
+    groups::save(&dir, "groups.json", &store)
+}
+
+#[tauri::command]
+pub fn load_library(app: tauri::AppHandle) -> Result<Option<Store>, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(groups::load(&dir, "library.json"))
+}
+
+#[tauri::command]
+pub fn save_library(app: tauri::AppHandle, store: Store) -> Result<(), String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    groups::save(&dir, "library.json", &store)
 }
 
 #[tauri::command]
@@ -24,7 +36,7 @@ pub async fn export_session(req: ExportRequest) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub async fn import_session(app: tauri::AppHandle, pack: PathBuf) -> Result<ImportedSession, String> {
+pub async fn import_session(app: tauri::AppHandle, pack: PathBuf) -> Result<serde_json::Value, String> {
     let data = app.path().app_data_dir().map_err(|e| e.to_string())?;
     tauri::async_runtime::spawn_blocking(move || session_pack::import_session(&pack, &data))
         .await
