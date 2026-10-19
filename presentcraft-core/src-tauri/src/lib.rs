@@ -4,6 +4,9 @@ use std::path::Path;
 use tauri::Manager;
 
 mod pro_parser;
+mod commands;
+mod groups;
+mod session_pack;
 use pro_parser::{parse_pro_file, parse_pro_file_with, MediaResolver, Slide};
 
 #[derive(serde::Serialize)]
@@ -59,14 +62,24 @@ fn load_presentation_bundle(app: tauri::AppHandle, file_path: String) -> Result<
             .map(|r| LoadResult { slides: r.slides, warnings: r.warnings });
     }
 
-    // Bundel .probundle / .zip
+    //bundle
+    let stem = Path::new(&file_path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "bundle".into());
+    let safe: String = stem
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { '_' })
+        .collect();
+
     let cache_dir = app
         .path()
-        .app_cache_dir()
+        .app_data_dir()
         .map_err(|e| e.to_string())?
-        .join("extracted_cache");
+        .join("bundles")
+        .join(safe);
 
-    let _ = fs::remove_dir_all(&cache_dir);
+    let _ = fs::remove_dir_all(&cache_dir); // hanya bundel yang sama
 
     extract_probundle(&file_path, cache_dir.to_str().ok_or("path cache tidak valid")?)
         .map_err(|e| format!("Gagal mengekstrak bundel: {}", e))?;
@@ -115,7 +128,17 @@ pub fn run() {
 
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![load_presentation_bundle])
+        .invoke_handler(tauri::generate_handler![
+            load_presentation_bundle,
+            commands::export_session,
+            commands::import_session,
+            commands::load_background_state,
+            commands::save_background_state,
+            commands::load_groups,
+            commands::save_groups,
+            commands::load_library,
+            commands::save_library,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

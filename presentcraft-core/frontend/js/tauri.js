@@ -6,3 +6,4 @@ export const emitEvent = (name, payload) => T.event.emit(name, payload);
 export const listen = (name, cb) => T.event.listen(name, cb);
 export const confirmDialog = (msg) =>
   T.dialog.confirm(msg, { title: 'PresentCraft', kind: 'warning' });
+export const saveDialog = (opts) => T.dialog.save(opts);

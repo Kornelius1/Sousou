@@ -6,7 +6,7 @@ import { initToolbar, initShortcuts } from './toolbar.js';
 import { initSorter, refreshThumbBackgrounds } from './sorter.js';
 import { initPreview, renderPreview, refreshPreviewBackground } from './preview.js';
 import { initProperties } from './properties.js';
-import { initLibrary, renderLibrary } from './library.js';
+import { initLibrary, renderLibrary, lib } from './library.js';
 import { initBackgroundPanel, syncPanel } from './background-panel.js';
 import { loadGroups, migrateBackground } from './groups.js';
 import { initExplorer } from './explorer.js';
@@ -17,14 +17,14 @@ initShortcuts();
 initSorter();
 initPreview();
 initProperties();
+await lib.load();
 initLibrary();
 
 // Listener dipasang sebelum membaca disk, agar event yang datang saat startup tidak terlewat.
 await onBackgroundChange((bg) => {
   state.bg = bg;
-  syncPanel(bg);
-  refreshThumbBackgrounds();
   refreshPreviewBackground();
+  syncPanel(bg);
 });
 
 state.bg = await loadBackground();

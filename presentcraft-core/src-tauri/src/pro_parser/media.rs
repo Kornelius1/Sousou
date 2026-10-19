@@ -16,7 +16,7 @@ use std::path::{Component, Path, PathBuf};
 const MAX_DEPTH: u32 = 4;
 
 /// Tolak path absolut / berisi `..` agar file .pro jahat tidak keluar dari root.
-pub(super) fn safe_relative(rel: &str) -> bool {
+pub(crate) fn safe_relative(rel: &str) -> bool {
     let p = Path::new(rel);
     !p.has_root()
         && p.components()

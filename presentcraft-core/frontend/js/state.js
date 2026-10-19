@@ -6,11 +6,15 @@ export const state = {
   selectedLayer: -1,
   blanked: false,
   bg: null,
-  showBgInThumbs: true,
+  showBgInThumbs: false,
   bundleMedia: [],      // [{ path, kind }]
   groups: [],
   selectedGroup: null,
   selectedItem: null,
+  bundleName: '',
+  mediaGroups: [],
+  selectedMediaGroup: null,
+  selectedMediaItem: null,
 };
 
 export const curLayer = () => {

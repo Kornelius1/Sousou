@@ -2,6 +2,7 @@ import { $, setStatus } from './utils.js';
 import { state } from './state.js';
 import { importFile, refreshThumbBackgrounds } from './sorter.js';
 import { resetConfirmations } from './confirm.js';
+import { exportSession, importSession } from './session.js';
 
 function togglePane(id, cls) {
   const el = $(id);
@@ -15,8 +16,8 @@ const MENUS = [
     items: [
       { label: 'Import file…', key: 'Ctrl+O', run: () => importFile() },
       { sep: true },
-      { label: 'Impor sesi…', disabled: true },
-      { label: 'Ekspor sesi…', disabled: true },
+      { label: 'Import session…', run: () => importSession() },
+      { label: 'Export session…', run: () => exportSession() },
     ],
   },
   {

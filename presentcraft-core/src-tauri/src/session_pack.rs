@@ -1,13 +1,15 @@
-use crate::parser::media::safe_relative;
-use crate::parser::parse_pro_file;
+use crate::pro_parser::media::safe_relative;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use serde_json::Value;
+use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::{self, Read, Seek, Write};
 use std::path::{Path, PathBuf};
-use zip::{write::SimpleFileOptions, CompressionMethod, ZipArchive, ZipWriter};
+use std::time::{SystemTime, UNIX_EPOCH};
+use zip::{CompressionMethod, ZipArchive, ZipWriter};
+use zip::write::SimpleFileOptions;
 
-const VERSION: u32 = 1;
+const VERSION: u64 = 2;
 const MAX_ENTRIES: usize = 20_000;
 const MAX_TOTAL: u64 = 20 * 1024 * 1024 * 1024; // 20 GB
 
@@ -22,57 +24,42 @@ pub struct Background {
     pub opacity: f32,
 }
 
-#[derive(Serialize, Deserialize)]
-struct PresEntry {
-    file: String,
-    name: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Manifest {
-    version: u32,
-    background: Option<Background>,
-    presentations: Vec<PresEntry>,
-    active: Option<usize>,
-}
-
-#[derive(Deserialize)]
-pub struct PresInput {
-    pub path: PathBuf,
-    pub media_root: PathBuf,
-}
-
 #[derive(Deserialize)]
 pub struct ExportRequest {
     pub dest: PathBuf,
-    pub background: Option<Background>,
-    pub presentations: Vec<PresInput>,
-    pub active: Option<usize>,
+    pub data: Value, // { workspace?, library?, background? }
 }
 
-#[derive(Serialize)]
-pub struct ImportedPres {
-    pub name: String,
-    pub path: String,
-    pub media_root: String,
+fn safe_name(s: &str) -> String {
+    s.chars()
+        .map(|c| if c.is_alphanumeric() || matches!(c, ' ' | '-' | '_' | '.') { c } else { '_' })
+        .collect()
 }
 
-#[derive(Serialize)]
-pub struct ImportedSession {
-    pub background: Option<Background>, // src sudah absolut
-    pub presentations: Vec<ImportedPres>,
-    pub active: Option<usize>,
+/// Panggil `f` untuk setiap string bernilai di kunci "path" atau "src", di mana pun letaknya.
+fn walk(v: &mut Value, f: &mut dyn FnMut(&mut String)) {
+    match v {
+        Value::Object(m) => {
+            for (k, x) in m.iter_mut() {
+                if k == "path" || k == "src" {
+                    if let Value::String(s) = x {
+                        f(s);
+                        continue;
+                    }
+                }
+                walk(x, f);
+            }
+        }
+        Value::Array(a) => a.iter_mut().for_each(|x| walk(x, f)),
+        _ => {}
+    }
 }
+
 
 fn e<T: std::fmt::Display>(x: T) -> String {
     x.to_string()
 }
 
-fn sanitize(s: &str) -> String {
-    s.chars()
-        .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { '_' })
-        .collect()
-}
 
 fn add_file<W: Write + Seek>(zip: &mut ZipWriter<W>, name: &str, src: &Path) -> Result<(), String> {
     // Media sudah terkompresi: simpan apa adanya. Teks/.pro: deflate.
@@ -87,51 +74,40 @@ fn add_file<W: Write + Seek>(zip: &mut ZipWriter<W>, name: &str, src: &Path) -> 
     Ok(())
 }
 
-/// Mengembalikan daftar peringatan (mis. media yang hilang dan tidak disertakan).
 pub fn export_session(req: ExportRequest) -> Result<Vec<String>, String> {
-    let mut zip = ZipWriter::new(File::create(&req.dest).map_err(e)?);
-    let mut warnings = Vec::new();
-    let mut added: HashSet<String> = HashSet::new();
-    let mut entries = Vec::new();
+    let ExportRequest { dest, mut data } = req;
+    let mut zip = ZipWriter::new(File::create(&dest).map_err(e)?);
+    let mut map: HashMap<String, String> = HashMap::new();
+    let mut order: Vec<(String, String)> = Vec::new();
+    let mut warnings: Vec<String> = Vec::new();
 
-    for (i, p) in req.presentations.iter().enumerate() {
-        let parsed = parse_pro_file(&p.path, &p.media_root)?;
-        let name = p.path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-        let file = format!("presentations/{:03}-{}.pro", i + 1, sanitize(&name));
-        add_file(&mut zip, &file, &p.path)?;
-        entries.push(PresEntry { file, name });
-
-        for l in parsed.slides.iter().flat_map(|s| &s.layers) {
-            let (Some(rel), Some(full)) = (&l.rel, &l.path) else { continue };
-            if l.status.as_deref() != Some("OK") {
-                warnings.push(format!("media tidak ditemukan, tidak disertakan: {rel}"));
-                continue;
-            }
-            let name = format!("media/{rel}");
-            if added.insert(name.clone()) {
-                add_file(&mut zip, &name, Path::new(full))?;
-            }
+    walk(&mut data, &mut |s: &mut String| {
+        let p = Path::new(s.as_str());
+        if s.is_empty() || !p.is_absolute() {
+            return; // warna ("#rrggbb"), teks kosong, atau sudah relatif
         }
+        if let Some(rel) = map.get(s.as_str()) {
+            *s = rel.clone();
+            return;
+        }
+        if !p.is_file() {
+            warnings.push(format!("file not found, not included: {s}"));
+            return;
+        }
+        let name = p.file_name().map(|n| safe_name(&n.to_string_lossy())).unwrap_or_default();
+        let rel = format!("media/{:03}-{}", order.len() + 1, name);
+        map.insert(s.clone(), rel.clone());
+        order.push((s.clone(), rel.clone()));
+        *s = rel;
+    });
+
+    for (abs, rel) in &order {
+        add_file(&mut zip, rel, Path::new(abs))?;
     }
 
-    let mut background = req.background;
-    if let Some(bg) = background.as_mut() {
-        if bg.kind != "color" {
-            let src = bg.src.take().map(PathBuf::from);
-            match src.as_deref().and_then(|p| p.file_name().map(|n| (p, n))) {
-                Some((p, n)) if p.is_file() => {
-                    let name = format!("background/{}", n.to_string_lossy());
-                    add_file(&mut zip, &name, p)?;
-                    bg.src = Some(name);
-                }
-                _ => warnings.push("file background tidak ditemukan, dilewati".into()),
-            }
-        }
-    }
-
-    let manifest = Manifest { version: VERSION, background, presentations: entries, active: req.active };
+    data["version"] = Value::from(VERSION);
     zip.start_file("manifest.json", SimpleFileOptions::default()).map_err(e)?;
-    zip.write_all(&serde_json::to_vec_pretty(&manifest).map_err(e)?).map_err(e)?;
+    zip.write_all(&serde_json::to_vec(&data).map_err(e)?).map_err(e)?;
     zip.finish().map_err(e)?;
     Ok(warnings)
 }
@@ -163,44 +139,41 @@ fn extract(pack: &Path, dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-pub fn import_session(pack: &Path, data_dir: &Path) -> Result<ImportedSession, String> {
-    let sessions = data_dir.join("sessions");
-    let _ = fs::remove_dir_all(&sessions); // hanya simpan sesi terakhir
-    let dir = sessions.join("current");
+pub fn import_session(pack: &Path, data_dir: &Path) -> Result<Value, String> {
+    let stamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0);
+    let dir = data_dir.join("sessions").join(stamp.to_string());
     fs::create_dir_all(&dir).map_err(e)?;
 
-    let result = (|| {
+    let result = (|| -> Result<Value, String> {
         extract(pack, &dir)?;
         let mut s = String::new();
         File::open(dir.join("manifest.json"))
-            .map_err(|_| "manifest.json tidak ada di paket")?
+            .map_err(|_| "manifest.json not found in package")?
             .read_to_string(&mut s)
             .map_err(e)?;
-        let m: Manifest = serde_json::from_str(&s).map_err(|x| format!("manifest rusak: {x}"))?;
-        if m.version > VERSION {
-            return Err(format!("versi paket {} lebih baru dari yang didukung ({VERSION})", m.version));
+        let mut v: Value = serde_json::from_str(&s).map_err(|x| format!("corrupt manifest: {x}"))?;
+        let ver = v["version"].as_u64().unwrap_or(0);
+        if ver != VERSION {
+            return Err(format!("unsupported package version {ver} (expected {VERSION})"));
         }
-
-        let abs = |rel: &str| -> Result<String, String> {
-            if !safe_relative(rel) {
-                return Err(format!("path tidak aman di manifest: {rel}"));
+        let mut bad: Option<String> = None;
+        walk(&mut v, &mut |s: &mut String| {
+            if s.starts_with("media/") {
+                if safe_relative(s) {
+                    let abs = dir.join(s.as_str()).to_string_lossy().replace('\\', "/");
+                    *s = abs;
+                } else {
+                    bad = Some(s.clone());
+                }
             }
-            Ok(dir.join(rel).to_string_lossy().replace('\\', "/"))
-        };
-
-        let mut background = m.background;
-        if let Some(bg) = background.as_mut() {
-            if let Some(src) = bg.src.take() {
-                bg.src = Some(abs(&src)?);
-            }
+        });
+        if let Some(b) = bad {
+            return Err(format!("unsafe path in manifest: {b}"));
         }
-        let media_root = dir.join("media").to_string_lossy().replace('\\', "/");
-        let presentations = m
-            .presentations
-            .iter()
-            .map(|p| Ok(ImportedPres { name: p.name.clone(), path: abs(&p.file)?, media_root: media_root.clone() }))
-            .collect::<Result<Vec<_>, String>>()?;
-        Ok(ImportedSession { background, presentations, active: m.active })
+        Ok(v)
     })();
 
     if result.is_err() {

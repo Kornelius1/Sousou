@@ -11,6 +11,7 @@ const pvHost = $('pv-host');
 const pv = { dir: 0, raf: 0, loop: null, rate: 1 }; // dir: 1 putar, 0 jeda; loop null = ikut layer
 let stage = null;
 let stageW = 1366;
+let bgHolder = null;
 
 const ICON = {
   play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
@@ -82,15 +83,19 @@ function buildStage(slide) {
   const p = slide
     ? toPayload(slide)
     : { content: '', mediaPath: null, width: 1366, height: 768, layers: [] };
-    
   stageW = p.width;
   pvHost.replaceChildren();
   pvHost.style.aspectRatio = `${p.width} / ${p.height}`;
   stage = document.createElement('div');
   stage.className = 'pv-stage';
   stage.style.cssText = `width:${p.width}px;height:${p.height}px;overflow:hidden`;
+  
+  bgHolder = document.createElement('div');
+  bgHolder.style.cssText = 'position:absolute;inset:0';
   const bg = backgroundEl(state.bg);
-  if (bg) stage.append(bg);
+  if (bg) bgHolder.append(bg);
+  stage.append(bgHolder);
+
   for (const l of p.layers) {
     const el = layerEl(l);
     if (el) stage.append(el);
@@ -195,12 +200,17 @@ export function renderPreview({ keep = false } = {}) {
 
 
 export const renderPreviewSoon = debounce(() => renderPreview({ keep: true }), 150);
+
 export function refreshPreviewBackground() {
-  if (!state.slides[state.activeIndex]) return renderPreview();
-  if (pvHost._bg && !pvHost.hidden) {
-    SR.renderBackground(pvHost._bg, state.bg, { preview: true, manual: true });
-    pvUi();
-  }
+  const slide = state.slides[state.activeIndex];
+  // belum ada stage, tersembunyi, atau tidak ada apa pun untuk ditampilkan: bangun/sembunyikan penuh
+  if (!stage || pvHost.hidden || (!slide && !state.bg)) return renderPreview();
+
+  const el = backgroundEl(state.bg);
+  bgHolder.replaceChildren(...(el ? [el] : []));
+  applyVideoPrefs();
+  if (pvVideos().length) pvPlay();   // video background baru ikut jalan
+  else pvUi();
 }
 
 export function initPreview() {
