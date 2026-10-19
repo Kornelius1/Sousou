@@ -14,7 +14,7 @@ export const selectedItem = () => {
 };
 
 export const newItem = (src, kind) => ({
-  id: uid(), src, kind, loop: true, mute: true, scale: 'fill', opacity: 1,
+  id: uid(), src, kind, loop: true, mute: true, scale: 'fill', opacity: 1, added: Date.now(),
 });
 
 // ---------- penyimpanan (ditunda 300 ms, berurutan) ----------
@@ -144,4 +144,42 @@ export function updateItem(gid, iid, patch) {
   Object.assign(it, patch);
   persist();
   emit('item-updated', it);
+}
+
+/** Pindahkan item ke grup lain. Mengembalikan 'ok', 'dup' (sudah ada di tujuan), atau null. */
+export function moveItem(fromId, iid, toId) {
+  const a = findGroup(fromId);
+  const b = findGroup(toId);
+  if (!a || !b || a === b) return null;
+  const i = a.items.findIndex((x) => x.id === iid);
+  if (i < 0) return null;
+  const it = a.items[i];
+  if (b.items.some((x) => x.src === it.src && x.kind === it.kind)) return 'dup';
+  a.items.splice(i, 1);
+  b.items.push(it);
+  if (S.selectedItem === iid) S.selectedGroup = toId; // item tetap terpilih di grup barunya
+  changed();
+  emit('selection-changed');
+  return 'ok';
+}
+
+
+//fungsi urut
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+const nameOf = (it) => (it.kind === 'color' ? it.src : it.src.split(/[\\/]/).pop());
+
+/** Urutkan item satu grup. by: 'name' | 'kind' | 'added'; dir: 'asc' | 'desc'. */
+export function sortGroup(gid, by, dir) {
+  const g = findGroup(gid);
+  if (!g) return;
+  const sign = dir === 'desc' ? -1 : 1;
+  const byName = (a, b) => collator.compare(nameOf(a), nameOf(b));
+  const cmp = {
+    name: byName,
+    kind: (a, b) => collator.compare(a.kind, b.kind) || byName(a, b),
+    added: (a, b) => (a.added || 0) - (b.added || 0) || byName(a, b),
+  }[by];
+  if (!cmp) return;
+  g.items.sort((a, b) => sign * cmp(a, b));
+  changed();
 }

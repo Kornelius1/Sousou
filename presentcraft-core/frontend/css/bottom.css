@@ -41,8 +41,17 @@
 .ex-row:hover { background: #2a2d2e; }
 .ex-row.active { background: #37373d; color: #fff; }
 #ex-list:focus .ex-row.active { background: #094771; }
-.ex-ico { display: grid; place-items: center; flex: none; }
-.ex-ico svg { width: 14px; height: 14px; fill: currentColor; opacity: .8; }
+
+.ex-ico {
+  width: 14px; height: 14px; flex-shrink: 0;
+  background: #999;
+  -webkit-mask: var(--ico) center / contain no-repeat;
+          mask: var(--ico) center / contain no-repeat;
+}
+.ex-ico.image { --ico: url('../icons/image.svg'); }
+.ex-ico.video { --ico: url('../icons/video.svg'); }
+.ex-row.sel .ex-ico { background: #ddd; }
+
 .ex-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .ex-del { visibility: hidden; }
 .ex-row:hover .ex-del, .ex-row.active .ex-del { visibility: visible; }
@@ -105,3 +114,56 @@
 .bgc input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
 .bgs-title { color: #03dac6; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bg-settings .off, #bg-settings [disabled] { opacity: .4; pointer-events: none; }
+
+.ex-row.ex-item { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }
+.ex-row.ex-item.sel { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }
+.ex-row.ex-group .ex-twisty { display: inline-block; transition: transform .1s; }
+.ex-row.ex-group.open .ex-twisty { transform: rotate(90deg); }
+/* scrollbar tipis monokrom, hanya di panel background */
+#media-panel * {
+  scrollbar-width: thin;                    /* Firefox */
+  scrollbar-color: #555 transparent;
+}
+#media-panel *::-webkit-scrollbar { width: 6px; height: 6px; }
+#media-panel *::-webkit-scrollbar-track { background: transparent; }
+#media-panel *::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+#media-panel *::-webkit-scrollbar-thumb:hover { background: #888; }
+#media-panel *::-webkit-scrollbar-corner { background: transparent; }
+.ex-n { font-size: 9px; color: #666; }
+
+.ex-ghost {
+  position: fixed; z-index: 1000; pointer-events: none; max-width: 200px;
+  padding: 2px 8px; border-radius: 3px; font-size: 12px; color: #fff;
+  background: #3d3d3d; border: 1px solid #03dac6; opacity: .9;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+#ex-list { user-select: none; -webkit-user-select: none; }
+#ex-list .ex-edit { user-select: text; -webkit-user-select: text; }
+body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-user-select: none !important; cursor: grabbing !important; }
+.ex-row.ex-group.drop { background: #3a3a3a; box-shadow: inset 0 0 0 1px #888; }
+.ex-ghost {
+  position: fixed; z-index: 1000; pointer-events: none; max-width: 200px;
+  padding: 2px 8px; border-radius: 3px; font-size: 12px; color: #ddd;
+  background: #333; border: 1px solid #777; opacity: .95;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.ex-ico { display: inline-flex; width: 14px; flex-shrink: 0; color: #999; }
+.ex-ico svg { width: 14px; height: 14px; fill: currentColor; }
+.ex-row.sel .ex-ico { color: #ddd; }
+
+.ex-menu {
+  position: fixed; z-index: 1000; min-width: 130px; padding: 3px;
+  background: #252526; border: 1px solid #454545; border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.6);
+  font-family: inherit; font-size: 12px;
+}
+.ex-menu-i {
+  display: flex; align-items: center; gap: 6px; width: 100%; text-align: left;
+  padding: 4px 10px 4px 6px; border: 0; border-radius: 4px;
+  background: none; color: #ddd; font-family: inherit; font-size: inherit; cursor: default;
+}
+.ex-menu-i:hover { background: #3a3a3a; }
+.ex-menu-dot { width: 10px; text-align: center; font-size: 7px; color: #ddd; }
+.ex-menu-sep { height: 1px; margin: 3px 4px; background: #3a3a3a; }

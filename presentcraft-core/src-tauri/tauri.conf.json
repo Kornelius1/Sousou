@@ -20,7 +20,7 @@
     ],
     "security": {
       "csp": null,
-      "assetProtocol": { "enable": true, "scope": ["$APPCACHE/**", "$APPCACHE/**", "$HOME/**"] }
+      "assetProtocol": { "enable": true, "scope": ["$APPCACHE/**", "$HOME/**"] }
     }
   },
   "bundle": {

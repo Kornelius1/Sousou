@@ -79,7 +79,10 @@ function applyScale() {
 }
 
 function buildStage(slide) {
-  const p = toPayload(slide);
+  const p = slide
+    ? toPayload(slide)
+    : { content: '', mediaPath: null, width: 1366, height: 768, layers: [] };
+    
   stageW = p.width;
   pvHost.replaceChildren();
   pvHost.style.aspectRatio = `${p.width} / ${p.height}`;
@@ -165,7 +168,6 @@ function applyVideoPrefs() {
   }
 }
 
-// keep: pertahankan posisi & status putar (dipakai saat edit properties / ganti background)
 export function renderPreview({ keep = false } = {}) {
   const prev = keep ? { times: pvVideos().map((v) => v.currentTime), dir: pv.dir } : null;
   cancelAnimationFrame(pv.raf);
@@ -173,16 +175,13 @@ export function renderPreview({ keep = false } = {}) {
   pv.dir = 0;
 
   const slide = state.slides[state.activeIndex];
-  pvHost.hidden = !slide;
-  $('pv-empty').hidden = !!slide;
-  if (!slide) {
-    pvHost.replaceChildren();
-    stage = null;
-    return pvUi();
-  }
+  const show = !!slide || !!state.bg;   // background saja sudah cukup
+  pvHost.hidden = !show;
+  $('pv-empty').hidden = show;
 
-  buildStage(slide);
+  if (show) buildStage(slide);          // slide boleh undefined
   applyVideoPrefs();
+
   const vids = pvVideos();
   if (prev) {
     vids.forEach((v, i) => {
@@ -190,11 +189,19 @@ export function renderPreview({ keep = false } = {}) {
       if (t) v.addEventListener('loadedmetadata', () => { v.currentTime = t; }, { once: true });
     });
   }
-  if (vids.length && (!prev || prev.dir !== 0)) pvPlay(); // autoplay seperti audience
+  if (vids.length && (!prev || prev.dir !== 0)) pvPlay();
   else pvUi();
 }
+
+
 export const renderPreviewSoon = debounce(() => renderPreview({ keep: true }), 150);
-export const refreshPreviewBackground = () => renderPreview({ keep: true });
+export function refreshPreviewBackground() {
+  if (!state.slides[state.activeIndex]) return renderPreview();
+  if (pvHost._bg && !pvHost.hidden) {
+    SR.renderBackground(pvHost._bg, state.bg, { preview: true, manual: true });
+    pvUi();
+  }
+}
 
 export function initPreview() {
   pvHost.addEventListener('loadedmetadata', pvScrubUi, true);

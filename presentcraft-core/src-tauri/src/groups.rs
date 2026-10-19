@@ -18,6 +18,8 @@ pub struct Item {
     pub scale: String,
     #[serde(default = "one")]
     pub opacity: f32,
+    #[serde(default)]
+    pub added: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
