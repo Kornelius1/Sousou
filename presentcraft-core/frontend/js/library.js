@@ -5,10 +5,8 @@ import { LIB_FILTER, libKindOf } from './media.js';
 import { createStore, itemName } from './store.js';
 import { createTree } from './tree.js';
 import { pick } from './background-panel.js';
-import { createGroupManager } from './group-factory.js';
 
 export const lib = createStore({ name: 'lib', loadCmd: 'load_library', saveCmd: 'save_library' });
-
 
 let tree = null;
 
@@ -50,7 +48,7 @@ function addMediaLayer(it) {
   if (!slide) return setStatus('Select a slide first.');
   if (it.kind !== 'image' && it.kind !== 'video') return setStatus('Only images and videos can be added to a slide.');
   slide.layers = slide.layers || [];
-  const z = slide.layers.reduce((m, l) => Math.min(m, l.z), 0) - 1; // paling belakang
+  const z = slide.layers.reduce((m, l) => Math.min(m, l.z), 0) - 1; 
   slide.layers.push({
     kind: it.kind, z, rect: { x: 0, y: 0, w: 100, h: 100 }, rotation: 0, opacity: 1,
     path: it.src, status: 'OK', inner: null, scale: 'SCALE_BEHAVIOR_FIT',
@@ -64,7 +62,7 @@ function addTextLayer(text) {
   const slide = curSlide();
   if (!slide) return setStatus('Select a slide first.');
   slide.layers = slide.layers || [];
-  const z = slide.layers.reduce((m, l) => Math.max(m, l.z), 0) + 1; // paling depan
+  const z = slide.layers.reduce((m, l) => Math.max(m, l.z), 0) + 1; 
   slide.layers.push({
     kind: 'text', z, rect: { x: 10, y: 25, w: 80, h: 50 }, rotation: 0, opacity: 1,
     path: null, status: null, inner: null, scale: null,
@@ -84,7 +82,6 @@ function replaceSelectedText(text) {
   emit('layer:added', state.selectedLayer);
   setStatus('Text replaced.');
 }
-
 
 export function renderLibrary() {
   if (tree) tree.render();
@@ -137,10 +134,6 @@ export function initLibrary() {
       return [{ label: 'No actions for this type', disabled: true }];
     },
   });
+  
   on('slides:loaded', syncBundle);
 }
-
-export const mediaGroups = createGroupManager({
-  getState: () => state.media,
-  eventPrefix: 'media'
-});

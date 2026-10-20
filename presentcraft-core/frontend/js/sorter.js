@@ -70,7 +70,10 @@ function makeCard(slide, i) {
   cap.textContent = `${slide.slide_number}${groupTag}`;
 
   card.append(thumb, cap);
-  card.addEventListener('click', () => showSlide(i));
+  card.addEventListener('click', () => {
+    showSlide(i);
+    card.focus(); 
+  });
 
   // Event Drag and Drop
   card.addEventListener('dragstart', (e) => {
@@ -209,22 +212,76 @@ export function initSorter() {
   grid.addEventListener('keydown', (e) => {
     if (!state.slides.length) return;
 
-    const current = state.activeIndex < 0 ? 0 : state.activeIndex;
-    let target = -1;
+    const currentIdx = state.activeIndex < 0 ? 0 : state.activeIndex;
+    const cards = Array.from(grid.querySelectorAll('.card'));
+    const currentCard = cards[currentIdx];
 
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      target = Math.min(state.slides.length - 1, current + 1);
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      target = Math.max(0, current - 1);
+    if (!currentCard) return;
+
+    const curRect = currentCard.getBoundingClientRect();
+    let targetIdx = currentIdx;
+
+    if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+
+      let bestMatch = -1;
+      let minDistance = Infinity;
+
+      cards.forEach((card, idx) => {
+        if (idx === currentIdx) return;
+        const rect = card.getBoundingClientRect();
+
+        let isValid = false;
+        let distance = Infinity;
+
+        // Validasi arah dan hitung jarak geometris terdekat
+        if (e.key === 'ArrowRight') {
+          // Harus berada di sebelah kanan dan sejajar secara vertikal
+          isValid = rect.left >= curRect.left + curRect.width / 2 && Math.abs(rect.top - curRect.top) < curRect.height;
+          distance = Math.hypot(rect.left - curRect.left, rect.top - curRect.top);
+        } else if (e.key === 'ArrowLeft') {
+          // Harus berada di sebelah kiri dan sejajar secara vertikal
+          isValid = rect.left <= curRect.left - rect.width / 2 && Math.abs(rect.top - curRect.top) < curRect.height;
+          distance = Math.hypot(curRect.left - rect.left, curRect.top - rect.top);
+        } else if (e.key === 'ArrowDown') {
+          // Harus berada di bawah secara vertikal
+          isValid = rect.top >= curRect.top + curRect.height / 2;
+          // Berikan bobot lebih besar pada selisih vertikal agar pindah baris lebih natural
+          distance = Math.abs(rect.top - curRect.top) * 2 + Math.abs(rect.left - curRect.left);
+        } else if (e.key === 'ArrowUp') {
+          // Harus berada di atas secara vertikal
+          isValid = rect.top <= curRect.top - rect.height / 2;
+          distance = Math.abs(curRect.top - rect.top) * 2 + Math.abs(rect.left - curRect.left);
+        }
+
+        if (isValid && distance < minDistance) {
+          minDistance = distance;
+          bestMatch = idx;
+        }
+      });
+
+      // Jika ada kartu terdekat yang valid di arah tersebut, pindahkan fokus/pilihan
+      if (bestMatch !== -1) {
+        targetIdx = bestMatch;
+      } else {
+        // Fallback perilaku linier jika berada di ujung grid
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          targetIdx = Math.min(state.slides.length - 1, currentIdx + 1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          targetIdx = Math.max(0, currentIdx - 1);
+        }
+      }
     } else if (e.key === 'Home') {
-      target = 0;
+      e.preventDefault();
+      targetIdx = 0;
     } else if (e.key === 'End') {
-      target = state.slides.length - 1;
+      e.preventDefault();
+      targetIdx = state.slides.length - 1;
     }
 
-    if (target !== -1 && target !== state.activeIndex) {
-      e.preventDefault();
-      showSlide(target);
+    if (targetIdx !== state.activeIndex) {
+      showSlide(targetIdx);
+      state.cards[targetIdx]?.card.focus({ preventScroll: true });
     }
   });
 

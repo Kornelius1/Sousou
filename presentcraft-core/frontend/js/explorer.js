@@ -27,6 +27,7 @@ export function initExplorer() {
       addFiles: G.addFiles,
     },
   });
+
   on('item-updated', (it) => {
     if (it.kind === 'color') tree.render();
   });

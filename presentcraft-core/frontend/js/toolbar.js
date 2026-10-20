@@ -21,6 +21,7 @@ export function initShortcuts() {
       importFile();
       return;
     }
+    if (e.defaultPrevented) return;  
     if (e.target.closest('input, select, button, textarea')) return;
     if (state.slides.length === 0) return;
 
