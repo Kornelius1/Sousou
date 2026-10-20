@@ -2,6 +2,7 @@ import { state as S } from './state.js';
 import { emit } from './bus.js';
 import { invoke } from './tauri.js';
 import { kindOf } from './media.js';
+import { newBlank } from './store.js';
 
 // Pakai fungsi murni bawaan browser, TIDAK ada import dari utils.js
 const uid = () =>

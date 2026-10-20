@@ -111,3 +111,4 @@
 .pv-btn.primary { min-width: 34px; height: 26px; background: #e0e0e0; color: #121212; border-color: #e0e0e0; }
 .pv-btn.primary svg { width: 14px; height: 14px; }
 .pv-btn.primary:hover:not(:disabled) { background: #fff; }
+
