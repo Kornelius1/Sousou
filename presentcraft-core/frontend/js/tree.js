@@ -102,7 +102,6 @@ const SORT_DIR = [
  * }
  */
 export function createTree(cfg) {
-  console.log("createTree:", cfg.ids.list, Object.keys(cfg.api));
   const list = $(cfg.ids.list);
   const open = new Set(cfg.openByDefault || []);
   const sortPref = new Map();
@@ -178,7 +177,7 @@ export function createTree(cfg) {
 
     const inp = el("input", "ex-edit"); // kelas ex-edit: semua guard yang ada ikut berlaku
     inp.maxLength = 60;
-    inp.placeholder = isGroup ? "Nama folder" : "Nama slide";
+    inp.placeholder = isGroup ? "New Group" : "New slide";
     inp.value = c.value;
     inp.addEventListener("input", () => {
       c.value = inp.value;
@@ -216,7 +215,6 @@ export function createTree(cfg) {
           if (it) cfg.api.selectItem(c.gid, it.id);
         }
       } catch (err) {
-        console.error(err);
         setStatus("Gagal membuat item.");
       }
     }
@@ -231,7 +229,7 @@ export function createTree(cfg) {
     showPopup(
       [
         {
-          label: target ? "Slide kosong" : "Slide kosong (buat grup dulu)",
+          label: target ? "New Slide" : "New Slide (Create a group first)",
           disabled: !target,
           run: () => startCreate({ type: "slide", gid: target.id }),
         },
@@ -250,7 +248,7 @@ export function createTree(cfg) {
     if (cnt) cnt.textContent = groups.length ? `(${groups.length})` : "";
     if (!groups.length && !creating) {
       list.appendChild(
-        el("p", "ex-empty", "Belum ada grup. Klik ikon folder di atas."),
+        el("p", "ex-empty", "No groups yet. Click the folder icon above."),
       );
       return;
     }

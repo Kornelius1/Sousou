@@ -146,6 +146,19 @@ export function createStore({ name, loadCmd, saveCmd }) {
     return it;
   }
 
+  function replaceSlides(gid, origin, slides) {
+    const g = find(gid);
+    if (!g) return 0;
+    // import ulang bundel yang sama: ganti slide lama, jangan dobel
+    g.items = g.items.filter(
+      (x) => !(x.kind === "slide" && x.origin === origin),
+    );
+    for (const s of slides)
+      g.items.push({ ...base(), kind: "slide", origin, ...s });
+    changed();
+    return slides.length;
+  }
+
   /** Salin item (mis. dari grup bundel) ke grup ini. 'ok' | 'dup' | null */
   function copyIn(gid, it) {
     const g = find(gid);
@@ -227,5 +240,6 @@ export function createStore({ name, loadCmd, saveCmd }) {
     moveItem,
     sortGroup,
     ensureGroup,
+    replaceSlides,
   };
 }

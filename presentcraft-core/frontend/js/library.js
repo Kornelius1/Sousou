@@ -5,7 +5,7 @@ import { LIB_FILTER, libKindOf } from "./media.js";
 import { createStore, itemName } from "./store.js";
 import { createTree } from "./tree.js";
 import { pick } from "./background-panel.js";
-import { showGroupSlides, showSlide } from "./sorter.js";
+import { showGroupSlides, showSlide, initBlankDeck } from "./sorter.js";
 
 export const lib = createStore({
   name: "lib",
@@ -15,42 +15,63 @@ export const lib = createStore({
 
 let tree = null;
 let syncing = false;
-export function refreshGrid() {
-  const g = lib.s.groups.find((x) => x.id === lib.s.gid);
-  if (!g) return false;
-  const hasSlides = g.items.some((it) => it.kind === "slide");
-  if (g.items.length && !hasSlides) return false;
+let shownGid = null;
 
+const textOf = (it) =>
+  it.kind === "text"
+    ? it.text
+    : it.kind === "slide"
+      ? it.slide?.content || ""
+      : "";
+
+function withSync(fn) {
+  if (syncing) return;
   syncing = true;
   try {
-    showGroupSlides(g);
+    fn();
   } finally {
     syncing = false;
   }
+}
 
-  if (lib.s.iid) {
-    const idx = state.slides.findIndex((s) => s.itemId === lib.s.iid);
-    if (idx >= 0) showSlide(idx);
-  }
-  return true;
+export function refreshGrid() {
+  withSync(() => {
+    const g = lib.s.groups.find((x) => x.id === lib.s.gid);
+    shownGid = g ? g.id : null;
+    if (!g) return initBlankDeck();
+    showGroupSlides(g);
+    selectInGrid();
+  });
+}
+
+function selectInGrid() {
+  if (!lib.s.iid) return;
+  const idx = state.slides.findIndex((s) => s.itemId === lib.s.iid);
+  if (idx >= 0) showSlide(idx);
+}
+
+function onLibSelection() {
+  if (lib.s.gid === shownGid) selectInGrid();
+  else refreshGrid();
 }
 
 /** Salin isi bundel yang baru dimuat ke grup permanen (nama = nama file). */
 function syncBundle() {
   if (!state.slides.length) return;
   const g = lib.ensureGroup(state.bundleName || "Bundle");
+
+  lib.replaceSlides(
+    g.id,
+    "bundle",
+    state.slides.map((s) => {
+      const first = (s.content || "").trim().split("\n")[0].slice(0, 40);
+      const label = [s.group_name, first].filter(Boolean).join(" — ");
+      return { label: label || `Slide ${s.slide_number}`, slide: s };
+    }),
+  );
+
   const seen = new Set();
   for (const s of state.slides) {
-    const text = (s.content || "").trim();
-    if (text) {
-      const first = text.split("\n")[0].slice(0, 40);
-      lib.copyIn(g.id, {
-        kind: "text",
-        text,
-        src: "",
-        label: `${s.slide_number}${s.group_name ? " · " + s.group_name : ""} — ${first}`,
-      });
-    }
     for (const l of s.layers || []) {
       if ((l.kind !== "video" && l.kind !== "image") || l.status !== "OK")
         continue;
@@ -167,8 +188,8 @@ export function initLibrary() {
         lib.selectItem(gid, iid);
         const g = lib.s.groups.find((x) => x.id === gid);
         const it = g && g.items.find((x) => x.id === iid);
-        if (it && it.kind === "text")
-          setStatus(it.text.replace(/\s+/g, " ").slice(0, 120));
+        const t = it ? textOf(it) : "";
+        if (t) setStatus(t.replace(/\s+/g, " ").slice(0, 120));
       },
       createGroup: lib.createGroup,
       renameGroup: lib.renameGroup,
@@ -180,17 +201,16 @@ export function initLibrary() {
       moveItem: lib.moveItem,
     },
     onActivate: (g, it) => {
-      if (it.kind === "text") addTextLayer(it.text);
-      else addMediaLayer(it);
+      const t = textOf(it);
+      if (t) addTextLayer(t);
+      else if (it.kind === "image" || it.kind === "video") addMediaLayer(it);
     },
     contextMenu: (g, it) => {
-      if (it.kind === "text") {
+      const t = textOf(it);
+      if (t) {
         return [
-          { label: "Add as new text layer", run: () => addTextLayer(it.text) },
-          {
-            label: "Replace selected text",
-            run: () => replaceSelectedText(it.text),
-          },
+          { label: "Add as new text layer", run: () => addTextLayer(t) },
+          { label: "Replace selected text", run: () => replaceSelectedText(t) },
         ];
       }
       if (it.kind === "image" || it.kind === "video") {
@@ -204,8 +224,9 @@ export function initLibrary() {
   });
 
   on("lib-changed", refreshGrid);
-  on("lib-selection", refreshGrid);
-  on("slides:loaded", () => {
-    if (!syncing) syncBundle();
+  on("lib-selection", onLibSelection);
+  on("bundle:imported", () => {
+    withSync(syncBundle); // lib-changed selama sinkron diabaikan oleh flag
+    refreshGrid(); // bangun ulang dari library supaya tiap slide punya itemId
   });
 }

@@ -1,39 +1,84 @@
 // Panel tengah: grid slide, load bundel, navigasi slide.
-import { $ } from './utils.js';
-import { state } from './state.js';
-import { emit, on } from './bus.js';
-import { invoke, openDialog } from './tauri.js';
-import { emitPayload, toPayload, setBlanked, emitBlank, cancelScheduledEmit } from './audience.js';
+import { $ } from "./utils.js";
+import { state } from "./state.js";
+import { emit, on } from "./bus.js";
+import { invoke, openDialog } from "./tauri.js";
+import {
+  emitPayload,
+  toPayload,
+  setBlanked,
+  emitBlank,
+  cancelScheduledEmit,
+} from "./audience.js";
+import { buildMediaLayer } from "./layers.js";
+import { itemName } from "./store.js";
 
 const SR = window.SlideRenderer;
-const grid = $('slide-grid');
+const grid = $("slide-grid");
+
+function padNum(n) {
+  const width = Math.max(2, String(state.slides.length).length);
+  return String(n).padStart(width, "0");
+}
+
+function buildCaption(cap, slide, i) {
+  const num = document.createElement("span");
+  num.className = "cap-num";
+  num.textContent = padNum(i + 1);
+  cap.appendChild(num);
+
+  const folder = slide.group_name || "";
+  const name = slide.label || "";
+  if (folder) {
+    const f = document.createElement("span");
+    f.className = "cap-folder";
+    f.textContent = folder;
+    cap.appendChild(f);
+  }
+  if (folder && name) {
+    const sep = document.createElement("span");
+    sep.className = "cap-sep";
+    sep.textContent = "|";
+    cap.appendChild(sep);
+  }
+  if (name) {
+    const n = document.createElement("span");
+    n.className = "cap-name";
+    n.textContent = name;
+    cap.appendChild(n);
+  }
+  cap.title = [folder, name].filter(Boolean).join(" | "); // tooltip untuk teks yang terpotong
+}
 
 export function createBlankSlide(slideNumber = 1) {
   return {
     slide_number: slideNumber,
     group_name: null,
     group_color: null,
-    layers: [],          
+    content: '',
+    layers: [],
   };
 }
 
 export function initBlankDeck() {
-  applySlides([createBlankSlide()], [], '');
+  applySlides([createBlankSlide()], [], "");
 }
 
 export function renderThumb(i) {
   const c = state.cards[i];
-  if (c && state.slides[i]) SR.renderThumbnail(c.thumb, toPayload(state.slides[i]));
+  if (c && state.slides[i])
+    SR.renderThumbnail(c.thumb, toPayload(state.slides[i]));
 }
 
 export function refreshThumbBackgrounds() {
   for (const c of state.cards) {
     if (c && c.thumb && c.thumb._bg) {
-      SR.renderBackground(c.thumb._bg, state.showBgInThumbs ? state.bg : null, { preview: true });
+      SR.renderBackground(c.thumb._bg, state.showBgInThumbs ? state.bg : null, {
+        preview: true,
+      });
     }
   }
 }
-
 
 function reorderSlides(fromIdx, toIdx) {
   const [movedSlide] = state.slides.splice(fromIdx, 1);
@@ -57,7 +102,7 @@ function reorderSlides(fromIdx, toIdx) {
 function handleAutoScroll(e) {
   const rect = grid.getBoundingClientRect();
   const threshold = 50; // Jarak zona scroll dari tepi atas/bawah (px)
-  const speed = 12;     // Kecepatan scroll
+  const speed = 12; // Kecepatan scroll
 
   if (e.clientY < rect.top + threshold) {
     grid.scrollTop -= speed;
@@ -67,50 +112,49 @@ function handleAutoScroll(e) {
 }
 
 function makeCard(slide, i) {
-  const card = document.createElement('div');
-  card.className = 'card';
+  const card = document.createElement("div");
+  card.className = "card";
   card.tabIndex = 0;
   card.draggable = true;
   card.dataset.index = i;
 
-  const thumb = document.createElement('div');
-  thumb.className = 'thumb';
+  const thumb = document.createElement("div");
+  thumb.className = "thumb";
 
-  const cap = document.createElement('div');
-  cap.className = 'cap';
+  const cap = document.createElement("div");
+  cap.className = "cap";
   if (slide.group_color) cap.style.borderLeftColor = slide.group_color;
-  
-  const groupTag = slide.group_name ? ` · ${slide.group_name}` : '';
-  cap.textContent = `${slide.slide_number}${groupTag}`;
+
+  buildCaption(cap, slide, i);
 
   card.append(thumb, cap);
-  card.addEventListener('click', () => {
+  card.addEventListener("click", () => {
     showSlide(i);
-    card.focus(); 
+    card.focus();
   });
 
   // Event Drag and Drop
-  card.addEventListener('dragstart', (e) => {
-    e.dataTransfer.setData('text/plain', String(i));
-    card.classList.add('dragging');
+  card.addEventListener("dragstart", (e) => {
+    e.dataTransfer.setData("text/plain", String(i));
+    card.classList.add("dragging");
   });
 
-  card.addEventListener('dragover', (e) => {
+  card.addEventListener("dragover", (e) => {
     e.preventDefault();
     handleAutoScroll(e); // Pemicu auto-scroll
   });
 
-  card.addEventListener('drop', (e) => {
+  card.addEventListener("drop", (e) => {
     e.preventDefault();
-    const srcIdx = Number(e.dataTransfer.getData('text/plain'));
+    const srcIdx = Number(e.dataTransfer.getData("text/plain"));
     const dstIdx = i;
     if (!Number.isNaN(srcIdx) && srcIdx !== dstIdx) {
       reorderSlides(srcIdx, dstIdx);
     }
   });
 
-  card.addEventListener('dragend', () => {
-    card.classList.remove('dragging');
+  card.addEventListener("dragend", () => {
+    card.classList.remove("dragging");
   });
 
   state.cards[i] = { card, thumb };
@@ -124,15 +168,15 @@ export function showSlide(i) {
   setBlanked(false);
 
   state.cards.forEach((c, idx) => {
-    if (c && c.card) c.card.classList.toggle('active', idx === i);
+    if (c && c.card) c.card.classList.toggle("active", idx === i);
   });
 
   const activeCard = state.cards[i]?.card;
   if (activeCard) {
-    activeCard.scrollIntoView({ block: 'nearest' });
+    activeCard.scrollIntoView({ block: "nearest" });
   }
 
-  emit('slide:shown', changed);
+  emit("slide:shown", changed);
   emitPayload(toPayload(state.slides[i]));
 }
 
@@ -143,18 +187,18 @@ export function toggleBlank() {
 }
 
 function renderWarnings(warnings) {
-  const slot = $('warn-slot');
+  const slot = $("warn-slot");
   slot.replaceChildren();
   if (!warnings || warnings.length === 0) return;
 
-  const d = document.createElement('details');
-  d.className = 'warnings';
-  const sum = document.createElement('summary');
+  const d = document.createElement("details");
+  d.className = "warnings";
+  const sum = document.createElement("summary");
   sum.textContent = `${warnings.length} peringatan saat memuat`;
 
-  const ul = document.createElement('ul');
+  const ul = document.createElement("ul");
   warnings.forEach((w) => {
-    const li = document.createElement('li');
+    const li = document.createElement("li");
     li.textContent = w;
     ul.appendChild(li);
   });
@@ -165,8 +209,8 @@ function renderWarnings(warnings) {
 
 function showMessage(text, color) {
   grid.replaceChildren();
-  const p = document.createElement('p');
-  p.className = 'empty';
+  const p = document.createElement("p");
+  p.className = "empty";
   p.style.color = color;
   p.textContent = text;
   grid.appendChild(p);
@@ -175,35 +219,43 @@ function showMessage(text, color) {
 export async function importFile() {
   const filePath = await openDialog({
     multiple: false,
-    filters: [{ name: 'ProPresenter', extensions: ['probundle', 'zip', 'pro'] }],
+    filters: [
+      { name: "ProPresenter", extensions: ["probundle", "zip", "pro"] },
+    ],
   });
   if (!filePath) return;
 
-  showMessage('Mengekstrak dan memuat bundel...', '#03dac6');
-  $('warn-slot').replaceChildren();
+  showMessage("Mengekstrak dan memuat bundel...", "#03dac6");
+  $("warn-slot").replaceChildren();
 
   try {
-    const result = await invoke('load_presentation_bundle', { filePath });
-    const name = filePath.split(/[\\/]/).pop().replace(/\.[^.]+$/, '');
-    applySlides(result?.slides || [], result?.warnings || [], name);
+    const result = await invoke("load_presentation_bundle", { filePath });
+    const name = filePath
+      .split(/[\\/]/)
+      .pop()
+      .replace(/\.[^.]+$/, "");
+
+    const slides = result?.slides || [];
+    applySlides(slides, result?.warnings || [], name);
+    if (slides.length) emit("bundle:imported");
   } catch (error) {
     console.error(error);
-    showMessage(`Gagal memuat: ${String(error)}`, '#ff6b6b');
+    showMessage(`Gagal memuat: ${String(error)}`, "#ff6b6b");
   }
 }
 
 export function applySlides(slides, warnings, bundleName) {
   state.slides = slides || [];
   if (state.slides.length === 0) {
-    state.slides = [createBlankSlide()];   // fallback: selalu ada minimal satu slide
+    state.slides = [createBlankSlide()]; // fallback: selalu ada minimal satu slide
   }
-  state.bundleName = bundleName || '';
+  state.bundleName = bundleName || "";
   state.cards = [];
   state.activeIndex = -1;
   state.selectedLayer = -1;
   cancelScheduledEmit();
 
-  $('slide-count').textContent = `(${state.slides.length})`;
+  $("slide-count").textContent = `(${state.slides.length})`;
   renderWarnings(warnings || []);
 
   grid.replaceChildren();
@@ -211,22 +263,22 @@ export function applySlides(slides, warnings, bundleName) {
   state.slides.forEach((_, i) => renderThumb(i));
   refreshThumbBackgrounds();
 
-  emit('slides:loaded');
+  emit("slides:loaded");
 }
 
 export function initSorter() {
-  const zoomInput = $('zoom');
+  const zoomInput = $("zoom");
   if (zoomInput) {
-    zoomInput.addEventListener('input', (e) => {
-      grid.style.setProperty('--thumb', `${e.target.value}px`);
+    zoomInput.addEventListener("input", (e) => {
+      grid.style.setProperty("--thumb", `${e.target.value}px`);
     });
   }
 
-  grid.addEventListener('keydown', (e) => {
+  grid.addEventListener("keydown", (e) => {
     if (!state.slides.length) return;
 
     const currentIdx = state.activeIndex < 0 ? 0 : state.activeIndex;
-    const cards = Array.from(grid.querySelectorAll('.card'));
+    const cards = Array.from(grid.querySelectorAll(".card"));
     const currentCard = cards[currentIdx];
 
     if (!currentCard) return;
@@ -234,7 +286,7 @@ export function initSorter() {
     const curRect = currentCard.getBoundingClientRect();
     let targetIdx = currentIdx;
 
-    if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+    if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(e.key)) {
       e.preventDefault();
 
       let bestMatch = -1;
@@ -248,23 +300,37 @@ export function initSorter() {
         let distance = Infinity;
 
         // Validasi arah dan hitung jarak geometris terdekat
-        if (e.key === 'ArrowRight') {
+        if (e.key === "ArrowRight") {
           // Harus berada di sebelah kanan dan sejajar secara vertikal
-          isValid = rect.left >= curRect.left + curRect.width / 2 && Math.abs(rect.top - curRect.top) < curRect.height;
-          distance = Math.hypot(rect.left - curRect.left, rect.top - curRect.top);
-        } else if (e.key === 'ArrowLeft') {
+          isValid =
+            rect.left >= curRect.left + curRect.width / 2 &&
+            Math.abs(rect.top - curRect.top) < curRect.height;
+          distance = Math.hypot(
+            rect.left - curRect.left,
+            rect.top - curRect.top,
+          );
+        } else if (e.key === "ArrowLeft") {
           // Harus berada di sebelah kiri dan sejajar secara vertikal
-          isValid = rect.left <= curRect.left - rect.width / 2 && Math.abs(rect.top - curRect.top) < curRect.height;
-          distance = Math.hypot(curRect.left - rect.left, curRect.top - rect.top);
-        } else if (e.key === 'ArrowDown') {
+          isValid =
+            rect.left <= curRect.left - rect.width / 2 &&
+            Math.abs(rect.top - curRect.top) < curRect.height;
+          distance = Math.hypot(
+            curRect.left - rect.left,
+            curRect.top - rect.top,
+          );
+        } else if (e.key === "ArrowDown") {
           // Harus berada di bawah secara vertikal
           isValid = rect.top >= curRect.top + curRect.height / 2;
           // Berikan bobot lebih besar pada selisih vertikal agar pindah baris lebih natural
-          distance = Math.abs(rect.top - curRect.top) * 2 + Math.abs(rect.left - curRect.left);
-        } else if (e.key === 'ArrowUp') {
+          distance =
+            Math.abs(rect.top - curRect.top) * 2 +
+            Math.abs(rect.left - curRect.left);
+        } else if (e.key === "ArrowUp") {
           // Harus berada di atas secara vertikal
           isValid = rect.top <= curRect.top - rect.height / 2;
-          distance = Math.abs(curRect.top - rect.top) * 2 + Math.abs(rect.left - curRect.left);
+          distance =
+            Math.abs(curRect.top - rect.top) * 2 +
+            Math.abs(rect.left - curRect.left);
         }
 
         if (isValid && distance < minDistance) {
@@ -278,16 +344,16 @@ export function initSorter() {
         targetIdx = bestMatch;
       } else {
         // Fallback perilaku linier jika berada di ujung grid
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
           targetIdx = Math.min(state.slides.length - 1, currentIdx + 1);
-        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
           targetIdx = Math.max(0, currentIdx - 1);
         }
       }
-    } else if (e.key === 'Home') {
+    } else if (e.key === "Home") {
       e.preventDefault();
       targetIdx = 0;
-    } else if (e.key === 'End') {
+    } else if (e.key === "End") {
       e.preventDefault();
       targetIdx = state.slides.length - 1;
     }
@@ -298,17 +364,39 @@ export function initSorter() {
     }
   });
 
-  on('background-changed', () => refreshThumbBackgrounds());
+  on("background-changed", () => refreshThumbBackgrounds());
+}
+
+function itemToSlide(it, g, n) {
+  const orig = it.kind === "slide" ? it.slide : null; // objek slide asli dari bundel
+  return {
+    ...createBlankSlide(n),
+    ...(orig || {}),
+    slide_number: n,
+    group_name: g.name, // folder library, dipakai caption "folder | nama"
+    groupId: g.id,
+    itemId: it.id,
+    label: itemName(it),
+    layers:
+      it.kind === "slide"
+        ? (orig?.layers ?? (it.layers ||= []))
+        : [buildMediaLayer(it)],
+  };
 }
 
 export function showGroupSlides(g) {
-  const items = g ? g.items.filter((it) => it.kind === 'slide') : [];
-  const slides = items.map((it, i) => ({
-    ...createBlankSlide(i + 1),
-    group_name: g.name,
-    itemId: it.id,
-    groupId: g.id,
-    label: it.label,
-  }));
-  applySlides(slides.length ? slides : [createBlankSlide()], [], g ? g.name : '');
+  const all = g ? g.items : [];
+  // grup hasil import: hanya slide-nya. File media di dalamnya hanyalah bahan.
+  const fromBundle = all.some(
+    (it) => it.kind === "slide" && it.origin === "bundle",
+  );
+  const kinds = fromBundle ? ["slide"] : ["slide", "image", "video"];
+  const slides = all
+    .filter((it) => kinds.includes(it.kind))
+    .map((it, i) => itemToSlide(it, g, i + 1));
+  applySlides(
+    slides.length ? slides : [createBlankSlide()],
+    [],
+    g ? g.name : "",
+  );
 }
