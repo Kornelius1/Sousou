@@ -159,6 +159,16 @@ export function createStore({ name, loadCmd, saveCmd }) {
     return slides.length;
   }
 
+  function setTag(gid, iid, tag) {
+    const g = find(gid);
+    const it = g && g.items.find((x) => x.id === iid);
+    if (!it) return false;
+    if (tag) it.tag = { name: tag.name, color: tag.color };
+    else delete it.tag;
+    changed();
+    return true;
+  }
+
   /** Salin item (mis. dari grup bundel) ke grup ini. 'ok' | 'dup' | null */
   function copyIn(gid, it) {
     const g = find(gid);

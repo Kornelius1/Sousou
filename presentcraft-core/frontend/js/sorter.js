@@ -1,5 +1,5 @@
 // Panel tengah: grid slide, load bundel, navigasi slide.
-import { $ } from "./utils.js";
+import { $, setStatus } from "./utils.js";
 import { state } from "./state.js";
 import { emit, on } from "./bus.js";
 import { invoke, openDialog } from "./tauri.js";
@@ -12,6 +12,8 @@ import {
 } from "./audience.js";
 import { buildMediaLayer } from "./layers.js";
 import { itemName } from "./store.js";
+import { showPopup } from "./tree.js";
+import { mergeTags, textOn } from "./tags.js";
 
 const SR = window.SlideRenderer;
 const grid = $("slide-grid");
@@ -27,7 +29,7 @@ function buildCaption(cap, slide, i) {
   num.textContent = padNum(i + 1);
   cap.appendChild(num);
 
-  const folder = slide.group_name || "";
+  const folder = slide.folder_name || "";
   const name = slide.label || "";
   if (folder) {
     const f = document.createElement("span");
@@ -55,7 +57,7 @@ export function createBlankSlide(slideNumber = 1) {
     slide_number: slideNumber,
     group_name: null,
     group_color: null,
-    content: '',
+    content: "",
     layers: [],
   };
 }
@@ -111,6 +113,59 @@ function handleAutoScroll(e) {
   }
 }
 
+const tagOf = (s) =>
+  s.tag !== undefined
+    ? s.tag
+    : s.group_name
+      ? { name: s.group_name, color: s.group_color }
+      : null;
+
+function decorateCard(card, slide) {
+  const tag = tagOf(slide);
+  card.querySelector(".tag-badge")?.remove();
+  card.classList.toggle("tagged", !!tag);
+  if (!tag) {
+    card.style.removeProperty("--tag-color");
+    return;
+  }
+
+  const color = tag.color || "#888888";
+  card.style.setProperty("--tag-color", color);
+  const b = document.createElement("span");
+  b.className = "tag-badge";
+  b.textContent = tag.name;
+  b.style.background = color;
+  b.style.color = textOn(color);
+  card.appendChild(b); // di card, bukan di thumb: thumbnail dirender ulang oleh SlideRenderer
+}
+
+function openTagMenu(e, i) {
+  const slide = state.slides[i];
+  if (!slide || !slide.itemId) {
+    return setStatus(
+      "Slide ini belum ada di library, tag belum bisa dipasang.",
+    );
+  }
+  const cur = tagOf(slide)?.name.toLowerCase();
+  const set = (tag) =>
+    emit("tag:set", { groupId: slide.groupId, itemId: slide.itemId, tag });
+  const choices = mergeTags(state.slides.map(tagOf));
+
+  showPopup(
+    [
+      ...choices.map((t) => ({
+        label: (t.name.toLowerCase() === cur ? "✓ " : "") + t.name,
+        dot: true,
+        color: t.color,
+        run: () => set(t),
+      })),
+      { sep: true },
+      { label: "Hapus tag", disabled: !tagOf(slide), run: () => set(null) },
+    ],
+    { x: e.clientX, y: e.clientY },
+  );
+}
+
 function makeCard(slide, i) {
   const card = document.createElement("div");
   card.className = "card";
@@ -123,11 +178,17 @@ function makeCard(slide, i) {
 
   const cap = document.createElement("div");
   cap.className = "cap";
-  if (slide.group_color) cap.style.borderLeftColor = slide.group_color;
 
   buildCaption(cap, slide, i);
 
   card.append(thumb, cap);
+
+  decorateCard(card, slide);
+  card.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    openTagMenu(e, i);
+  });
+
   card.addEventListener("click", () => {
     showSlide(i);
     card.focus();
@@ -365,6 +426,13 @@ export function initSorter() {
   });
 
   on("background-changed", () => refreshThumbBackgrounds());
+  on("tag:applied", ({ itemId, tag }) => {
+    const i = state.slides.findIndex((s) => s.itemId === itemId);
+    if (i < 0) return;
+    state.slides[i].tag = tag;
+    const c = state.cards[i];
+    if (c) decorateCard(c.card, state.slides[i]);
+  });
 }
 
 function itemToSlide(it, g, n) {
@@ -373,7 +441,8 @@ function itemToSlide(it, g, n) {
     ...createBlankSlide(n),
     ...(orig || {}),
     slide_number: n,
-    group_name: g.name, // folder library, dipakai caption "folder | nama"
+    folder_name: g.name,
+    tag: it.tag ?? null,
     groupId: g.id,
     itemId: it.id,
     label: itemName(it),

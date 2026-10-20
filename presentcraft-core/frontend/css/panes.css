@@ -125,3 +125,24 @@
 .cap-folder { color: #999; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .cap-sep    { color: #555; flex: none; }
 .cap-name   { color: #eee; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.card { position: relative; }
+
+.card .tag-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  max-width: 70%;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.card.tagged { background: color-mix(in srgb, var(--tag-color) 16%, #1e1e1e); }
+.card.tagged .cap { border-left-color: var(--tag-color); }
