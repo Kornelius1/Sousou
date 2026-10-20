@@ -65,8 +65,13 @@ function syncBundle() {
     "bundle",
     state.slides.map((s) => {
       const first = (s.content || "").trim().split("\n")[0].slice(0, 40);
-      const label = [s.group_name, first].filter(Boolean).join(" — ");
-      return { label: label || `Slide ${s.slide_number}`, slide: s };
+      return {
+        label: first || `Slide ${s.slide_number}`,
+        tag: s.group_name
+          ? { name: s.group_name, color: s.group_color || null }
+          : null,
+        slide: s,
+      };
     }),
   );
 
@@ -228,5 +233,12 @@ export function initLibrary() {
   on("bundle:imported", () => {
     withSync(syncBundle); // lib-changed selama sinkron diabaikan oleh flag
     refreshGrid(); // bangun ulang dari library supaya tiap slide punya itemId
+  });
+  on("tag:set", ({ groupId, itemId, tag }) => {
+    let ok = false;
+    withSync(() => {
+      ok = lib.setTag(groupId, itemId, tag);
+    }); // lib-changed selama ini tidak membangun ulang grid
+    if (ok) emit("tag:applied", { itemId, tag });
   });
 }

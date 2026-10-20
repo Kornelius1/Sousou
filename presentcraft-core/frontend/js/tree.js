@@ -3,6 +3,7 @@ import { on } from "./bus.js";
 import { openDialog } from "./tauri.js";
 import { askConfirm } from "./confirm.js";
 
+
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
