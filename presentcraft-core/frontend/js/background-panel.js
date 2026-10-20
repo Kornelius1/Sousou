@@ -5,7 +5,6 @@ import { MEDIA_FILTER } from './media.js';
 import { setBackground, patchBackground, clearBackground } from '../background-state.js';
 import * as G from './groups.js';
 import { askConfirm } from './confirm.js';
-import { createGroupManager } from './group-factory.js';
 import { state } from './state.js';
 
 const SR = window.SlideRenderer;
@@ -244,8 +243,3 @@ export function initBackgroundPanel() {
 
   refresh();
 }
-
-export const bgGroups = createGroupManager({
-  getState: () => state.bg,
-  eventPrefix: 'bg'
-});

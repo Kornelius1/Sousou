@@ -80,7 +80,7 @@
 .bgt-thumb { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; isolation: isolate; }
 .bgt-layer { position: absolute; inset: 0; overflow: hidden; }
 .bgt.live .bgt-thumb::after {
-  content: 'TAYANG'; position: absolute; top: 4px; left: 4px; z-index: 5;
+  content: 'show'; position: absolute; top: 4px; left: 4px; z-index: 5;
   background: #cf6679; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
 }
 .bgt-cap { margin-top: 3px; font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
