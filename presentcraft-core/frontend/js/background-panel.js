@@ -104,7 +104,6 @@ function syncSettings() {
     $('bg-opacity').value = it.opacity;
     if (it.kind === 'color') $('bg-color').value = it.src;
   }
-  $('bgs-title').textContent = has ? `Pengaturan: ${label(it)}` : 'Pilih item untuk mengatur';
   $('bg-opacity').disabled = !has;
   $('bg-scale').disabled = !isMedia;
   $('lbl-loop').classList.toggle('off', !isVideo);

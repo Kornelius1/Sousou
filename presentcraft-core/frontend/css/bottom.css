@@ -32,7 +32,7 @@
 .ex-row { display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px 0 22px; color: #ccc; cursor: pointer; white-space: nowrap; }
 .ex-row:hover { background: #2a2d2e; }
 .ex-row.active { background: #37373d; color: #fff; }
-#ex-list:focus .ex-row.active { background: #094771; }
+#ex-list:focus .ex-row.active { background: rgba(255, 255, 255, 0.14); }
 
 .ex-ico {
   width: 14px; height: 14px; flex-shrink: 0;
@@ -76,7 +76,7 @@
 }
 .bgt { border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #1e1e1e; cursor: pointer; }
 .bgt:hover { background: #2a2a2a; }
-.bgt.sel { border-color: #03dac6; }
+.bgt.sel { border-color: var(--select-color); }
 .bgt-thumb { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; isolation: isolate; }
 .bgt-layer { position: absolute; inset: 0; overflow: hidden; }
 .bgt.live .bgt-thumb::after {
@@ -103,7 +103,6 @@
 .bgc label { color: #aaa; font-size: 12px; }
 .bgc select { background: #2d2d2d; color: #e0e0e0; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 6px; font: inherit; }
 .bgc input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
-.bgs-title { color: #03dac6; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #bg-settings .off, #bg-settings [disabled] { opacity: .4; pointer-events: none; }
 
 .ex-row.ex-item { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }

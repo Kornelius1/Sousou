@@ -37,5 +37,5 @@ initBackgroundPanel();
 syncPanel(state.bg);
 refreshThumbBackgrounds();
 renderLibrary();
-if (!refreshGrid()) initBlankDeck();
+refreshGrid();  
 renderPreview();
