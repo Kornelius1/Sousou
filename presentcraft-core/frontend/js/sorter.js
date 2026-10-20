@@ -8,6 +8,19 @@ import { emitPayload, toPayload, setBlanked, emitBlank, cancelScheduledEmit } fr
 const SR = window.SlideRenderer;
 const grid = $('slide-grid');
 
+export function createBlankSlide(slideNumber = 1) {
+  return {
+    slide_number: slideNumber,
+    group_name: null,
+    group_color: null,
+    layers: [],          
+  };
+}
+
+export function initBlankDeck() {
+  applySlides([createBlankSlide()], [], '');
+}
+
 export function renderThumb(i) {
   const c = state.cards[i];
   if (c && state.slides[i]) SR.renderThumbnail(c.thumb, toPayload(state.slides[i]));
@@ -20,6 +33,7 @@ export function refreshThumbBackgrounds() {
     }
   }
 }
+
 
 function reorderSlides(fromIdx, toIdx) {
   const [movedSlide] = state.slides.splice(fromIdx, 1);
@@ -180,23 +194,22 @@ export async function importFile() {
 
 export function applySlides(slides, warnings, bundleName) {
   state.slides = slides || [];
+  if (state.slides.length === 0) {
+    state.slides = [createBlankSlide()];   // fallback: selalu ada minimal satu slide
+  }
   state.bundleName = bundleName || '';
   state.cards = [];
   state.activeIndex = -1;
   state.selectedLayer = -1;
   cancelScheduledEmit();
 
-  $('slide-count').textContent = state.slides.length ? `(${state.slides.length})` : '';
+  $('slide-count').textContent = `(${state.slides.length})`;
   renderWarnings(warnings || []);
 
-  if (state.slides.length === 0) {
-    showMessage('Tidak ada slide ditemukan di file ini.', '#ffb74d');
-  } else {
-    grid.replaceChildren();
-    state.slides.forEach((slide, i) => grid.appendChild(makeCard(slide, i)));
-    state.slides.forEach((_, i) => renderThumb(i));
-    refreshThumbBackgrounds();
-  }
+  grid.replaceChildren();
+  state.slides.forEach((slide, i) => grid.appendChild(makeCard(slide, i)));
+  state.slides.forEach((_, i) => renderThumb(i));
+  refreshThumbBackgrounds();
 
   emit('slides:loaded');
 }
@@ -286,4 +299,16 @@ export function initSorter() {
   });
 
   on('background-changed', () => refreshThumbBackgrounds());
+}
+
+export function showGroupSlides(g) {
+  const items = g ? g.items.filter((it) => it.kind === 'slide') : [];
+  const slides = items.map((it, i) => ({
+    ...createBlankSlide(i + 1),
+    group_name: g.name,
+    itemId: it.id,
+    groupId: g.id,
+    label: it.label,
+  }));
+  applySlides(slides.length ? slides : [createBlankSlide()], [], g ? g.name : '');
 }
