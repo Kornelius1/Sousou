@@ -167,3 +167,7 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
 .ex-menu-i:disabled { color: #777; }
 
 #library * { scrollbar-width: thin; scrollbar-color: #555 transparent; }
+.ex-menu-i { width: 100%; }
+.ex-menu-arrow { margin-left: auto; padding-left: 18px; opacity: .7; }
+.ex-menu-i.open-sub { background: rgba(255, 255, 255, 0.1); }
+.ex-submenu { max-height: 70vh; overflow-y: auto; }

@@ -3,7 +3,6 @@ import { on } from "./bus.js";
 import { openDialog } from "./tauri.js";
 import { askConfirm } from "./confirm.js";
 
-
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -14,9 +13,24 @@ const ICON_KINDS = new Set(["image", "video", "audio", "text"]);
 
 // ---------- popup menu (satu untuk seluruh aplikasi) ----------
 let popup = null;
+let popupSub = null;
 let popupAnchor = null;
+let subTimer = null;
+
+function closeSub() {
+  clearTimeout(subTimer);
+  if (popupSub) {
+    popupSub.remove();
+    popupSub = null;
+  }
+  if (popup)
+    popup
+      .querySelectorAll(".open-sub")
+      .forEach((b) => b.classList.remove("open-sub"));
+}
 
 export function closePopup() {
+  closeSub();
   if (!popup) return;
   popup.remove();
   popup = null;
@@ -24,20 +38,40 @@ export function closePopup() {
   document.removeEventListener("mousedown", popupOutside, true);
   document.removeEventListener("keydown", popupKey, true);
 }
+
 function popupOutside(e) {
-  if (e.target.closest(".ex-menu")) return;
+  if (e.target.closest(".ex-menu")) return; // menu utama dan submenu
   if (popupAnchor && popupAnchor.contains(e.target)) return; // klik tombol pemilik = toggle
   closePopup();
 }
+
 function popupKey(e) {
   if (e.key === "Escape") closePopup();
 }
+
 const popupOpenFor = (a) => !!popup && popupAnchor === a;
 
-/** entries: { label, dot?, disabled?, run? } | { sep: true } */
-export function showPopup(entries, { x = 0, y = 0, anchor = null } = {}) {
-  closePopup();
-  const m = el("div", "ex-menu");
+function openSub(btn, entries) {
+  closeSub();
+  btn.classList.add("open-sub");
+  const s = el("div", "ex-menu ex-submenu");
+  fillMenu(s, entries);
+  s.addEventListener("mouseenter", () => clearTimeout(subTimer)); // kursor sudah di submenu: jangan tutup
+  document.body.appendChild(s);
+  popupSub = s;
+
+  const r = btn.getBoundingClientRect();
+  let left = r.right - 2;
+  if (left + s.offsetWidth > innerWidth - 4)
+    left = Math.max(4, r.left - s.offsetWidth + 2); // tidak muat: ke kiri
+  let top = r.top - 4;
+  if (top + s.offsetHeight > innerHeight - 4)
+    top = Math.max(4, innerHeight - s.offsetHeight - 4);
+  s.style.left = left + "px";
+  s.style.top = top + "px";
+}
+
+function fillMenu(m, entries) {
   for (const e of entries) {
     if (e.sep) {
       m.appendChild(el("div", "ex-menu-sep"));
@@ -45,36 +79,59 @@ export function showPopup(entries, { x = 0, y = 0, anchor = null } = {}) {
     }
     const b = el("button", "ex-menu-i");
     b.disabled = !!e.disabled;
-    b.append(
-      el("span", "ex-menu-dot", e.dot ? "●" : ""),
-      el("span", null, e.label),
-    );
-    b.addEventListener("click", () => {
-      closePopup();
-      if (e.run) e.run();
-    });
+
+    const dot = el("span", "ex-menu-dot", e.dot ? "●" : "");
+    if (e.dot && e.color) dot.style.color = e.color; // titik = penanda yang sedang dipilih
+    if (e.color) b.style.boxShadow = `inset 3px 0 0 ${e.color}`; // strip warna tag di tepi kiri
+    b.append(dot, el("span", null, e.label));
+
+    if (e.submenu) {
+      b.classList.add("has-sub");
+      b.append(el("span", "ex-menu-arrow", "▸"));
+      b.addEventListener("mouseenter", () => {
+        clearTimeout(subTimer);
+        subTimer = setTimeout(() => openSub(b, e.submenu), 120);
+      });
+      b.addEventListener("click", () => {
+        clearTimeout(subTimer);
+        openSub(b, e.submenu);
+      }); // klik tidak menutup menu
+    } else {
+      b.addEventListener("mouseenter", () => {
+        clearTimeout(subTimer);
+        if (popupSub && !m.classList.contains("ex-submenu"))
+          subTimer = setTimeout(closeSub, 120);
+      });
+      b.addEventListener("click", () => {
+        closePopup();
+        if (e.run) e.run();
+      });
+    }
     m.appendChild(b);
   }
+}
+
+/** entries: { label, dot?, disabled?, run? } | { sep: true } */
+export function showPopup(entries, { x = 0, y = 0, anchor = null } = {}) {
+  closePopup();
+  const m = el('div', 'ex-menu');
+  fillMenu(m, entries);
   document.body.appendChild(m);
   popup = m;
   popupAnchor = anchor;
 
-  let left = x,
-    top = y;
+  let left = x, top = y;
   if (anchor) {
     const r = anchor.getBoundingClientRect();
-    left = r.left;
-    top = r.bottom + 2;
-    if (top + m.offsetHeight > innerHeight)
-      top = Math.max(4, r.top - m.offsetHeight - 2);
+    left = r.left; top = r.bottom + 2;
+    if (top + m.offsetHeight > innerHeight) top = Math.max(4, r.top - m.offsetHeight - 2);
   } else if (top + m.offsetHeight > innerHeight) {
     top = Math.max(4, innerHeight - m.offsetHeight - 4);
   }
-  m.style.top = top + "px";
-  m.style.left =
-    Math.max(4, Math.min(left, innerWidth - m.offsetWidth - 4)) + "px";
-  document.addEventListener("mousedown", popupOutside, true);
-  document.addEventListener("keydown", popupKey, true);
+  m.style.top = top + 'px';
+  m.style.left = Math.max(4, Math.min(left, innerWidth - m.offsetWidth - 4)) + 'px';
+  document.addEventListener('mousedown', popupOutside, true);
+  document.addEventListener('keydown', popupKey, true);
 }
 
 // ---------- pohon ----------
