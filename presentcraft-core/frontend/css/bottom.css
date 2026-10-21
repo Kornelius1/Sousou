@@ -6,7 +6,6 @@
 .tb.on { background: #bb86fc; color: #121212; border-color: #bb86fc; }
 .tb kbd { color: #888; font: inherit; margin-left: 4px; }
 .tb.on kbd { color: #333; }
-#tb-bible { background: #1f3a5f; border-color: #3d6fa8; color: #9cc9ff; }
 #tb-bible:hover { background: #28507f; }
 #tb-status { color: #03dac6; font-size: 12px; }
 

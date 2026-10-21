@@ -13,7 +13,7 @@
   display: flex; align-items: center; gap: 8px;
   height: 34px; box-sizing: border-box; padding: 0 14px;   /* tinggi tetap, tidak ikut isi */
   background: #1b1b1b; border-bottom: 1px solid #2a2a2a;
-  color: #bb86fc; font-weight: 600; flex-shrink: 0;
+  color: hsl(0, 0%, 100%); font-weight: 600; flex-shrink: 0;
 }
 
 .pane-title .sp { flex: 1; }
@@ -60,6 +60,10 @@
 
 /* ---------- properties + preview (kanan) ---------- */
 #props { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-left: 1px solid #2a2a2a; overflow: hidden; }
+#props {
+  --bg2: #262626; --bg3: #353535; --line: #303030;
+  --txt: #cdcdcd; --dim: #868686; --hi: #f4f4f4;
+}
 #props-scroll { flex: 1; overflow: auto; min-height: 0; padding: 10px 0 14px; }
 #props .body { padding: 0 14px; }
 #props h4 { margin: 16px 0 8px; color: #03dac6; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
@@ -75,12 +79,12 @@
 .btnrow { display: flex; gap: 4px; }
 .tg { flex: 1; background: #2d2d2d; color: #ccc; border: 1px solid #3a3a3a; border-radius: 3px; padding: 4px 0; font: inherit; cursor: pointer; }
 .tg:hover { background: #3a3a3a; }
-.tg.on { background: #bb86fc; color: #121212; border-color: #bb86fc; }
+.tg.on { background: hsl(300, 100%, 100%); color: #121212; border-color: hsl(270, 100%, 99%); }
 .tg:disabled { opacity: .4; pointer-events: none; }
 .muted { color: #888; font-style: italic; padding: 0 14px; }
 
-#preview { flex-shrink: 0; border-top: 2px solid #bb86fc; padding: 8px 14px 12px; background: #1b1b1b; }
-.pv-title { color: #bb86fc; font-weight: 600; margin-bottom: 6px; }
+#preview { flex-shrink: 0; border-top: 1px solid #888; padding: 8px 14px 12px; background: #1b1b1b; }
+.pv-title { color: hsl(0, 0%, 100%); font-weight: 600; margin-bottom: 6px; }
 #pv-host { background: #000; }
 #pv-time { white-space: nowrap; font-variant-numeric: tabular-nums; color: #aaa; font-size: 11px; min-width: 64px; text-align: right; }
 #pv-host .pv-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
