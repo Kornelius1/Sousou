@@ -13,7 +13,7 @@ import {
 import { buildMediaLayer } from "./layers.js";
 import { itemName } from "./store.js";
 import { showPopup } from "./tree.js";
-import { mergeTags, textOn } from "./tags.js";
+import { mergeTags, textOn, resolveTag } from "./tags.js";
 
 const SR = window.SlideRenderer;
 const grid = $("slide-grid");
@@ -113,12 +113,12 @@ function handleAutoScroll(e) {
   }
 }
 
-const tagOf = (s) =>
-  s.tag !== undefined
-    ? s.tag
-    : s.group_name
-      ? { name: s.group_name, color: s.group_color }
-      : null;
+const tagOf = (s) => {
+  if (s.tag === null) return null; // sengaja tanpa tag
+  const raw =
+    s.tag !== undefined ? s.tag : s.group_name ? { name: s.group_name } : null; // undefined = belum lewat library
+  return raw ? resolveTag(raw.name) : null;
+};
 
 function decorateCard(card, slide) {
   const tag = tagOf(slide);
@@ -146,21 +146,26 @@ function openTagMenu(e, i) {
       "Slide ini belum ada di library, tag belum bisa dipasang.",
     );
   }
-  const cur = tagOf(slide)?.name.toLowerCase();
+  const cur = tagOf(slide)?.name.toLowerCase() || null;
   const set = (tag) =>
     emit("tag:set", { groupId: slide.groupId, itemId: slide.itemId, tag });
   const choices = mergeTags(state.slides.map(tagOf));
 
   showPopup(
     [
-      ...choices.map((t) => ({
-        label: (t.name.toLowerCase() === cur ? "✓ " : "") + t.name,
-        dot: true,
-        color: t.color,
-        run: () => set(t),
-      })),
-      { sep: true },
-      { label: "Hapus tag", disabled: !tagOf(slide), run: () => set(null) },
+      {
+        label: "Tag",
+        submenu: [
+          ...choices.map((t) => ({
+            label: t.name,
+            color: t.color,
+            dot: t.name.toLowerCase() === cur, // titik = tag yang sedang dipilih
+            run: () => set(t),
+          })),
+          { sep: true },
+          { label: "Hapus tag", disabled: !cur, run: () => set(null) },
+        ],
+      },
     ],
     { x: e.clientX, y: e.clientY },
   );

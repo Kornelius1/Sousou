@@ -6,6 +6,7 @@ import { createStore, itemName } from "./store.js";
 import { createTree } from "./tree.js";
 import { pick } from "./background-panel.js";
 import { showGroupSlides, showSlide, initBlankDeck } from "./sorter.js";
+import { resolveTag } from "./tags.js";
 
 export const lib = createStore({
   name: "lib",
@@ -67,9 +68,7 @@ function syncBundle() {
       const first = (s.content || "").trim().split("\n")[0].slice(0, 40);
       return {
         label: first || `Slide ${s.slide_number}`,
-        tag: s.group_name
-          ? { name: s.group_name, color: s.group_color || null }
-          : null,
+        tag: resolveTag(s.group_name),
         slide: s,
       };
     }),

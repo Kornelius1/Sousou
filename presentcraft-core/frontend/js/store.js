@@ -251,5 +251,6 @@ export function createStore({ name, loadCmd, saveCmd }) {
     sortGroup,
     ensureGroup,
     replaceSlides,
+    setTag
   };
 }
