@@ -10,9 +10,12 @@
 #props   { grid-column: 3; grid-row: 1; }
 
 .pane-title {
-  display: flex; align-items: center; gap: 12px; padding: 6px 14px; background: #1b1b1b;
-  border-bottom: 1px solid #2a2a2a; color: #bb86fc; font-weight: 600; flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  height: 34px; box-sizing: border-box; padding: 0 14px;   /* tinggi tetap, tidak ikut isi */
+  background: #1b1b1b; border-bottom: 1px solid #2a2a2a;
+  color: #bb86fc; font-weight: 600; flex-shrink: 0;
 }
+
 .pane-title .sp { flex: 1; }
 .pane-title label { color: #999; font-weight: 400; display: flex; gap: 6px; align-items: center; }
 .small-btn { background: #3a3a3a; color: #e0e0e0; border: 0; border-radius: 3px; padding: 3px 10px; font: inherit; cursor: pointer; }
@@ -146,3 +149,117 @@
 
 .card.tagged { background: color-mix(in srgb, var(--tag-color) 16%, #1e1e1e); }
 .card.tagged .cap { border-left-color: var(--tag-color); }
+/* Slider zoom: tipis, monokrom */
+#zoom {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 18px;
+  margin: 0;                 /* area klik; garisnya sendiri tetap tipis */
+  background: transparent;
+  cursor: pointer;
+  --fill: 50%;                  /* diisi JS: bagian trek yang terisi */
+}
+#zoom:focus { outline: none; }
+
+/* Trek */
+#zoom::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to right, #bbb var(--fill), #444 var(--fill));
+}
+#zoom::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  background: #444;
+}
+#zoom::-moz-range-progress {
+  height: 2px;
+  border-radius: 1px;
+  background: #bbb;
+}
+
+/* Gagang */
+#zoom::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -4px;             /* (tinggi trek - tinggi gagang) / 2, supaya sejajar tengah */
+  border: 0;
+  border-radius: 50%;
+  background: #ddd;
+  transition: transform .1s, background .1s;
+}
+#zoom::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: #ddd;
+}
+
+#zoom:hover::-webkit-slider-thumb,
+#zoom:active::-webkit-slider-thumb { background: #fff; transform: scale(1.2); }
+#zoom:hover::-moz-range-thumb,
+#zoom:active::-moz-range-thumb { background: #fff; }
+
+#zoom:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+#zoom:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.zoom-ctl { display: flex; align-items: center; gap: 4px; }
+.zoom-lbl { color: #888; font-weight: 400; margin-right: 2px; }
+
+.zoom-btn {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #aaa;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.zoom-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.zoom-btn:active:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
+.zoom-btn:disabled { color: #555; cursor: default; }
+.zoom-btn:focus-visible { outline: 1px solid #aaa; outline-offset: 1px; }
+
+/* ---------- tombol tampil/sembunyi layar audiens ---------- */
+.clear-btn {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: #999;
+  cursor: pointer;
+}
+.clear-btn svg { width: 15px; height: 15px; grid-area: 1 / 1; }
+.clear-btn:focus-visible { outline: 1px solid #777; outline-offset: 1px; }
+
+/* tampil = mata terbuka, dikosongkan = mata terpejam */
+.clear-btn .eye-closed { display: none; }
+.clear-btn[aria-pressed="true"] .eye-open { display: none; }
+.clear-btn[aria-pressed="true"] .eye-closed { display: block; }
+
+.pane-sep { width: 1px; height: 12px; margin: 0 10px; background: #333; }
+
+.zoom-ctl { display: flex; align-items: center; gap: 4px; }
+.zoom-lbl { color: #888; font-weight: 400; line-height: 1; margin-right: 4px; }
+
+.clear-btn, .zoom-btn {
+  width: 22px; height: 22px; padding: 0; flex: none;
+  display: grid; place-items: center;
+  border: 0; background: none; cursor: pointer;
+}
+.clear-btn { color: #999; }
+.zoom-btn  { color: #aaa; border-radius: 3px; }
+.clear-btn svg, .zoom-btn svg { width: 15px; height: 15px; display: block; grid-area: 1 / 1; }
+
+.pane-sep { width: 1px; height: 12px; margin: 0 4px; background: #333; flex: none; }

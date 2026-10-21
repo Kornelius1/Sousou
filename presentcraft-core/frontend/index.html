@@ -1,186 +1,287 @@
 <!doctype html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <title>PresentCraft - Control Center</title>
-    <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/panes.css" />
-    <link rel="stylesheet" href="css/bottom.css" />
-  </head>
-  <body>
-    <div id="app">
-      <nav id="menubar"></nav>
 
-      <main id="workspace">
-        <aside id="library">
-          <div class="ex-head">
-            <span>Media</span><span id="lib-count"></span>
-            <span class="sp"></span>
-            <button class="ex-act" id="lib-new" title="Grup baru" aria-label="Grup baru">
-              <svg viewBox="0 0 16 16"><path d="M1 3h5l1.5 1.5H15V13H1z"/></svg>
+<head>
+  <meta charset="UTF-8" />
+  <title>PresentCraft - Control Center</title>
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/panes.css" />
+  <link rel="stylesheet" href="css/bottom.css" />
+  <link rel="stylesheet" href="css/editor.css" />
+</head>
+
+<body>
+  <div id="app">
+    <nav id="menubar"></nav>
+
+    <main id="workspace">
+      <aside id="library">
+        <div class="ex-head">
+          <span>Media</span><span id="lib-count"></span>
+          <span class="sp"></span>
+          <button class="ex-act" id="lib-new" title="Grup baru" aria-label="Grup baru">
+            <svg viewBox="0 0 16 16">
+              <path d="M1 3h5l1.5 1.5H15V13H1z" />
+            </svg>
+          </button>
+          <button class="ex-act" id="lib-add" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
+            <svg viewBox="0 0 16 16">
+              <path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z" />
+            </svg>
+          </button>
+          <button class="ex-act" id="lib-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
+            <svg viewBox="0 0 16 16">
+              <path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z" />
+            </svg>
+          </button>
+          <button class="ex-act" id="lib-del" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
+            <svg viewBox="0 0 16 16">
+              <path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z" />
+            </svg>
+          </button>
+        </div>
+        <div id="lib-list" tabindex="0"></div>
+      </aside>
+
+      <section id="sorter">
+        <div class="pane-title">
+          <span>Slide</span>
+          <span id="slide-count"></span>
+          <span class="sp"></span>
+          <button class="clear-btn" id="tb-edit" title="Edit slide (Enter)" aria-label="Edit slide">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
+              stroke-linejoin="round" aria-hidden="true">
+              <path d="M11 2.5l2.5 2.5L5.5 13H3v-2.5z" />
+              <path d="M9.5 4l2.5 2.5" />
+            </svg>
+          </button>
+
+          <button class="clear-btn" id="tb-blank" aria-pressed="false" title="Show / hide audience screen (B)"
+            aria-label="Show or hide audience screen">
+            <svg class="eye-open" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 8s2.6-4.5 7-4.5S15 8 15 8s-2.6 4.5-7 4.5S1 8 1 8z" />
+              <circle cx="8" cy="8" r="2" />
+            </svg>
+            <svg class="eye-closed" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1.5 6.5C3.2 9.2 5.5 10.5 8 10.5s4.8-1.3 6.5-4" />
+              <path d="M3.6 9.3L2.4 11M8 10.5v2M12.4 9.3l1.2 1.7" />
+            </svg>
+          </button>
+
+          <span class="pane-sep"></span>
+
+          <div class="zoom-ctl">
+            <span class="zoom-lbl">Slide Size</span>
+            <button class="zoom-btn" id="zoom-out" title="Zoom out" aria-label="Zoon out">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                aria-hidden="true">
+                <path d="M3.5 8h9" />
+              </svg>
             </button>
-            <button class="ex-act" id="lib-add" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
-              <svg viewBox="0 0 16 16"><path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z"/></svg>
-            </button>
-            <button class="ex-act" id="lib-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
-              <svg viewBox="0 0 16 16"><path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z"/></svg>
-            </button>
-            <button class="ex-act" id="lib-del" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
-              <svg viewBox="0 0 16 16"><path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z"/></svg>
+            <input type="range" id="zoom" min="120" max="380" value="200" aria-label="Ukuran thumbnail" />
+            <button class="zoom-btn" id="zoom-in" title="Zoom in" aria-label="Zoom in">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                aria-hidden="true">
+                <path d="M3.5 8h9M8 3.5v9" />
+              </svg>
             </button>
           </div>
-          <div id="lib-list" tabindex="0"></div>
-        </aside>
+        </div>
 
-        <section id="sorter">
-          <div class="pane-title">
-            <span>Slide</span><span id="slide-count" style="color:#888;font-weight:400"></span>
-            <span class="sp"></span>
-            <label>Ukuran <input type="range" id="zoom" min="120" max="380" value="200" /></label>
-          </div>
-          <div id="warn-slot"></div>
-          <div id="slide-grid"></div>
-        </section>
+        <div id="warn-slot"></div>
+        <div id="slide-grid"></div>
+      </section>
 
-        <aside id="props">
-          <div class="pane-title">Properties</div>
-          <div id="props-scroll">
-            <p class="muted" id="props-empty">Pilih sebuah slide.</p>
+      <aside id="props">
+        <div class="pane-title">Properties</div>
+        <div id="props-scroll">
+          <p class="muted" id="props-empty">Pilih sebuah slide.</p>
 
-            <div class="body" id="props-body" hidden>
-              <div class="f"><label for="p-layer">Layer</label><select id="p-layer"></select></div>
+          <div class="body" id="props-body" hidden>
+            <div class="f">
+              <label for="p-layer">Layer</label><select id="p-layer"></select>
+            </div>
 
-              <h4>Transform</h4>
+            <h4>Transform</h4>
+            <div class="f">
+              <label for="p-opacity">Opasitas</label>
+              <div style="display: flex; gap: 6px; align-items: center">
+                <input type="range" id="p-opacity" min="0" max="1" step="0.01" />
+                <span id="p-opacity-v" style="width: 36px; text-align: right"></span>
+              </div>
+              <label for="p-rotation">Rotasi °</label><input type="number" id="p-rotation" step="0.1" />
+              <label for="p-x">X (%)</label><input type="number" id="p-x" step="0.1" />
+              <label for="p-y">Y (%)</label><input type="number" id="p-y" step="0.1" />
+              <label for="p-w">Lebar (%)</label><input type="number" id="p-w" step="0.1" min="0.1" />
+              <label for="p-h">Tinggi (%)</label><input type="number" id="p-h" step="0.1" min="0.1" />
+            </div>
+
+            <div id="text-props">
+              <h4>Teks</h4>
               <div class="f">
-                <label for="p-opacity">Opasitas</label>
-                <div style="display:flex;gap:6px;align-items:center">
-                  <input type="range" id="p-opacity" min="0" max="1" step="0.01" />
-                  <span id="p-opacity-v" style="width:36px;text-align:right"></span>
+                <label for="p-font">Font</label>
+                <select id="p-font">
+                  <option value="Arial, sans-serif">Arial</option>
+                  <option value="'Segoe UI', sans-serif">Segoe UI</option>
+                  <option value="Verdana, sans-serif">Verdana</option>
+                  <option value="Georgia, serif">Georgia</option>
+                  <option value="'Times New Roman', serif">
+                    Times New Roman
+                  </option>
+                  <option value="'Courier New', monospace">
+                    Courier New
+                  </option>
+                  <option value="Impact, sans-serif">Impact</option>
+                </select>
+                <label for="p-size">Ukuran (px)</label><input type="number" id="p-size" min="1" step="1" />
+                <label for="p-color">Warna</label><input type="color" id="p-color" />
+                <label>Gaya</label>
+                <div class="btnrow">
+                  <button class="tg" id="p-bold" title="Tebal">
+                    <b>B</b>
+                  </button>
+                  <button class="tg" id="p-italic" title="Miring">
+                    <i>I</i>
+                  </button>
                 </div>
-                <label for="p-rotation">Rotasi °</label><input type="number" id="p-rotation" step="0.1" />
-                <label for="p-x">X (%)</label><input type="number" id="p-x" step="0.1" />
-                <label for="p-y">Y (%)</label><input type="number" id="p-y" step="0.1" />
-                <label for="p-w">Lebar (%)</label><input type="number" id="p-w" step="0.1" min="0.1" />
-                <label for="p-h">Tinggi (%)</label><input type="number" id="p-h" step="0.1" min="0.1" />
-              </div>
-
-              <div id="text-props">
-                <h4>Teks</h4>
-                <div class="f">
-                  <label for="p-font">Font</label>
-                  <select id="p-font">
-                    <option value="Arial, sans-serif">Arial</option>
-                    <option value="'Segoe UI', sans-serif">Segoe UI</option>
-                    <option value="Verdana, sans-serif">Verdana</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="'Times New Roman', serif">Times New Roman</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                    <option value="Impact, sans-serif">Impact</option>
-                  </select>
-                  <label for="p-size">Ukuran (px)</label><input type="number" id="p-size" min="1" step="1" />
-                  <label for="p-color">Warna</label><input type="color" id="p-color" />
-                  <label>Gaya</label>
-                  <div class="btnrow">
-                    <button class="tg" id="p-bold" title="Tebal"><b>B</b></button>
-                    <button class="tg" id="p-italic" title="Miring"><i>I</i></button>
-                  </div>
-                  <label>Rata</label>
-                  <div class="btnrow" id="p-align">
-                    <button class="tg" data-align="left" title="Kiri">⯇</button>
-                    <button class="tg" data-align="center" title="Tengah">≡</button>
-                    <button class="tg" data-align="right" title="Kanan">⯈</button>
-                    <button class="tg" data-align="justify" title="Rata kiri-kanan">☰</button>
-                  </div>
-                  <label>Vertikal</label>
-                  <div class="btnrow" id="p-valign">
-                    <button class="tg" data-valign="top">Atas</button>
-                    <button class="tg" data-valign="middle">Tengah</button>
-                    <button class="tg" data-valign="bottom">Bawah</button>
-                  </div>
+                <label>Rata</label>
+                <div class="btnrow" id="p-align">
+                  <button class="tg" data-align="left" title="Kiri">⯇</button>
+                  <button class="tg" data-align="center" title="Tengah">
+                    ≡
+                  </button>
+                  <button class="tg" data-align="right" title="Kanan">
+                    ⯈
+                  </button>
+                  <button class="tg" data-align="justify" title="Rata kiri-kanan">
+                    ☰
+                  </button>
+                </div>
+                <label>Vertikal</label>
+                <div class="btnrow" id="p-valign">
+                  <button class="tg" data-valign="top">Atas</button>
+                  <button class="tg" data-valign="middle">Tengah</button>
+                  <button class="tg" data-valign="bottom">Bawah</button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div id="preview">
-            <div class="pv-title">Preview</div>
-            <div id="pv-host" class="thumb" hidden></div>
-            <p class="muted" id="pv-empty" style="padding:0">Pilih sebuah slide.</p>
-            <div class="pv-seekrow">
-              <input type="range" id="pv-seek" min="0" max="1000" value="0" aria-label="Posisi video" />
-              <span id="pv-time">0:00 / 0:00</span>
-            </div>
-            <div class="pv-controls">
-              <button class="pv-btn" id="pv-restart" title="Ulang dari awal" aria-label="Ulang dari awal"></button>
-              <button class="pv-btn pill" id="pv-back" title="Mundur 5 detik">−5s</button>
-              <button class="pv-btn primary" id="pv-toggle" title="Putar / Jeda (klik preview juga bisa)" aria-label="Putar / Jeda"></button>
-              <button class="pv-btn pill" id="pv-fwd" title="Maju 5 detik">+5s</button>
-              <button class="pv-btn" id="pv-loop" title="Ulang terus (loop)" aria-label="Loop"></button>
-              <button class="pv-btn pill" id="pv-speed" title="Kecepatan putar">1×</button>
-            </div>
+        <div id="preview">
+          <div class="pv-title">Preview</div>
+          <div id="pv-host" class="thumb" hidden></div>
+          <p class="muted" id="pv-empty" style="padding: 0">
+            Pilih sebuah slide.
+          </p>
+          <div class="pv-seekrow">
+            <input type="range" id="pv-seek" min="0" max="1000" value="0" aria-label="Posisi video" />
+            <span id="pv-time">0:00 / 0:00</span>
           </div>
-        </aside>
-      </main>
-
-      <div id="toolbar">
-        <button class="tb" id="tb-bible" title="Alkitab">📖 Alkitab</button>
-        <button class="tb" id="tb-blank" title="Kosongkan / tampilkan layar">⬛ Kosongkan layar <kbd>B</kbd></button>
-        <span class="sp"></span>
-        <span id="tb-status"></span>
-      </div>
-
-      <div id="media-panel">
-        <!-- kiri: daftar layer background (gaya explorer) -->
-        <section id="bg-explorer">
-          <div class="ex-head">
-            <span>Background</span><span id="ex-count"></span>
-            <span class="sp"></span>
-            <button class="ex-act" id="ex-new" title="Grup baru" aria-label="Grup baru">
-              <svg viewBox="0 0 16 16"><path d="M1 3h5l1.5 1.5H15V13H1z"/></svg>
+          <div class="pv-controls">
+            <button class="pv-btn" id="pv-restart" title="Ulang dari awal" aria-label="Ulang dari awal"></button>
+            <button class="pv-btn pill" id="pv-back" title="Mundur 5 detik">
+              −5s
             </button>
-            <button class="ex-act" id="ex-add-file" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
-              <svg viewBox="0 0 16 16"><path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z"/></svg>
+            <button class="pv-btn primary" id="pv-toggle" title="Putar / Jeda (klik preview juga bisa)"
+              aria-label="Putar / Jeda"></button>
+            <button class="pv-btn pill" id="pv-fwd" title="Maju 5 detik">
+              +5s
             </button>
-            <button class="ex-act" id="ex-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
-              <svg viewBox="0 0 16 16"><path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z"/></svg>
-            </button>
-            <button class="ex-act" id="ex-delete" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
-              <svg viewBox="0 0 16 16"><path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z"/></svg>
+            <button class="pv-btn" id="pv-loop" title="Ulang terus (loop)" aria-label="Loop"></button>
+            <button class="pv-btn pill" id="pv-speed" title="Kecepatan putar">
+              1×
             </button>
           </div>
-          <div id="ex-list" tabindex="0"></div>
-        </section>
+        </div>
+      </aside>
+    </main>
 
-       
-        <!-- tengah: area slide background -->
-        <section id="bg-detail">
-          <div id="bg-slides" tabindex="0">
-            <div id="bg-grid" hidden></div>
-            <div id="bg-drop" role="button" tabindex="0">
-              <svg viewBox="0 0 24 24"><path d="M19 15v4H5v-4H3v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4zM11 4.8L7.4 8.4 6 7l6-6 6 6-1.4 1.4L13 4.8V16h-2z" transform="translate(0 1)"/></svg>
-              <b>Seret file ke sini</b>
-              <span>atau klik untuk upload (video / gambar)</span>
-            </div>
-          </div>
-        </section>
-
-                <!-- kanan: pengaturan item terpilih -->
-        <section id="bg-settings">
-          <div class="bgc"><label for="bg-color">Warna polos</label><input type="color" id="bg-color" value="#000000" /></div>
-          <div class="bgc"><label for="bg-scale">Skala</label>
-            <select id="bg-scale"><option value="fill">Fill</option><option value="fit">Fit</option></select></div>
-          <div class="bgc wide"><label for="bg-opacity">Opasitas</label>
-            <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1" /></div>
-          <div class="bgc wide checks">
-            <label id="lbl-loop"><input type="checkbox" id="bg-loop" checked /> Ulang</label>
-            <label id="lbl-mute"><input type="checkbox" id="bg-mute" checked /> Bisu</label>
-          </div>
-          <div class="bgc wide"><button class="small-btn" id="bg-clear">Bersihkan background</button></div>
-        </section>
-      </div>
+    <div id="toolbar">
+      <button class="tb" id="tb-bible" title="Alkitab">📖 Alkitab</button>
+      <span class="sp"></span>
+      <span id="tb-status"></span>
     </div>
 
-    <script src="slide-renderer.js"></script>
-    <script type="module" src="js/main.js"></script>
-  </body>
+    <div id="media-panel">
+      <!-- kiri: daftar layer background (gaya explorer) -->
+      <section id="bg-explorer">
+        <div class="ex-head">
+          <span>Background</span><span id="ex-count"></span>
+          <span class="sp"></span>
+          <button class="ex-act" id="ex-new" title="Grup baru" aria-label="Grup baru">
+            <svg viewBox="0 0 16 16">
+              <path d="M1 3h5l1.5 1.5H15V13H1z" />
+            </svg>
+          </button>
+          <button class="ex-act" id="ex-add-file" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
+            <svg viewBox="0 0 16 16">
+              <path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z" />
+            </svg>
+          </button>
+          <button class="ex-act" id="ex-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
+            <svg viewBox="0 0 16 16">
+              <path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z" />
+            </svg>
+          </button>
+          <button class="ex-act" id="ex-delete" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
+            <svg viewBox="0 0 16 16">
+              <path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z" />
+            </svg>
+          </button>
+        </div>
+        <div id="ex-list" tabindex="0"></div>
+      </section>
+
+      <!-- tengah: area slide background -->
+      <section id="bg-detail">
+        <div id="bg-slides" tabindex="0">
+          <div id="bg-grid" hidden></div>
+          <div id="bg-drop" role="button" tabindex="0">
+            <svg viewBox="0 0 24 24">
+              <path
+                d="M19 15v4H5v-4H3v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4zM11 4.8L7.4 8.4 6 7l6-6 6 6-1.4 1.4L13 4.8V16h-2z"
+                transform="translate(0 1)" />
+            </svg>
+            <b>Seret file ke sini</b>
+            <span>atau klik untuk upload (video / gambar)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- kanan: pengaturan item terpilih -->
+      <section id="bg-settings">
+        <div class="bgc">
+          <label for="bg-color">Warna polos</label><input type="color" id="bg-color" value="#000000" />
+        </div>
+        <div class="bgc">
+          <label for="bg-scale">Skala</label>
+          <select id="bg-scale">
+            <option value="fill">Fill</option>
+            <option value="fit">Fit</option>
+          </select>
+        </div>
+        <div class="bgc wide">
+          <label for="bg-opacity">Opasitas</label>
+          <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1" />
+        </div>
+        <div class="bgc wide checks">
+          <label id="lbl-loop"><input type="checkbox" id="bg-loop" checked /> Ulang</label>
+          <label id="lbl-mute"><input type="checkbox" id="bg-mute" checked /> Bisu</label>
+        </div>
+        <div class="bgc wide">
+          <button class="small-btn" id="bg-clear">
+            Bersihkan background
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="slide-renderer.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+
 </html>

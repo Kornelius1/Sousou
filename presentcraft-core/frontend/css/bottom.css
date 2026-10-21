@@ -8,10 +8,6 @@
 .tb.on kbd { color: #333; }
 #tb-bible { background: #1f3a5f; border-color: #3d6fa8; color: #9cc9ff; }
 #tb-bible:hover { background: #28507f; }
-#tb-blank { background: #4a2430; border-color: #8a3d50; color: #ff9aa9; }
-#tb-blank:hover { background: #5e2d3c; }
-#tb-blank.on { background: #ff5370; border-color: #ff5370; color: #121212; }
-#tb-blank.on kbd { color: #5a1020; }
 #tb-status { color: #03dac6; font-size: 12px; }
 
 /* ---------- panel background (bawah): explorer | detail ---------- */
@@ -35,14 +31,18 @@
 #ex-list:focus .ex-row.active { background: rgba(255, 255, 255, 0.14); }
 
 .ex-ico {
-  width: 14px; height: 14px; flex-shrink: 0;
+  display: inline-flex; width: 14px; height: 14px; flex-shrink: 0; color: #999;
   background: #999;
   -webkit-mask: var(--ico) center / contain no-repeat;
           mask: var(--ico) center / contain no-repeat;
 }
+.ex-ico svg { width: 14px; height: 14px; fill: currentColor; }
 .ex-ico.image { --ico: url('../icons/image.svg'); }
 .ex-ico.video { --ico: url('../icons/video.svg'); }
-.ex-row.sel .ex-ico { background: #ddd; }
+.ex-ico.audio { --ico: url('../icons/music.svg'); }
+.ex-ico.text  { --ico: url('../icons/file-text.svg'); }
+.ex-ico.file  { --ico: url('../icons/file.svg'); }
+.ex-row.sel .ex-ico { background: #ddd; color: #ddd; }
 
 .ex-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
 .ex-del { visibility: hidden; }
@@ -52,9 +52,15 @@
 /* kanan: background aktif / drop zone + kontrol */
 #bg-media video, #bg-media img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
+#bg-drop {
+  height: 100%; min-height: 130px; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  border: 2px dashed #3a3a3a; border-radius: 6px; color: #888; cursor: pointer;
+}
 #bg-drop svg { width: 28px; height: 28px; fill: currentColor; margin-bottom: 2px; }
 #bg-drop b { font-size: 12px; font-weight: 600; color: #bbb; }
-#bg-drop:hover, #bg-drop:focus-visible, #media-panel.dragover #bg-drop { border-color: #ccc; color: #ddd; background: #242424; }
+#bg-drop:hover { border-color: #bb86fc; color: #bbb; background: #242424; }
+#bg-drop:focus-visible, #media-panel.dragover #bg-drop { border-color: #ccc; color: #ddd; background: #242424; }
 #bg-stage:hover #bg-replace { opacity: 1; }
 #media-panel.dragover #bg-stage { outline: 2px dashed #ccc; outline-offset: -2px; }
 
@@ -65,7 +71,10 @@
 }
 #media-panel.dragover { outline: 2px dashed #03dac6; outline-offset: -4px; }
 #bg-explorer { display: flex; flex-direction: column; min-width: 0; min-height: 0; border-right: 1px solid #2a2a2a; }
-#ex-list { flex: 1; min-height: 0; overflow: auto; outline: none; }
+#ex-list {
+  flex: 1; min-height: 0; overflow: auto; outline: none;
+  user-select: none; -webkit-user-select: none;
+}
 
 #bg-detail { min-width: 0; min-height: 0; display: flex; }
 #bg-slides { flex: 1; min-width: 0; overflow: auto; padding: 10px; outline: none; }
@@ -85,14 +94,6 @@
 }
 .bgt-cap { margin-top: 3px; font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-#bg-drop {
-  height: 100%; min-height: 130px; box-sizing: border-box;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-  border: 2px dashed #3a3a3a; border-radius: 6px; color: #888; cursor: pointer;
-}
-#bg-drop:hover { border-color: #bb86fc; color: #bbb; }
-#bg-drop svg { width: 28px; height: 28px; fill: currentColor; }
-
 #bg-settings {
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-content: start;
   padding: 8px 12px; overflow: auto; border-left: 1px solid #2a2a2a;
@@ -106,7 +107,6 @@
 #bg-settings .off, #bg-settings [disabled] { opacity: .4; pointer-events: none; }
 
 .ex-row.ex-item { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }
-.ex-row.ex-item.sel { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }
 .ex-row.ex-group .ex-twisty { display: inline-block; transition: transform .1s; }
 .ex-row.ex-group.open .ex-twisty { transform: rotate(90deg); }
 /* scrollbar tipis monokrom, hanya di panel background */
@@ -121,14 +121,6 @@
 #media-panel *::-webkit-scrollbar-corner { background: transparent; }
 .ex-n { font-size: 9px; color: #666; }
 
-.ex-ghost {
-  position: fixed; z-index: 1000; pointer-events: none; max-width: 200px;
-  padding: 2px 8px; border-radius: 3px; font-size: 12px; color: #fff;
-  background: #3d3d3d; border: 1px solid #03dac6; opacity: .9;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-#ex-list { user-select: none; -webkit-user-select: none; }
 #ex-list .ex-edit { user-select: text; -webkit-user-select: text; }
 body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-user-select: none !important; cursor: grabbing !important; }
 .ex-row.ex-group.drop { background: #3a3a3a; box-shadow: inset 0 0 0 1px #888; }
@@ -138,10 +130,6 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
   background: #333; border: 1px solid #777; opacity: .95;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
-.ex-ico { display: inline-flex; width: 14px; flex-shrink: 0; color: #999; }
-.ex-ico svg { width: 14px; height: 14px; fill: currentColor; }
-.ex-row.sel .ex-ico { color: #ddd; }
 
 .ex-menu {
   position: fixed; z-index: 1000; min-width: 130px; padding: 3px;
@@ -158,16 +146,11 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
 .ex-menu-dot { width: 10px; text-align: center; font-size: 7px; color: #ddd; }
 .ex-menu-sep { height: 1px; margin: 3px 4px; background: #3a3a3a; }
 
-.ex-ico.audio { --ico: url('../icons/music.svg'); }
-.ex-ico.text  { --ico: url('../icons/file-text.svg'); }
-.ex-ico.file  { --ico: url('../icons/file.svg'); }
-
 #lib-list { flex: 1; min-height: 0; overflow: auto; outline: none; user-select: none; -webkit-user-select: none; }
 .ex-group.ro .ex-name { color: #999; font-style: italic; }
 .ex-menu-i:disabled { color: #777; }
 
 #library * { scrollbar-width: thin; scrollbar-color: #555 transparent; }
-.ex-menu-i { width: 100%; }
 .ex-menu-arrow { margin-left: auto; padding-left: 18px; opacity: .7; }
 .ex-menu-i.open-sub { background: rgba(255, 255, 255, 0.1); }
 .ex-submenu { max-height: 70vh; overflow-y: auto; }
