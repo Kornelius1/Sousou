@@ -14,6 +14,7 @@ import { buildMediaLayer } from "./layers.js";
 import { itemName } from "./store.js";
 import { showPopup } from "./tree.js";
 import { mergeTags, textOn, resolveTag } from "./tags.js";
+import { openEditor } from "./editor.js";
 
 const SR = window.SlideRenderer;
 const grid = $("slide-grid");
@@ -141,34 +142,37 @@ function decorateCard(card, slide) {
 
 function openTagMenu(e, i) {
   const slide = state.slides[i];
-  if (!slide || !slide.itemId) {
-    return setStatus(
-      "Slide ini belum ada di library, tag belum bisa dipasang.",
-    );
-  }
-  const cur = tagOf(slide)?.name.toLowerCase() || null;
-  const set = (tag) =>
-    emit("tag:set", { groupId: slide.groupId, itemId: slide.itemId, tag });
-  const choices = mergeTags(state.slides.map(tagOf));
+  if (!slide) return;
 
-  showPopup(
-    [
-      {
-        label: "Tag",
-        submenu: [
-          ...choices.map((t) => ({
-            label: t.name,
-            color: t.color,
-            dot: t.name.toLowerCase() === cur, // titik = tag yang sedang dipilih
-            run: () => set(t),
-          })),
-          { sep: true },
-          { label: "Hapus tag", disabled: !cur, run: () => set(null) },
-        ],
-      },
-    ],
-    { x: e.clientX, y: e.clientY },
-  );
+  const entries = [
+    { label: "Edit slide…", run: () => openEditor(i) },
+    { sep: true },
+  ];
+
+  if (slide.itemId) {
+    const cur = tagOf(slide)?.name.toLowerCase() || null;
+    const set = (tag) =>
+      emit("tag:set", { groupId: slide.groupId, itemId: slide.itemId, tag });
+    const choices = mergeTags(state.slides.map(tagOf));
+
+    entries.push({
+      label: "Tag",
+      submenu: [
+        ...choices.map((t) => ({
+          label: t.name,
+          color: t.color,
+          dot: t.name.toLowerCase() === cur, // titik = tag yang sedang dipilih
+          run: () => set(t),
+        })),
+        { sep: true },
+        { label: "Hapus tag", disabled: !cur, run: () => set(null) },
+      ],
+    });
+  } else {
+    entries.push({ label: "Tag (slide belum ada di library)", disabled: true });
+  }
+
+  showPopup(entries, { x: e.clientX, y: e.clientY });
 }
 
 function makeCard(slide, i) {
@@ -335,9 +339,36 @@ export function applySlides(slides, warnings, bundleName) {
 export function initSorter() {
   const zoomInput = $("zoom");
   if (zoomInput) {
-    zoomInput.addEventListener("input", (e) => {
-      grid.style.setProperty("--thumb", `${e.target.value}px`);
-    });
+    const out = $("zoom-out");
+    const inn = $("zoom-in");
+    const STEP = 20;
+
+    const apply = () => {
+      const min = Number(zoomInput.min),
+        max = Number(zoomInput.max),
+        v = Number(zoomInput.value);
+      zoomInput.style.setProperty(
+        "--fill",
+        ((v - min) / (max - min)) * 100 + "%",
+      );
+      grid.style.setProperty("--thumb", `${v}px`);
+      out.disabled = v <= min; // tombol mati di batas
+      inn.disabled = v >= max;
+    };
+    const nudge = (d) => {
+      const min = Number(zoomInput.min),
+        max = Number(zoomInput.max);
+      zoomInput.value = Math.min(
+        max,
+        Math.max(min, Number(zoomInput.value) + d),
+      );
+      apply();
+    };
+
+    zoomInput.addEventListener("input", apply);
+    out.addEventListener("click", () => nudge(-STEP));
+    inn.addEventListener("click", () => nudge(STEP));
+    apply();
   }
 
   grid.addEventListener("keydown", (e) => {
@@ -438,6 +469,17 @@ export function initSorter() {
     const c = state.cards[i];
     if (c) decorateCard(c.card, state.slides[i]);
   });
+  on("slide:edited", ({ index, layers }) => {
+    const s = state.slides[index];
+    if (!s) return;
+    const arr = (s.layers ||= []);
+    arr.splice(0, arr.length, ...layers); // in-place, referensi tetap sama
+    renderThumb(index);
+    if (state.activeIndex === index) {
+      if (!state.blanked) emitPayload(toPayload(s));
+      emit("slide:shown", true);
+    }
+  });
 }
 
 function itemToSlide(it, g, n) {
@@ -453,7 +495,7 @@ function itemToSlide(it, g, n) {
     label: itemName(it),
     layers:
       it.kind === "slide"
-        ? (orig?.layers ?? (it.layers ||= []))
+        ? (it.layers ?? orig?.layers ?? [])
         : [buildMediaLayer(it)],
   };
 }

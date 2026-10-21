@@ -1,0 +1,664 @@
+// Editor slide (mode terpisah). Hanya untuk slide di workspace, BUKAN background.
+// - Mengedit SEMUA slide dalam grup yang sama (filmstrip di kiri).
+// - Semua perubahan terjadi di salinan kerja; dikirim lewat event "slide:edited" saat Simpan.
+// - Klik teks di kanvas = langsung diedit di tempat. Form teks di panel Properties tetap ada.
+import { baseName, round, setStatus } from "./utils.js";
+import { state } from "./state.js";
+import { emit } from "./bus.js";
+import { toPayload } from "./audience.js";
+import { askConfirm } from "./confirm.js";
+
+const SR = window.SlideRenderer;
+
+// Lebar acuan untuk ukuran font. Ukuran font di layer dianggap piksel pada kanvas selebar ini,
+// lalu diskalakan ke lebar kanvas editor. Kalau teks saat diedit tampak lebih besar/kecil
+// daripada hasil render, sesuaikan angka ini dengan slide-renderer.js.
+const REF_W = 1920;
+
+const FONTS = [
+  ["Arial, sans-serif", "Arial"],
+  ["'Segoe UI', sans-serif", "Segoe UI"],
+  ["Verdana, sans-serif", "Verdana"],
+  ["Georgia, serif", "Georgia"],
+  ["'Times New Roman', serif", "Times New Roman"],
+  ["'Courier New', monospace", "Courier New"],
+  ["Impact, sans-serif", "Impact"],
+];
+
+const isText = (l) => l.kind === "text";
+const isMedia = (l) => l.kind === "image" || l.kind === "video";
+const isVideo = (l) => l.kind === "video";
+
+// Satu daftar field. path = lokasi nilai di objek layer ("rect.x", "style.fontSize", ...).
+// t: num | range | area | sel | seg | tog | color    span: 2 = selebar panel    when: syarat layer
+const FIELDS = [
+  { grp: "Transform", path: "rect.x", label: "X", tip: "Posisi X (%)", t: "num", step: 0.1 },
+  { grp: "Transform", path: "rect.y", label: "Y", tip: "Posisi Y (%)", t: "num", step: 0.1 },
+  { grp: "Transform", path: "rect.w", label: "W", tip: "Lebar (%)", t: "num", step: 0.1, min: 0.1 },
+  { grp: "Transform", path: "rect.h", label: "H", tip: "Tinggi (%)", t: "num", step: 0.1, min: 0.1 },
+  { grp: "Transform", path: "rotation", label: "Rotasi", t: "num", span: 2, step: 0.1, show: (v) => ((v % 360) + 360) % 360 },
+  { grp: "Transform", path: "opacity", label: "Opasitas", t: "range", span: 2, min: 0, max: 1, step: 0.01 },
+
+  { grp: "Teks", path: "text", label: "Isi teks", t: "area", span: 2, when: isText },
+  { grp: "Teks", path: "style.fontFamily", label: "Font", t: "sel", span: 2, opts: FONTS, when: isText },
+  { grp: "Teks", path: "style.fontSize", label: "Ukuran", t: "num", step: 1, min: 1, when: isText },
+  { grp: "Teks", path: "style.color", label: "Warna", t: "color", when: isText },
+  { grp: "Teks", path: "style.bold", label: "B", tip: "Tebal", t: "tog", cls: "b", when: isText },
+  { grp: "Teks", path: "style.italic", label: "I", tip: "Miring", t: "tog", cls: "i", when: isText },
+  {
+    grp: "Teks", path: "style.align", label: "Rata", t: "seg", span: 2, when: isText,
+    opts: [["left", "⯇", "Kiri"], ["center", "≡", "Tengah"], ["right", "⯈", "Kanan"], ["justify", "☰", "Kiri-kanan"]],
+  },
+  {
+    grp: "Teks", path: "style.valign", label: "Vertikal", t: "seg", span: 2, when: isText,
+    opts: [["top", "Atas"], ["middle", "Tengah"], ["bottom", "Bawah"]],
+  },
+
+  { grp: "Warna", path: "color", label: "Warna polos", t: "color", span: 2, when: (l) => l.kind === "color" },
+
+  {
+    grp: "Media", path: "scale", label: "Skala", t: "sel", span: 2, when: isMedia,
+    opts: [["SCALE_BEHAVIOR_FILL", "Fill"], ["SCALE_BEHAVIOR_FIT", "Fit"]],
+  },
+  { grp: "Media", path: "looped", label: "Ulang", t: "tog", when: isVideo },
+  { grp: "Media", path: "muted", label: "Bisu", t: "tog", when: isVideo },
+];
+
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+};
+
+// ---------- akses nilai lewat path ----------
+const getPath = (o, path) => path.split(".").reduce((a, k) => (a == null ? a : a[k]), o);
+function setPath(o, path, v) {
+  const ks = path.split(".");
+  const last = ks.pop();
+  let t = o;
+  for (const k of ks) t = t[k] ??= {};
+  t[last] = v;
+}
+const styleOf = (l) => ({ ...(SR.TEXT_DEFAULTS || {}), ...(l.style || {}) });
+const readValue = (l, f) => (f.path.startsWith("style.") ? styleOf(l)[f.path.slice(6)] : getPath(l, f.path));
+
+function layerLabel(l, k) {
+  let detail = "";
+  if (isText(l)) detail = (l.text || "").replace(/\s+/g, " ").slice(0, 24);
+  else if (l.path) detail = baseName(l.path);
+  else if (l.kind === "color") detail = l.color || "";
+  return `${k + 1}. ${l.kind}${detail ? " — " + detail : ""}`;
+}
+
+// ---------- state editor ----------
+let root = null;
+let items = []; // [{ index, layers, orig }]  satu entri per slide dalam grup
+let cur = 0; // posisi di items
+let sel = -1; // indeks layer terpilih pada slide aktif
+let hist = [];
+let hi = 0;
+let showBg = true;
+let editing = null; // { i, box, txt }
+let ro = null;
+let fsThumbs = [];
+const closedSecs = new Set();
+
+const L = () => items[cur].layers;
+const snap = () => JSON.stringify(items.map((it) => it.layers));
+const dirty = () => items.some((it) => JSON.stringify(it.layers) !== it.orig);
+
+// ---------- riwayat undo/redo (snapshot seluruh grup) ----------
+function push() {
+  const s = snap();
+  if (s === hist[hi]) return;
+  hist = hist.slice(0, hi + 1);
+  hist.push(s);
+  hi = hist.length - 1;
+  syncButtons();
+}
+function go(d) {
+  if (editing) endEdit();
+  const n = hi + d;
+  if (n < 0 || n >= hist.length) return;
+  hi = n;
+  const arr = JSON.parse(hist[hi]);
+  items.forEach((it, k) => (it.layers = arr[k]));
+  if (sel >= L().length) sel = L().length - 1;
+  renderAll();
+  items.forEach((_, k) => renderFsThumb(k));
+}
+function syncButtons() {
+  root.querySelector('[data-a="undo"]').disabled = hi === 0;
+  root.querySelector('[data-a="redo"]').disabled = hi >= hist.length - 1;
+}
+
+// ---------- render: kanvas ----------
+function payloadFor(k, hideIdx = -1) {
+  const it = items[k];
+  const layers = hideIdx < 0 ? it.layers : it.layers.map((l, i) => (i === hideIdx ? { ...l, text: "" } : l));
+  return toPayload({ ...state.slides[it.index], layers });
+}
+
+function renderPreview() {
+  const host = root.querySelector(".ed-render");
+  // layer yang sedang diedit di tempat disembunyikan teksnya; teks aslinya tampil lewat kotak edit
+  SR.renderThumbnail(host, payloadFor(cur, editing ? editing.i : -1));
+  if (host._bg) SR.renderBackground(host._bg, showBg ? state.bg : null, { preview: true });
+}
+
+const boxStyle = (l) => {
+  const r = l.rect || { x: 0, y: 0, w: 100, h: 100 };
+  const rot = Number(l.rotation) % 360;
+  return {
+    left: r.x + "%",
+    top: r.y + "%",
+    width: r.w + "%",
+    height: r.h + "%",
+    transform: rot ? `rotate(${rot}deg)` : "",
+  };
+};
+
+// kotak transparan di atas kanvas: satu per layer, dipakai untuk memilih layer dengan klik
+function renderOverlay() {
+  const ov = root.querySelector(".ed-ov");
+  ov.replaceChildren();
+  const layers = L();
+  const order = layers.map((_, i) => i).sort((a, b) => (layers[a].z ?? 0) - (layers[b].z ?? 0) || a - b);
+  for (const i of order) {
+    const l = layers[i];
+    const b = el("div", "ed-hit" + (i === sel ? " sel" : "") + (isText(l) ? " txt" : ""));
+    b.dataset.i = i;
+    Object.assign(b.style, boxStyle(l));
+    ov.appendChild(b);
+  }
+}
+
+// ---------- edit teks langsung di kanvas ----------
+const readTxt = (txt) => (txt.contentEditable === "plaintext-only" ? txt.textContent : txt.innerText);
+
+function styleEditBox() {
+  if (!editing) return;
+  const l = L()[editing.i];
+  if (!l) return;
+  const { box, txt } = editing;
+  Object.assign(box.style, boxStyle(l));
+  const st = styleOf(l);
+  const k = root.querySelector(".ed-canvas").clientWidth / REF_W;
+  Object.assign(txt.style, {
+    fontFamily: st.fontFamily,
+    fontSize: st.fontSize * k + "px",
+    color: st.color,
+    fontWeight: st.bold ? "700" : "400",
+    fontStyle: st.italic ? "italic" : "normal",
+    textAlign: st.align || "left",
+  });
+  box.style.justifyContent = { top: "flex-start", middle: "center", bottom: "flex-end" }[st.valign] || "flex-start";
+}
+
+function placeCaret(txt, x, y) {
+  let range = null;
+  try {
+    if (document.caretPositionFromPoint) {
+      const p = document.caretPositionFromPoint(x, y);
+      if (p && txt.contains(p.offsetNode)) {
+        range = document.createRange();
+        range.setStart(p.offsetNode, p.offset);
+      }
+    } else if (document.caretRangeFromPoint) {
+      const r = document.caretRangeFromPoint(x, y);
+      if (r && txt.contains(r.startContainer)) range = r;
+    }
+  } catch {
+    range = null;
+  }
+  const s = getSelection();
+  s.removeAllRanges();
+  if (range) {
+    range.collapse(true);
+  } else {
+    range = document.createRange();
+    range.selectNodeContents(txt);
+    range.collapse(false); // tidak ketemu titiknya: taruh kursor di akhir
+  }
+  s.addRange(range);
+}
+
+function startEdit(i, cx, cy) {
+  const l = L()[i];
+  if (!l || !isText(l)) return;
+  const box = el("div", "ed-editbox");
+  const txt = el("div", "ed-txt");
+  try {
+    txt.contentEditable = "plaintext-only";
+  } catch {
+    /* peramban lama: pakai "true" di bawah */
+  }
+  if (txt.contentEditable !== "plaintext-only") txt.contentEditable = "true";
+  txt.spellcheck = false;
+  txt.textContent = l.text || "";
+  box.appendChild(txt);
+  root.querySelector(".ed-eb").appendChild(box);
+  editing = { i, box, txt };
+  styleEditBox();
+  renderPreview(); // sembunyikan teks asli layer ini supaya tidak dobel
+
+  txt.addEventListener("input", () => {
+    if (!editing) return;
+    const lay = L()[editing.i];
+    lay.text = readTxt(txt);
+    updateLayerLabel(editing.i);
+    syncField("text", lay.text);
+    queueThumb(cur);
+  });
+  txt.addEventListener("blur", () => endEdit());
+  txt.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      e.stopPropagation(); // Esc di sini hanya mengakhiri edit teks, bukan menutup editor
+      e.preventDefault();
+      endEdit();
+    }
+  });
+  txt.addEventListener("paste", (e) => {
+    e.preventDefault();
+    document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+  });
+  txt.focus();
+  placeCaret(txt, cx, cy);
+}
+
+function endEdit() {
+  if (!editing) return;
+  const { i, box, txt } = editing;
+  editing = null; // null dulu: remove() bisa memicu blur lagi
+  const l = L()[i];
+  if (l) l.text = readTxt(txt);
+  box.remove();
+  push();
+  renderPreview();
+  queueThumb(cur);
+  // pembaruan di tempat (bukan membangun ulang panel) supaya klik yang sedang berlangsung tidak hilang
+  if (l) {
+    updateLayerLabel(i);
+    syncField("text", l.text);
+  }
+}
+
+// ---------- render: filmstrip, layer, properti ----------
+function renderFsThumb(k) {
+  const th = fsThumbs[k];
+  if (!root || !th) return;
+  SR.renderThumbnail(th, payloadFor(k));
+  if (th._bg) SR.renderBackground(th._bg, state.showBgInThumbs ? state.bg : null, { preview: true });
+}
+const pending = new Set();
+let pendingTimer = 0;
+function queueThumb(k) {
+  pending.add(k);
+  clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(() => {
+    pending.forEach(renderFsThumb);
+    pending.clear();
+  }, 120);
+}
+
+function buildFilmstrip() {
+  const fs = root.querySelector(".ed-fs");
+  fs.replaceChildren();
+  fsThumbs = [];
+  items.forEach((it, k) => {
+    const s = state.slides[it.index];
+    const b = el("button", "ed-fs-i" + (k === cur ? " sel" : ""));
+    b.type = "button";
+    b.dataset.k = k;
+    const th = el("div", "thumb ed-fs-th");
+    const cap = el("div", "ed-fs-cap");
+    cap.append(el("span", "ed-fs-n", String(it.index + 1)), el("span", "ed-fs-t", s.label || ""));
+    b.append(th, cap);
+    fs.appendChild(b);
+    fsThumbs[k] = th;
+    renderFsThumb(k);
+  });
+}
+
+function updateHeader() {
+  const s = state.slides[items[cur].index];
+  root.querySelector(".ed-title").textContent = s.folder_name || state.bundleName || "Edit slide";
+  root.querySelector(".ed-count").textContent = `${cur + 1} / ${items.length}`;
+  root.querySelectorAll(".ed-fs-i").forEach((b, k) => {
+    b.classList.toggle("sel", k === cur);
+    if (k === cur) b.scrollIntoView({ block: "nearest" });
+  });
+}
+
+function renderLayers() {
+  const box = root.querySelector(".ed-list");
+  box.replaceChildren();
+  if (!L().length) {
+    box.appendChild(el("p", "ed-empty", "Slide ini belum punya layer."));
+    return;
+  }
+  L().forEach((l, i) => {
+    const row = el("button", "ed-layer" + (i === sel ? " sel" : ""), layerLabel(l, i));
+    row.type = "button";
+    row.addEventListener("click", () => selectLayer(i));
+    box.appendChild(row);
+  });
+}
+function updateLayerLabel(i) {
+  const row = root.querySelectorAll(".ed-layer")[i];
+  if (row && L()[i]) row.textContent = layerLabel(L()[i], i);
+}
+function syncField(path, value) {
+  const t = root.querySelector(`.ed-f[data-path="${path}"] textarea`);
+  if (t && document.activeElement !== t) t.value = value ?? "";
+}
+
+function setVal(f, l, val) {
+  if (typeof val === "number") {
+    if (!Number.isFinite(val)) return false;
+    if (f.min != null) val = Math.max(f.min, val);
+    if (f.max != null) val = Math.min(f.max, val);
+  }
+  setPath(l, f.path, val);
+  if (f.path === "text") updateLayerLabel(sel);
+  if (f.path.startsWith("rect.") || f.path === "rotation") renderOverlay();
+  renderPreview();
+  queueThumb(cur);
+  return true;
+}
+
+function fieldRow(f, l) {
+  const row = el("div", "ed-f" + (f.span === 2 ? " s2" : "") + (f.t === "area" ? " area" : ""));
+  row.dataset.path = f.path;
+  const v = readValue(l, f);
+
+  if (f.t === "tog") {
+    const b = el("button", "ed-tog" + (f.cls ? " " + f.cls : ""), f.label);
+    b.type = "button";
+    if (f.tip) b.title = f.tip;
+    b.setAttribute("aria-pressed", String(!!v));
+    b.addEventListener("click", () => {
+      const on = b.getAttribute("aria-pressed") !== "true";
+      b.setAttribute("aria-pressed", String(on));
+      setVal(f, l, on);
+      push();
+    });
+    row.appendChild(b);
+    return row;
+  }
+
+  const lab = el("span", "ed-fl", f.label);
+  if (f.tip) row.title = f.tip;
+  row.appendChild(lab);
+
+  if (f.t === "seg") {
+    const wrap = el("div", "ed-seg");
+    for (const [val, text, tip] of f.opts) {
+      const b = el("button", null, text);
+      b.type = "button";
+      b.title = tip || text;
+      b.setAttribute("aria-pressed", String(val === v));
+      b.addEventListener("click", () => {
+        wrap.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false"));
+        b.setAttribute("aria-pressed", "true");
+        setVal(f, l, val);
+        push();
+      });
+      wrap.appendChild(b);
+    }
+    row.appendChild(wrap);
+    return row;
+  }
+
+  let inp;
+  if (f.t === "area") {
+    inp = el("textarea");
+    inp.rows = 5;
+    inp.value = v ?? "";
+  } else if (f.t === "sel") {
+    inp = el("select");
+    for (const [val, name] of f.opts) {
+      const o = el("option", null, name);
+      o.value = val;
+      inp.appendChild(o);
+    }
+    inp.value = v ?? f.opts[0][0];
+  } else {
+    inp = el("input");
+    inp.type = f.t === "color" ? "color" : f.t === "range" ? "range" : "number";
+    if (f.step != null) inp.step = f.step;
+    if (f.min != null) inp.min = f.min;
+    if (f.max != null) inp.max = f.max;
+    if (f.t === "color") {
+      inp.value = /^#[0-9a-f]{6}$/i.test(v) ? v : "#ffffff";
+    } else {
+      const n = Number(v);
+      inp.value = Number.isFinite(n) ? round(f.show ? f.show(n) : n) : "";
+    }
+  }
+  const read = () =>
+    f.t === "num" || f.t === "range" ? (inp.value === "" ? null : Number(inp.value)) : inp.value;
+  inp.addEventListener("input", () => {
+    const val = read();
+    if (val !== null) setVal(f, l, val);
+  });
+  inp.addEventListener("change", () => {
+    const val = read();
+    if (val !== null) setVal(f, l, val);
+    push();
+  });
+  row.appendChild(inp);
+  return row;
+}
+
+function renderFields() {
+  const box = root.querySelector(".ed-fields");
+  box.replaceChildren();
+  const l = L()[sel];
+  if (!l) return;
+  let grp = null;
+  let grid = null;
+  for (const f of FIELDS) {
+    if (f.when && !f.when(l)) continue;
+    if (f.grp !== grp) {
+      grp = f.grp;
+      const g = grp;
+      const d = el("details", "ed-sec");
+      d.open = !closedSecs.has(g);
+      d.addEventListener("toggle", () => (d.open ? closedSecs.delete(g) : closedSecs.add(g)));
+      grid = el("div", "ed-grid");
+      d.append(el("summary", null, g), grid);
+      box.appendChild(d);
+    }
+    grid.appendChild(fieldRow(f, l));
+  }
+}
+
+function renderAll() {
+  renderLayers();
+  renderFields();
+  renderOverlay();
+  renderPreview();
+  updateHeader();
+  syncButtons();
+}
+
+// ---------- navigasi ----------
+function selectLayer(i) {
+  endEdit();
+  sel = i;
+  renderLayers();
+  renderFields();
+  renderOverlay();
+}
+function selectSlide(k) {
+  if (k < 0 || k >= items.length || k === cur) return;
+  endEdit();
+  cur = k;
+  const firstText = L().findIndex(isText);
+  sel = L().length ? (firstText >= 0 ? firstText : 0) : -1;
+  renderAll();
+}
+
+// ---------- buka / tutup ----------
+function close() {
+  if (!root) return;
+  ro?.disconnect();
+  ro = null;
+  clearTimeout(pendingTimer);
+  pending.clear();
+  editing = null;
+  root.remove();
+  root = null;
+  items = [];
+  fsThumbs = [];
+}
+
+function save() {
+  endEdit();
+  let n = 0;
+  let mem = 0;
+  for (const it of items) {
+    if (JSON.stringify(it.layers) === it.orig) continue;
+    const s = state.slides[it.index];
+    emit("slide:edited", { index: it.index, groupId: s.groupId, itemId: s.itemId, layers: it.layers });
+    n++;
+    if (!s.itemId) mem++;
+  }
+  close();
+  setStatus(
+    !n ? "Tidak ada perubahan."
+    : mem ? `${n} slide diubah (${mem} belum ada di library, hanya di memori).`
+    : `${n} slide disimpan.`,
+  );
+}
+
+async function cancel() {
+  endEdit();
+  if (!dirty()) return close();
+  const ok = await askConfirm({
+    key: "discard-edit",
+    title: "Buang perubahan",
+    message: "Perubahan pada slide-slide ini belum disimpan. Buang?",
+  });
+  if (ok) close();
+}
+
+function onKey(e) {
+  e.stopPropagation(); // jangan bocor ke pintasan global (B, panah, dst.)
+  const typing = e.target.isContentEditable || e.target.matches("textarea, input[type=text], input[type=number]");
+  const mod = e.ctrlKey || e.metaKey;
+  const k = e.key.toLowerCase();
+  if (e.key === "Escape") return cancel();
+  if (mod && k === "s") {
+    e.preventDefault();
+    return save();
+  }
+  if (typing) return;
+  if (mod && k === "z") {
+    e.preventDefault();
+    go(e.shiftKey ? 1 : -1);
+  } else if (mod && k === "y") {
+    e.preventDefault();
+    go(1);
+  } else if (e.key === "PageDown") {
+    e.preventDefault();
+    selectSlide(cur + 1);
+  } else if (e.key === "PageUp") {
+    e.preventDefault();
+    selectSlide(cur - 1);
+  }
+}
+
+export function openEditor(i) {
+  if (root) return;
+  const s0 = state.slides[i];
+  if (!s0) return setStatus("Pilih sebuah slide dulu.");
+
+  // semua slide dalam grup yang sama; slide tanpa groupId (hasil import) = seluruh grid
+  const idxs = state.slides.map((_, k) => k).filter((k) => s0.groupId == null || state.slides[k].groupId === s0.groupId);
+  items = idxs.map((k) => {
+    const layers = state.slides[k].layers || [];
+    return { index: k, layers: structuredClone(layers), orig: JSON.stringify(layers) };
+  });
+  cur = Math.max(0, idxs.indexOf(i));
+  const firstText = L().findIndex(isText);
+  sel = L().length ? (firstText >= 0 ? firstText : 0) : -1;
+  hist = [snap()];
+  hi = 0;
+  showBg = true;
+  editing = null;
+
+  root = el("div", "ed-root");
+  root.tabIndex = -1;
+  root.innerHTML = `
+    <header class="ed-top">
+      <b class="ed-title"></b><span class="ed-count"></span>
+      <span class="ed-sp"></span>
+      <button class="ed-btn" data-a="undo" title="Undo (Ctrl+Z)">Undo</button>
+      <button class="ed-btn" data-a="redo" title="Redo (Ctrl+Y)">Redo</button>
+      <span class="ed-vr"></span>
+      <button class="ed-btn" data-a="bg" aria-pressed="true" title="Tampilkan / sembunyikan background">Background</button>
+      <span class="ed-vr"></span>
+      <button class="ed-btn" data-a="cancel" title="Batal (Esc)">Batal</button>
+      <button class="ed-btn primary" data-a="save" title="Simpan (Ctrl+S)">Simpan</button>
+    </header>
+    <div class="ed-body">
+      <aside class="ed-fs" aria-label="Slide dalam grup"></aside>
+      <section class="ed-stage">
+        <div class="ed-canvas">
+          <div class="thumb ed-render"></div>
+          <div class="ed-ov"></div>
+          <div class="ed-eb"></div>
+        </div>
+      </section>
+      <aside class="ed-dock">
+        <section class="ed-panel ed-props"><div class="ed-ph">Properties</div><div class="ed-fields"></div></section>
+        <section class="ed-panel ed-lay"><div class="ed-ph">Layers</div><div class="ed-list"></div></section>
+      </aside>
+    </div>`;
+
+  root.addEventListener("keydown", onKey);
+  root.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-a]")?.dataset.a;
+    if (a === "save") save();
+    else if (a === "cancel") cancel();
+    else if (a === "undo") go(-1);
+    else if (a === "redo") go(1);
+    else if (a === "bg") {
+      showBg = !showBg;
+      e.target.closest("[data-a]").setAttribute("aria-pressed", String(showBg));
+      renderPreview();
+    }
+    const fsi = e.target.closest(".ed-fs-i");
+    if (fsi) selectSlide(Number(fsi.dataset.k));
+  });
+  // klik layer di kanvas: pilih; kalau teks, langsung diedit di tempat
+  root.querySelector(".ed-ov").addEventListener("mousedown", (e) => {
+    const b = e.target.closest(".ed-hit");
+    if (!b || e.button !== 0) return;
+    e.preventDefault();
+    const li = Number(b.dataset.i);
+    selectLayer(li);
+    if (isText(L()[li])) startEdit(li, e.clientX, e.clientY);
+  });
+  // klik area kosong di sekitar kanvas: akhiri edit teks
+  root.querySelector(".ed-stage").addEventListener("mousedown", (e) => {
+    if (!e.target.closest(".ed-hit, .ed-editbox")) endEdit();
+  });
+
+  document.body.appendChild(root);
+  ro = new ResizeObserver(() => styleEditBox());
+  ro.observe(root.querySelector(".ed-canvas"));
+  buildFilmstrip();
+  renderAll();
+  root.focus();
+}
+
+// Tombol pensil (#tb-edit): didelegasikan di sini, jadi tidak bergantung pada urutan inisialisasi.
+document.addEventListener("click", (e) => {
+  if (!e.target.closest?.("#tb-edit")) return;
+  if (!state.slides.length) return setStatus("Belum ada slide.");
+  openEditor(state.activeIndex >= 0 ? state.activeIndex : 0);
+});

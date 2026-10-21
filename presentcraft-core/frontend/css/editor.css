@@ -1,0 +1,349 @@
+/* Editor slide: tata letak ala Photoshop (filmstrip | kanvas | panel Properties + Layers),
+   minimalis dan monokrom. Satu-satunya "warna" adalah putih untuk status terpilih. */
+.ed-root {
+  --bg0: #101010; /* area kanvas */
+  --bg1: #1c1c1c; /* bar dan panel */
+  --bg2: #262626; /* input, hover */
+  --bg3: #353535; /* terpilih */
+  --line: #303030;
+  --txt: #cdcdcd;
+  --dim: #868686;
+  --hi: #f4f4f4;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg1);
+  color: var(--txt);
+  font: 12px/1.35 "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+  outline: none;
+}
+.ed-root * { box-sizing: border-box; }
+
+/* ---- scrollbar: monokrom & tipis ---- */
+.ed-root * { scrollbar-width: thin; scrollbar-color: #4a4a4a transparent; } /* Firefox */
+.ed-root *::-webkit-scrollbar { width: 4px; height: 4px; }
+.ed-root *::-webkit-scrollbar-track { background: transparent; }
+.ed-root *::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 2px; }
+.ed-root *::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
+.ed-root *::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---- bar atas ---- */
+.ed-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line);
+}
+.ed-title { color: var(--hi); font-weight: 600; margin-right: 8px; }
+.ed-count { color: var(--dim); }
+.ed-sp { flex: 1; }
+.ed-vr { width: 1px; height: 16px; margin: 0 4px; background: var(--line); }
+
+.ed-btn {
+  height: 24px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  cursor: pointer;
+}
+.ed-btn:hover:not(:disabled) { background: var(--bg2); }
+.ed-btn:disabled { opacity: 0.35; cursor: default; }
+.ed-btn[aria-pressed="true"] { background: var(--bg3); color: var(--hi); }
+.ed-btn.primary { background: var(--hi); color: #111; font-weight: 600; }
+.ed-btn.primary:hover { background: #fff; }
+.ed-root button:focus-visible,
+.ed-root input:focus-visible,
+.ed-root select:focus-visible,
+.ed-root textarea:focus-visible,
+.ed-root summary:focus-visible { outline: 1px solid var(--hi); outline-offset: 1px; }
+
+/* ---- badan ---- */
+.ed-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr) 288px;
+}
+
+/* ---- filmstrip (kiri) ---- */
+.ed-fs {
+  overflow-y: auto;
+  padding: 8px;
+  border-right: 1px solid var(--line);
+  background: var(--bg1);
+}
+.ed-fs-i {
+  display: block;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ed-fs-i:hover { background: var(--bg2); }
+.ed-fs-i.sel { background: var(--bg3); border-color: var(--hi); color: var(--hi); }
+.ed-fs-th { position: relative; width: 100%; aspect-ratio: 16 / 9; pointer-events: none; }
+.ed-fs-cap { display: flex; gap: 6px; margin-top: 3px; min-width: 0; }
+.ed-fs-n { flex: none; }
+.ed-fs-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- kanvas (tengah) ---- */
+.ed-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 20px;
+  background: var(--bg0);
+}
+.ed-canvas {
+  position: relative;
+  width: min(100%, calc((100vh - 36px - 40px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  box-shadow: 0 0 0 1px #000;
+}
+.ed-canvas > .ed-render,
+.ed-canvas > .ed-ov,
+.ed-canvas > .ed-eb { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ed-canvas > .ed-eb { pointer-events: none; }
+.ed-canvas > .ed-eb > * { pointer-events: auto; }
+
+.ed-hit { position: absolute; cursor: default; }
+.ed-hit.txt { cursor: text; }
+.ed-hit:hover { outline: 1px solid rgba(255, 255, 255, 0.35); }
+.ed-hit.sel { outline: 1px solid var(--hi); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+
+.ed-editbox {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  outline: 1px solid var(--hi);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  background: rgba(127, 127, 127, 0.28);
+}
+.ed-txt {
+  width: 100%;
+  min-height: 1em;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  outline: none;
+  cursor: text;
+}
+
+/* ---- dock kanan: Properties + Layers ---- */
+.ed-dock {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--line);
+  background: var(--bg1);
+}
+.ed-panel { display: flex; flex-direction: column; min-height: 0; }
+.ed-props { flex: 1; border-bottom: 1px solid var(--line); }
+.ed-lay { height: 190px; }
+.ed-ph {
+  flex: none;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--hi);
+  font-weight: 600;
+}
+.ed-fields, .ed-list { flex: 1; overflow-y: auto; }
+.ed-empty { margin: 10px; color: var(--dim); }
+
+/* ---- Properties: bagian yang bisa dilipat ---- */
+.ed-sec { border-bottom: 1px solid var(--line); }
+.ed-sec > summary {
+  padding: 6px 10px;
+  color: var(--txt);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.ed-sec > summary::-webkit-details-marker { display: none; }
+.ed-sec > summary::before { content: "▸"; display: inline-block; width: 14px; color: var(--dim); }
+.ed-sec[open] > summary::before { content: "▾"; }
+.ed-sec > summary:hover { background: var(--bg2); }
+
+/* Grid 4 kolom: [label][input][label][input].
+   Kolom label pertama selebar --lw, jadi input X, W, Rotasi, Opasitas, Font, dan Ukuran
+   semua mulai dari garis kiri yang sama. */
+.ed-grid {
+  --lw: 52px;
+  --gap-x: 8px;
+  display: grid;
+  grid-template-columns: var(--lw) minmax(0, 1fr) 14px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px var(--gap-x);
+  padding: 4px 10px 10px;
+}
+.ed-f { display: contents; } /* label dan input jadi sel grid langsung */
+.ed-fl { color: var(--dim); white-space: nowrap; }
+
+/* baris span 2: label kolom 1, input membentang sampai tepi kanan */
+.ed-f.s2 > .ed-fl { grid-column: 1; }
+.ed-f.s2 > :not(.ed-fl) { grid-column: 2 / -1; }
+
+/* tombol B / I / Ulang / Bisu: yang pertama di kolom input kiri, berikutnya di kolom input kanan */
+.ed-f:has(> .ed-tog) { display: block; grid-column: 2; }
+.ed-f:has(> .ed-tog) + .ed-f:has(> .ed-tog) { grid-column: 4; }
+
+/* area teks: label di kolom 1, textarea sampai tepi kanan */
+.ed-f.area > .ed-fl { grid-column: 1; align-self: start; padding-top: 5px; }
+.ed-f.area > textarea { grid-column: 2 / -1; }
+
+.ed-f input[type="number"],
+.ed-f select,
+.ed-f textarea {
+  width: 100%;
+  min-width: 0;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg2);
+  color: var(--hi);
+  font: inherit;
+}
+.ed-f textarea { height: auto; min-height: 84px; padding: 6px; resize: vertical; }
+
+/* spin box: tersembunyi, muncul saat hover/fokus */
+.ed-f input[type="number"]::-webkit-inner-spin-button { opacity: 0; filter: grayscale(1); }
+.ed-f input[type="number"]:hover::-webkit-inner-spin-button,
+.ed-f input[type="number"]:focus::-webkit-inner-spin-button { opacity: 0.6; }
+
+.ed-f input[type="color"] {
+  width: 100%;
+  height: 24px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg2);
+  cursor: pointer;
+}
+.ed-f input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.ed-f input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 1px; }
+
+/* slider: monokrom & tipis */
+.ed-f input[type="range"] {
+  --track: #555;
+  --thumb: var(--txt);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  height: 14px; /* area klik; garis aslinya tetap 1px */
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.ed-f input[type="range"]::-webkit-slider-runnable-track { height: 1px; border: 0; background: var(--track); }
+.ed-f input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 8px;
+  margin-top: -3.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--thumb);
+}
+.ed-f input[type="range"]:hover { --track: #808080; }
+.ed-f input[type="range"]:focus-visible { outline-offset: 2px; --thumb: var(--hi); }
+
+/* tombol B / I dan kontrol segmen (rata teks) */
+.ed-tog,
+.ed-seg button {
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--bg2);
+  color: var(--txt);
+  font: inherit;
+  cursor: pointer;
+}
+.ed-tog { width: 100%; }
+.ed-tog.b { font-weight: 700; }
+.ed-tog.i { font-style: italic; }
+.ed-seg { display: flex; min-width: 0; }
+.ed-seg button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0;
+  margin-left: -1px;
+  padding: 0 4px;
+}
+.ed-seg button:first-child { border-radius: 3px 0 0 3px; margin-left: 0; }
+.ed-seg button:last-child { border-radius: 0 3px 3px 0; }
+.ed-seg button svg { display: block; pointer-events: none; }
+.ed-tog:hover, .ed-seg button:hover { background: var(--bg3); }
+.ed-tog[aria-pressed="true"],
+.ed-seg button[aria-pressed="true"] { background: var(--hi); border-color: var(--hi); color: #111; }
+
+/* ---- baris input + satuan: X/Y, W/H, Ukuran ----
+   Pakai flex (bukan grid) supaya satuan selalu sebaris, apa pun struktur HTML-nya.
+   Field pertama memakai lebar label --lw, jadi inputnya lurus dengan Rotasi/Font. */
+.ed-line {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--gap-x, 8px);
+  min-width: 0;
+}
+.ed-line .ed-f {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.ed-line .ed-f:first-child { gap: 0; }
+.ed-line .ed-f:first-child > .ed-fl { flex: 0 0 var(--lw, 52px); }
+.ed-line .ed-fl { flex: 0 0 auto; }
+.ed-line .ed-f > input,
+.ed-line .ed-f > select { flex: 1 1 auto; width: 100%; min-width: 0; }
+.ed-line .ed-unit { flex: 0 0 56px; width: 56px; min-width: 0; height: 24px; }
+
+/* ---- daftar layer ---- */
+.ed-layer {
+  display: block;
+  width: 100%;
+  padding: 5px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--txt);
+  font: inherit;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.ed-layer:hover { background: var(--bg2); }
+.ed-layer.sel { background: var(--bg3); color: var(--hi); }
+
+.ed-line .ed-f { display: contents; }
+.ed-line .ed-f:first-child > .ed-fl { flex: 0 0 var(--lw, 52px); }
+.ed-line .ed-f:nth-child(2) > .ed-fl { flex: 0 0 14px; }
+.ed-line .ed-f > input,
+.ed-line .ed-f > select { flex: 1 1 0; width: auto; min-width: 0; }
+
+.ed-lines { display: contents; }  /* tiap .ed-line jadi baris langsung di .ed-grid */
+.ed-line:not(:has(.ed-unit)) { padding-right: calc(56px + var(--gap-x, 8px)); }

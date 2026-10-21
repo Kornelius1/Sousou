@@ -51,3 +51,9 @@ body {
 .cf-btn:focus-visible, .cf-skip input:focus-visible { outline: 1px solid #aaa; outline-offset: 2px; }
 .cf-danger { background: #5c2330; border-color: #7a2f40; color: #ffb3c0; }
 .cf-danger:hover { background: #702a3b; }
+
+*::-webkit-scrollbar { width: 5px; height: 5px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 2px; }
+*::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
+*::-webkit-scrollbar-corner { background: transparent; }
