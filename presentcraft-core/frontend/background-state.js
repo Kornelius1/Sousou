@@ -49,6 +49,7 @@ function persist(state) {
 
 /** Ganti seluruh background. Hanya dipanggil dari Control Center. */
 export async function setBackground(bg) {
+  if (!visible) await setBackgroundVisible(true); 
   current = normalize(bg);
   await emit(BACKGROUND_EVENT, current); // layar dulu, disk menyusul
   await persist(current);
@@ -62,6 +63,20 @@ export function patchBackground(patch) {
 }
 
 export const clearBackground = () => setBackground(null);
+
+export const BACKGROUND_VISIBLE_EVENT = 'background-visible-event';
+let visible = true;
+
+export const isBackgroundVisible = () => visible;
+
+export function setBackgroundVisible(v) {
+  visible = !!v;
+  return emit(BACKGROUND_VISIBLE_EVENT, visible);
+}
+
+export function onBackgroundVisible(cb) {
+  return listen(BACKGROUND_VISIBLE_EVENT, (e) => cb(!!e.payload));
+}
 
 /**
  * Dengarkan perubahan dari jendela mana pun (termasuk jendela sendiri).

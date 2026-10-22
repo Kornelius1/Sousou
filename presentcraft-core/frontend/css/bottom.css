@@ -80,7 +80,7 @@
 #bg-slides:focus-visible { box-shadow: inset 0 0 0 1px #3a3a3a; }
 #bg-grid {
   display: grid; gap: 10px; align-content: start;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--bgt, 150px), 1fr));
 }
 .bgt { border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #1e1e1e; cursor: pointer; }
 .bgt:hover { background: #2a2a2a; }
@@ -92,18 +92,6 @@
   background: #cf6679; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
 }
 .bgt-cap { margin-top: 3px; font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-#bg-settings {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; align-content: start;
-  padding: 8px 12px; overflow: auto; border-left: 1px solid #2a2a2a;
-}
-.bgc { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.bgc.wide { grid-column: 1 / -1; }
-.bgc.checks { flex-direction: row; gap: 14px; }
-.bgc label { color: #aaa; font-size: 12px; }
-.bgc select { background: #2d2d2d; color: #e0e0e0; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 6px; font: inherit; }
-.bgc input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
-#bg-settings .off, #bg-settings [disabled] { opacity: .4; pointer-events: none; }
 
 .ex-row.ex-item { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }
 .ex-row.ex-group .ex-twisty { display: inline-block; transition: transform .1s; }
@@ -153,3 +141,21 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
 .ex-menu-arrow { margin-left: auto; padding-left: 18px; opacity: .7; }
 .ex-menu-i.open-sub { background: rgba(255, 255, 255, 0.1); }
 .ex-submenu { max-height: 70vh; overflow-y: auto; }
+#bg-detail { display: flex; flex-direction: column; min-height: 0; }
+#bg-slides { flex: 1; min-height: 0; }
+
+.tb-group { display: flex; align-items: center; gap: 2px; }
+.tb-group + .tb-group {
+  margin-left: 6px;
+  padding-left: 6px;
+  border-left: 1px solid var(--line, #303030);
+}
+
+.bg-eye svg { width: 16px; height: 16px; display: block; pointer-events: none; }
+.bg-eye .eye-closed,
+.bg-eye[aria-pressed="true"] .eye-open { display: none; }
+.bg-eye[aria-pressed="true"] .eye-closed { display: block; }
+.bg-eye:disabled { opacity: 0.35; }
+
+.pop-mark { width: 16px; margin-right: 8px; text-align: center; font-size: 13px; }
+

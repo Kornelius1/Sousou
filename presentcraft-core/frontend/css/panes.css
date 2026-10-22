@@ -18,8 +18,6 @@
 
 .pane-title .sp { flex: 1; }
 .pane-title label { color: #999; font-weight: 400; display: flex; gap: 6px; align-items: center; }
-.small-btn { background: #3a3a3a; color: #e0e0e0; border: 0; border-radius: 3px; padding: 3px 10px; font: inherit; cursor: pointer; }
-.small-btn:hover { background: #4a4a4a; }
 
 /* ---------- pustaka media (kiri) ---------- */
 #library { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-right: 1px solid #2a2a2a; overflow: hidden; }
@@ -58,6 +56,20 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
+/* ---------- background (panel bawah): judul tetap, grid bisa di-scroll ---------- */
+#bg-detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+#bg-detail > .pane-title { flex: none; }
+#bg-detail > #bg-slides { flex: 1; min-height: 0; overflow-y: auto; }
+
+/* ukuran thumbnail mengikuti slider (--bgt diisi JS), sama seperti #slide-grid */
+#bg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--bgt, 160px), 1fr));
+  gap: 12px;
+  padding: 12px;
+  align-content: start;
+}
+
 /* ---------- properties + preview (kanan) ---------- */
 #props { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-left: 1px solid #2a2a2a; overflow: hidden; }
 #props {
@@ -71,7 +83,7 @@
 .f { display: grid; grid-template-columns: 86px 1fr; gap: 6px 8px; align-items: center; }
 .f label { color: #aaa; }
 .f input[type=number], .f select, #p-layer {
-  width: 100%; box-sizing: border-box; background: #2d2d2d; color: #e0e0e0;
+  width: 100%; box-sizing: border-box; background: #2d2d2d; color: #ac1b1b;
   border: 1px solid #3a3a3a; border-radius: 3px; padding: 4px 6px; font: inherit;
 }
 .f input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
@@ -118,6 +130,7 @@
 .pv-btn.primary svg { width: 14px; height: 14px; }
 .pv-btn.primary:hover:not(:disabled) { background: #fff; }
 
+/* ---------- kartu slide ---------- */
 #slide-grid .card { outline: none; border: 2px solid transparent; }
 #slide-grid .card.active { border-color: var(--select-color); }
 #slide-grid .card:focus-visible:not(.active) { border-color: rgba(255, 255, 255, 0.4); }
@@ -153,110 +166,14 @@
 
 .card.tagged { background: color-mix(in srgb, var(--tag-color) 16%, #1e1e1e); }
 .card.tagged .cap { border-left-color: var(--tag-color); }
-/* Slider zoom: tipis, monokrom */
-#zoom {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 110px;
-  height: 18px;
-  margin: 0;                 /* area klik; garisnya sendiri tetap tipis */
-  background: transparent;
-  cursor: pointer;
-  --fill: 50%;                  /* diisi JS: bagian trek yang terisi */
-}
-#zoom:focus { outline: none; }
 
-/* Trek */
-#zoom::-webkit-slider-runnable-track {
-  height: 2px;
-  border-radius: 1px;
-  background: linear-gradient(to right, #bbb var(--fill), #444 var(--fill));
-}
-#zoom::-moz-range-track {
-  height: 2px;
-  border-radius: 1px;
-  background: #444;
-}
-#zoom::-moz-range-progress {
-  height: 2px;
-  border-radius: 1px;
-  background: #bbb;
-}
-
-/* Gagang */
-#zoom::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 10px;
-  height: 10px;
-  margin-top: -4px;             /* (tinggi trek - tinggi gagang) / 2, supaya sejajar tengah */
-  border: 0;
-  border-radius: 50%;
-  background: #ddd;
-  transition: transform .1s, background .1s;
-}
-#zoom::-moz-range-thumb {
-  width: 10px;
-  height: 10px;
-  border: 0;
-  border-radius: 50%;
-  background: #ddd;
-}
-
-#zoom:hover::-webkit-slider-thumb,
-#zoom:active::-webkit-slider-thumb { background: #fff; transform: scale(1.2); }
-#zoom:hover::-moz-range-thumb,
-#zoom:active::-moz-range-thumb { background: #fff; }
-
-#zoom:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
-#zoom:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
-.zoom-ctl { display: flex; align-items: center; gap: 4px; }
-.zoom-lbl { color: #888; font-weight: 400; margin-right: 2px; }
-
-.zoom-btn {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: #aaa;
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-}
-.zoom-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
-.zoom-btn:active:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
-.zoom-btn:disabled { color: #555; cursor: default; }
-.zoom-btn:focus-visible { outline: 1px solid #aaa; outline-offset: 1px; }
-
-/* ---------- tombol tampil/sembunyi layar audiens ---------- */
-.clear-btn {
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 0;
-  background: none;
-  color: #999;
-  cursor: pointer;
-}
-.clear-btn svg { width: 15px; height: 15px; grid-area: 1 / 1; }
-.clear-btn:focus-visible { outline: 1px solid #777; outline-offset: 1px; }
-
-/* tampil = mata terbuka, dikosongkan = mata terpejam */
-.clear-btn .eye-closed { display: none; }
-.clear-btn[aria-pressed="true"] .eye-open { display: none; }
-.clear-btn[aria-pressed="true"] .eye-closed { display: block; }
-
-.pane-sep { width: 1px; height: 12px; margin: 0 10px; background: #333; }
-
+/* ---------- kontrol di judul panel: ukuran thumbnail + mata ---------- */
 .zoom-ctl { display: flex; align-items: center; gap: 4px; }
 .zoom-lbl { color: #888; font-weight: 400; line-height: 1; margin-right: 4px; }
 
+.pane-sep { width: 1px; height: 12px; margin: 0 4px; background: #333; flex: none; }
+
+/* tombol ikon: mata (.clear-btn), edit, zoom +/- */
 .clear-btn, .zoom-btn {
   width: 22px; height: 22px; padding: 0; flex: none;
   display: grid; place-items: center;
@@ -266,4 +183,72 @@
 .zoom-btn  { color: #aaa; border-radius: 3px; }
 .clear-btn svg, .zoom-btn svg { width: 15px; height: 15px; display: block; grid-area: 1 / 1; }
 
-.pane-sep { width: 1px; height: 12px; margin: 0 4px; background: #333; flex: none; }
+.clear-btn:focus-visible { outline: 1px solid #777; outline-offset: 1px; }
+.zoom-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.zoom-btn:active:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
+.zoom-btn:disabled { color: #555; cursor: default; }
+.zoom-btn:focus-visible { outline: 1px solid #aaa; outline-offset: 1px; }
+
+/* tampil = mata terbuka, dikosongkan/disembunyikan = mata terpejam */
+.clear-btn .eye-closed { display: none; }
+.clear-btn[aria-pressed="true"] .eye-open { display: none; }
+.clear-btn[aria-pressed="true"] .eye-closed { display: block; }
+.clear-btn:disabled { opacity: .35; cursor: default; }
+
+/* Slider zoom: tipis, monokrom. Dipakai bersama oleh #zoom (Slide) dan #bg-zoom (Background). */
+.zoom-ctl input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 18px;
+  margin: 0;                 /* area klik; garisnya sendiri tetap tipis */
+  background: transparent;
+  cursor: pointer;
+  --fill: 50%;               /* diisi JS: bagian trek yang terisi */
+}
+.zoom-ctl input[type="range"]:focus { outline: none; }
+
+/* Trek */
+.zoom-ctl input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to right, #bbb var(--fill), #444 var(--fill));
+}
+.zoom-ctl input[type="range"]::-moz-range-track {
+  height: 2px;
+  border-radius: 1px;
+  background: #444;
+}
+.zoom-ctl input[type="range"]::-moz-range-progress {
+  height: 2px;
+  border-radius: 1px;
+  background: #bbb;
+}
+
+/* Gagang */
+.zoom-ctl input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -4px;          /* (tinggi trek - tinggi gagang) / 2, supaya sejajar tengah */
+  border: 0;
+  border-radius: 50%;
+  background: #ddd;
+  transition: transform .1s, background .1s;
+}
+.zoom-ctl input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: #ddd;
+}
+
+.zoom-ctl input[type="range"]:hover::-webkit-slider-thumb,
+.zoom-ctl input[type="range"]:active::-webkit-slider-thumb { background: #fff; transform: scale(1.2); }
+.zoom-ctl input[type="range"]:hover::-moz-range-thumb,
+.zoom-ctl input[type="range"]:active::-moz-range-thumb { background: #fff; }
+
+.zoom-ctl input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }
+.zoom-ctl input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35); }

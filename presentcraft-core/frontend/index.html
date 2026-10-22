@@ -16,6 +16,7 @@
     <nav id="menubar"></nav>
 
     <main id="workspace">
+      <!-- ================= LIBRARY (media) ================= -->
       <aside id="library">
         <div class="ex-head">
           <span>Media</span><span id="lib-count"></span>
@@ -44,11 +45,13 @@
         <div id="lib-list" tabindex="0"></div>
       </aside>
 
+      <!-- ================= SLIDE SORTER ================= -->
       <section id="sorter">
         <div class="pane-title">
           <span>Slide</span>
           <span id="slide-count"></span>
           <span class="sp"></span>
+
           <button class="clear-btn" id="tb-edit" title="Edit slide (Enter)" aria-label="Edit slide">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"
               stroke-linejoin="round" aria-hidden="true">
@@ -75,7 +78,7 @@
 
           <div class="zoom-ctl">
             <span class="zoom-lbl">Slide Size</span>
-            <button class="zoom-btn" id="zoom-out" title="Zoom out" aria-label="Zoon out">
+            <button class="zoom-btn" id="zoom-out" title="Zoom out" aria-label="Zoom out">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
                 aria-hidden="true">
                 <path d="M3.5 8h9" />
@@ -95,6 +98,7 @@
         <div id="slide-grid"></div>
       </section>
 
+      <!-- ================= PROPERTIES ================= -->
       <aside id="props">
         <div class="pane-title">Properties</div>
         <div id="props-scroll">
@@ -108,7 +112,7 @@
               </div>
 
               <div class="ed-f s2">
-                <label class="ed-fl" for="p-opacity">Opasitas</label>
+                <label class="ed-fl" for="p-opacity">Opacity</label>
                 <div style="display:flex;gap:6px;align-items:center">
                   <input type="range" id="p-opacity" min="0" max="1" step="0.01" />
                   <span id="p-opacity-v" style="width:36px;text-align:right"></span>
@@ -116,94 +120,97 @@
               </div>
 
               <div class="ed-f s2">
-                <span class="ed-fl">Ratakan</span>
+                <span class="ed-fl">Align</span>
                 <div class="ed-seg">
-                  <button type="button" data-ralign="left" title="Rata kiri slide" aria-label="Rata kiri slide"><svg
-                      viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
-                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <button type="button" data-ralign="Left" title="Left-aligned" aria-label="Left-aligned">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+                      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M2 1.5V14.5" />
                       <rect x="4" y="4" width="9" height="3" />
                       <rect x="4" y="9" width="6" height="3" />
-                    </svg></button>
-                  <button type="button" data-ralign="center" title="Tengah horizontal"
-                    aria-label="Tengah horizontal"><svg viewBox="0 0 16 16" width="14" height="14" fill="none"
-                      stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"
-                      aria-hidden="true">
+                    </svg>
+                  </button>
+                  <button type="button" data-ralign="center" title="Horizontal-center" aria-label="Horizontal-center">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+                      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M8 1.5V14.5" />
                       <rect x="3" y="4" width="10" height="3" />
                       <rect x="5" y="9" width="6" height="3" />
-                    </svg></button>
-                  <button type="button" data-ralign="right" title="Rata kanan slide" aria-label="Rata kanan slide"><svg
-                      viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
-                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    </svg>
+                  </button>
+                  <button type="button" data-ralign="Right" title="Right-aligned" aria-label="Right-aligned">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+                      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M14 1.5V14.5" />
                       <rect x="3" y="4" width="9" height="3" />
                       <rect x="6" y="9" width="6" height="3" />
-                    </svg></button>
-                  <button type="button" data-ralign="top" title="Rata atas slide" aria-label="Rata atas slide"><svg
-                      viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
-                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    </svg>
+                  </button>
+                  <button type="button" data-ralign="Top" title="Top-aligned" aria-label="Top-aligned">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+                      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M1.5 2H14.5" />
                       <rect x="4" y="4" width="3" height="9" />
                       <rect x="9" y="4" width="3" height="6" />
-                    </svg></button>
-                  <button type="button" data-ralign="middle" title="Tengah vertikal" aria-label="Tengah vertikal"><svg
-                      viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
-                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    </svg>
+                  </button>
+                  <button type="button" data-ralign="middle" title="Vertical-center" aria-label="Vertical-center">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+                      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M1.5 8H14.5" />
                       <rect x="4" y="3" width="3" height="10" />
                       <rect x="9" y="5" width="3" height="6" />
-                    </svg></button>
-                  <button type="button" data-ralign="bottom" title="Rata bawah slide" aria-label="Rata bawah slide"><svg
-                      viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
-                      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    </svg>
+                  </button>
+                  <button type="button" data-ralign="Bottom" title="Bottom-aligned" aria-label="Bottom-aligned">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor"
+                      stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M1.5 14H14.5" />
                       <rect x="4" y="3" width="3" height="9" />
                       <rect x="9" y="6" width="3" height="6" />
-                    </svg></button>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </div>
           </div>
+
           <div id="preview">
             <div class="pv-title">Preview</div>
             <div id="pv-host" class="thumb" hidden></div>
-            <p class="muted" id="pv-empty" style="padding: 0">
-              Select a slide.
-            </p>
+            <p class="muted" id="pv-empty" style="padding: 0">Select a slide.</p>
             <div class="pv-seekrow">
               <input type="range" id="pv-seek" min="0" max="1000" value="0" aria-label="Posisi video" />
               <span id="pv-time">0:00 / 0:00</span>
             </div>
             <div class="pv-controls">
               <button class="pv-btn" id="pv-restart" title="Ulang dari awal" aria-label="Ulang dari awal"></button>
-              <button class="pv-btn pill" id="pv-back" title="Mundur 5 detik">
-                −5s
-              </button>
+              <button class="pv-btn pill" id="pv-back" title="Mundur 5 detik">−5s</button>
               <button class="pv-btn primary" id="pv-toggle" title="Putar / Jeda (klik preview juga bisa)"
                 aria-label="Putar / Jeda"></button>
-              <button class="pv-btn pill" id="pv-fwd" title="Maju 5 detik">
-                +5s
-              </button>
+              <button class="pv-btn pill" id="pv-fwd" title="Maju 5 detik">+5s</button>
               <button class="pv-btn" id="pv-loop" title="Ulang terus (loop)" aria-label="Loop"></button>
-              <button class="pv-btn pill" id="pv-speed" title="Kecepatan putar">
-                1×
-              </button>
+              <button class="pv-btn pill" id="pv-speed" title="Kecepatan putar">1×</button>
             </div>
           </div>
+        </div>
       </aside>
     </main>
 
- <div id="toolbar">
-  <button class="tb" id="tb-bible" title="Alkitab" aria-label="Alkitab">
-    <i class="fa-solid fa-book-bible"></i>
-  </button>
-  <span class="sp"></span>
-  <span id="tb-status"></span>
-</div>
+    <!-- ================= TOOLBAR (Bible only, kept separate) ================= -->
+    <div id="toolbar">
+      <div class="tb-group" id="tb-grp-bible">
+        <button class="tb" id="tb-bible" title="Alkitab" aria-label="Alkitab">
+          <i class="fa-solid fa-book-bible"></i>
+        </button>
+      </div>
+      <span class="sp"></span>
+      <span id="tb-status"></span>
+    </div>
 
+    <!-- ================= BACKGROUND PANEL ================= -->
     <div id="media-panel">
-      <!-- kiri: daftar layer background (gaya explorer) -->
+      <!-- left: background group list (explorer style) -->
       <section id="bg-explorer">
         <div class="ex-head">
           <span>Background</span><span id="ex-count"></span>
@@ -232,8 +239,48 @@
         <div id="ex-list" tabindex="0"></div>
       </section>
 
-      <!-- tengah: area slide background -->
+      <!-- right: slide background area -->
       <section id="bg-detail">
+        <div class="pane-title">
+          <span>Slide Background</span>
+          <span class="sp"></span>
+
+          <button class="clear-btn" id="bg-toggle" aria-pressed="false"
+            title="Click: show / hide background. Right-click: remove background"
+            aria-label="Show or hide background">
+            <svg class="eye-open" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1 8s2.6-4.5 7-4.5S15 8 15 8s-2.6 4.5-7 4.5S1 8 1 8z" />
+              <circle cx="8" cy="8" r="2" />
+            </svg>
+            <svg class="eye-closed" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M1.5 6.5C3.2 9.2 5.5 10.5 8 10.5s4.8-1.3 6.5-4" />
+              <path d="M3.6 9.3L2.4 11M8 10.5v2M12.4 9.3l1.2 1.7" />
+            </svg>
+          </button>
+
+          <span class="pane-sep"></span>
+
+          <div class="zoom-ctl">
+            <span class="zoom-lbl">Slide Size</span>
+            <button class="zoom-btn" id="bg-zoom-out" title="Zoom out" aria-label="Zoom out">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                aria-hidden="true">
+                <path d="M3.5 8h9" />
+              </svg>
+            </button>
+            <input type="range" id="bg-zoom" min="100" max="300" value="160"
+              aria-label="Background thumbnail size" />
+            <button class="zoom-btn" id="bg-zoom-in" title="Zoom in" aria-label="Zoom in">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
+                aria-hidden="true">
+                <path d="M3.5 8h9M8 3.5v9" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <div id="bg-slides" tabindex="0">
           <div id="bg-grid" hidden></div>
           <div id="bg-drop" role="button" tabindex="0">
@@ -247,35 +294,12 @@
           </div>
         </div>
       </section>
-
-      <!-- kanan: pengaturan item terpilih -->
-      <section id="bg-settings">
-        <div class="bgc">
-          <label for="bg-color">Warna polos</label><input type="color" id="bg-color" value="#000000" />
-        </div>
-        <div class="bgc">
-          <label for="bg-scale">Skala</label>
-          <select id="bg-scale">
-            <option value="fill">Fill</option>
-            <option value="fit">Fit</option>
-          </select>
-        </div>
-        <div class="bgc wide">
-          <label for="bg-opacity">Opasitas</label>
-          <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1" />
-        </div>
-        <div class="bgc wide checks">
-          <label id="lbl-loop"><input type="checkbox" id="bg-loop" checked /> Ulang</label>
-          <label id="lbl-mute"><input type="checkbox" id="bg-mute" checked /> Bisu</label>
-        </div>
-        <div class="bgc wide">
-          <button class="small-btn" id="bg-clear">
-            Bersihkan background
-          </button>
-        </div>
-      </section>
     </div>
   </div>
+
+  <!-- hidden native color picker, used by the background right-click menu -->
+  <input type="color" id="bg-color" value="#000000"
+    style="position:fixed;left:-9999px;opacity:0;pointer-events:none" tabindex="-1" aria-hidden="true" />
 
   <script src="slide-renderer.js"></script>
   <script type="module" src="js/main.js"></script>
