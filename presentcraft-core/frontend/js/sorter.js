@@ -251,7 +251,11 @@ export function showSlide(i) {
 }
 
 export function toggleBlank() {
-  if (!state.blanked) return emitBlank();
+  if (!state.blanked) {
+    emitBlank();
+    emit("blank:changed");   // preview ikut dikosongkan
+    return;
+  }
   if (state.activeIndex >= 0) showSlide(state.activeIndex);
   else setBlanked(false);
 }

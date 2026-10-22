@@ -22,7 +22,11 @@
 
     <script src="slide-renderer.js"></script>
     <script type="module">
-      import { loadBackground, onBackgroundChange } from './background-state.js';
+      import {
+        loadBackground,
+        onBackgroundChange,
+        onBackgroundVisible,
+      } from './background-state.js';
 
       const { renderSlide, fitStage, renderBackground } = window.SlideRenderer;
       const stage = document.getElementById('stage');
@@ -33,12 +37,19 @@
       window.addEventListener('resize', () => fitStage(stage));
       await window.__TAURI__.event.listen('update-slide-event', (e) => renderSlide(stage, e.payload));
 
+      // Mata background: hanya menyembunyikan layer background di layar audience.
+      // visibility:hidden membuat video tetap berjalan, jadi saat dibuka lagi tidak mulai dari awal.
+      await onBackgroundVisible((v) => {
+        layer.style.visibility = v ? '' : 'hidden';
+      });
+
       // Background: pasang listener sebelum membaca disk, agar perubahan yang
       // datang saat startup tidak tertimpa hasil baca yang lebih lama.
       let gotEvent = false;
       await onBackgroundChange((bg) => { gotEvent = true; renderBackground(layer, bg); });
       const saved = await loadBackground();
       if (!gotEvent) renderBackground(layer, saved);
+      await window.__TAURI__.event.emit('audience-ready');
     </script>
   </body>
 </html>

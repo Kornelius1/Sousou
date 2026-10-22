@@ -225,6 +225,10 @@
 .ed-f input[type="number"]::-webkit-inner-spin-button { opacity: 0; filter: grayscale(1); }
 .ed-f input[type="number"]:hover::-webkit-inner-spin-button,
 .ed-f input[type="number"]:focus::-webkit-inner-spin-button { opacity: 0.6; }
+.ed-f input[type="number"] {
+  color-scheme: dark;
+}
+
 
 .ed-f input[type="color"] {
   width: 100%;
@@ -347,3 +351,4 @@
 
 .ed-lines { display: contents; }  /* tiap .ed-line jadi baris langsung di .ed-grid */
 .ed-line:not(:has(.ed-unit)) { padding-right: calc(56px + var(--gap-x, 8px)); }
+

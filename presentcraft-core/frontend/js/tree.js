@@ -11,6 +11,11 @@ const el = (tag, cls, text) => {
 };
 const ICON_KINDS = new Set(["image", "video", "audio", "text"]);
 
+const MARK = {
+  check: ["fa-solid fa-square-check", "fa-regular fa-square"],
+  radio: ["fa-solid fa-circle-dot", "fa-regular fa-circle"],
+};
+
 // ---------- popup menu (satu untuk seluruh aplikasi) ----------
 let popup = null;
 let popupSub = null;
@@ -80,9 +85,25 @@ function fillMenu(m, entries) {
     const b = el("button", "ex-menu-i");
     b.disabled = !!e.disabled;
 
-    const dot = el("span", "ex-menu-dot", e.dot ? "●" : "");
-    if (e.dot && e.color) dot.style.color = e.color; // titik = penanda yang sedang dipilih
-    if (e.color) b.style.boxShadow = `inset 3px 0 0 ${e.color}`; // strip warna tag di tepi kiri
+    // marker slot: checkbox / radio when requested, otherwise the old dot
+    const kind = "check" in e ? "check" : "radio" in e ? "radio" : null;
+    const dot = el("span", "ex-menu-dot");
+    if (kind) {
+      const on = !!e[kind];
+      const icon = el("i", MARK[kind][on ? 0 : 1]);
+      icon.setAttribute("aria-hidden", "true");
+      dot.appendChild(icon);
+      dot.classList.add("is-mark");
+      b.setAttribute(
+        "role",
+        kind === "check" ? "menuitemcheckbox" : "menuitemradio",
+      );
+      b.setAttribute("aria-checked", String(on));
+    } else {
+      dot.textContent = e.dot ? "●" : "";
+      if (e.dot && e.color) dot.style.color = e.color; // tag dot keeps working
+    }
+    if (e.color) b.style.boxShadow = `inset 3px 0 0 ${e.color}`;
     b.append(dot, el("span", null, e.label));
 
     if (e.submenu) {
@@ -114,24 +135,28 @@ function fillMenu(m, entries) {
 /** entries: { label, dot?, disabled?, run? } | { sep: true } */
 export function showPopup(entries, { x = 0, y = 0, anchor = null } = {}) {
   closePopup();
-  const m = el('div', 'ex-menu');
+  const m = el("div", "ex-menu");
   fillMenu(m, entries);
   document.body.appendChild(m);
   popup = m;
   popupAnchor = anchor;
 
-  let left = x, top = y;
+  let left = x,
+    top = y;
   if (anchor) {
     const r = anchor.getBoundingClientRect();
-    left = r.left; top = r.bottom + 2;
-    if (top + m.offsetHeight > innerHeight) top = Math.max(4, r.top - m.offsetHeight - 2);
+    left = r.left;
+    top = r.bottom + 2;
+    if (top + m.offsetHeight > innerHeight)
+      top = Math.max(4, r.top - m.offsetHeight - 2);
   } else if (top + m.offsetHeight > innerHeight) {
     top = Math.max(4, innerHeight - m.offsetHeight - 4);
   }
-  m.style.top = top + 'px';
-  m.style.left = Math.max(4, Math.min(left, innerWidth - m.offsetWidth - 4)) + 'px';
-  document.addEventListener('mousedown', popupOutside, true);
-  document.addEventListener('keydown', popupKey, true);
+  m.style.top = top + "px";
+  m.style.left =
+    Math.max(4, Math.min(left, innerWidth - m.offsetWidth - 4)) + "px";
+  document.addEventListener("mousedown", popupOutside, true);
+  document.addEventListener("keydown", popupKey, true);
 }
 
 // ---------- pohon ----------
