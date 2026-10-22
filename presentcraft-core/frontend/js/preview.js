@@ -213,11 +213,12 @@ export function renderPreview({ keep = false } = {}) {
   pv.dir = 0;
 
   const slide = state.slides[state.activeIndex];
-  const show = !!slide || !!bgNow(); // background saja sudah cukup
-  pvHost.hidden = !show;
-  $("pv-empty").hidden = show;
 
-  if (show) buildStage(slide); // slide boleh undefined
+  const empty = !slide && !bgNow();
+  pvHost.hidden = false; // layar selalu ada
+  pvHost.classList.toggle("empty", empty); // untuk ikon samar (opsional)
+
+  buildStage(slide); // slide boleh undefined
   applyVideoPrefs();
 
   const vids = pvVideos();
@@ -245,14 +246,13 @@ export const renderPreviewSoon = debounce(
 
 export function refreshPreviewBackground() {
   const slide = state.slides[state.activeIndex];
-  // belum ada stage, tersembunyi, atau tidak ada apa pun untuk ditampilkan: bangun/sembunyikan penuh
-  if (!stage || pvHost.hidden || (!slide && !bgNow())) return renderPreview();
+  if (!stage) return renderPreview();
 
+  pvHost.classList.toggle('empty', !slide && !bgNow());
   const el = backgroundEl(bgNow());
   bgHolder.replaceChildren(...(el ? [el] : []));
   applyVideoPrefs();
-  if (pvVideos().length)
-    pvPlay(); // video background baru ikut jalan
+  if (pvVideos().length) pvPlay();
   else pvUi();
 }
 
@@ -302,6 +302,6 @@ export function initPreview() {
 
   on("slides:loaded", () => renderPreview());
   on("slide:shown", () => renderPreview());
-  on('blank:changed', () => renderPreview({ keep: true }));
+  on("blank:changed", () => renderPreview({ keep: true }));
   pvUi();
 }

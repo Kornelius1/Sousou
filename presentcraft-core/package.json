@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.4"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^6.7.2"
+  }
+}

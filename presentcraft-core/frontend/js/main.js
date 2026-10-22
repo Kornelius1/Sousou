@@ -13,7 +13,7 @@ import {
   initSorter,
   refreshThumbBackgrounds,
   initBlankDeck,
-} from "./sorter.js";
+} from "./sorter/sorter.js";
 import {
   initPreview,
   renderPreview,

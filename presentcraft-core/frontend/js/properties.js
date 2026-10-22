@@ -3,7 +3,7 @@ import { $, clamp, round } from "./utils.js";
 import { state, curLayer } from "./state.js";
 import { on } from "./events.js";
 import { scheduleEmit } from "./audience.js";
-import { renderThumb, refreshThumbBackgrounds } from "./sorter.js";
+import { renderThumb, refreshThumbBackgrounds } from "./sorter/sorter.js";
 import { renderPreviewSoon } from "./preview.js";
 
 function alignLayer(l, how) {

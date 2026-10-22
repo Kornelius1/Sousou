@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="css/panes.css" />
   <link rel="stylesheet" href="css/bottom.css" />
   <link rel="stylesheet" href="css/editor.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="stylesheet" href="css/fontawesome/css/all.min.css" />
 </head>
 
 <body>
@@ -103,7 +103,6 @@
         <div class="pane-title">Properties</div>
         <div id="props-scroll">
           <p class="muted" id="props-empty">Select a slide.</p>
-
           <div class="body" id="props-body" hidden>
             <div class="ed-grid">
               <div class="ed-f s2">
@@ -177,8 +176,8 @@
 
           <div id="preview">
             <div class="pv-title">Preview</div>
-            <div id="pv-host" class="thumb" hidden></div>
-            <p class="muted" id="pv-empty" style="padding: 0">Select a slide.</p>
+            <div id="pv-host" class="thumb"></div>
+            
             <div class="pv-seekrow">
               <input type="range" id="pv-seek" min="0" max="1000" value="0" aria-label="Posisi video" />
               <span id="pv-time">0:00 / 0:00</span>
