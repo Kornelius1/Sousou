@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { setStatus } from './utils.js';
 import { invoke, openDialog, saveDialog } from './tauri.js';
 import { setBackground } from '../background-state.js';
-import { applySlides } from './sorter.js';
+import { applySlides } from './sorter/sorter.js';
 import { lib } from './library.js';
 import * as G from './groups.js';
 

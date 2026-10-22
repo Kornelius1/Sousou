@@ -1,6 +1,7 @@
 import { $, setStatus } from './utils.js';
 import { state } from './state.js';
-import { showSlide, toggleBlank, importFile } from './sorter.js';
+import { showSlide, toggleBlank } from './sorter/sorter.js';
+import { importFile } from "./sorter/bundle-import.js";
 import { closeMenus } from './menu.js';
 
 // Hook Alkitab: ganti isi fungsi ini saat fitur Alkitab dibuat.

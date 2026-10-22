@@ -104,7 +104,7 @@ function fillMenu(m, entries) {
       if (e.dot && e.color) dot.style.color = e.color; // tag dot keeps working
     }
     if (e.color) b.style.boxShadow = `inset 3px 0 0 ${e.color}`;
-    b.append(dot, el("span", null, e.label));
+    b.append(dot, el("span", null, e.label)); 
 
     if (e.submenu) {
       b.classList.add("has-sub");

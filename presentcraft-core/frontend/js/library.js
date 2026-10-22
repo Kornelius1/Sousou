@@ -5,7 +5,7 @@ import { LIB_FILTER, libKindOf } from "./media.js";
 import { createStore, itemName } from "./store.js";
 import { createTree } from "./tree.js";
 import { pick } from "./background-panel.js";
-import { showGroupSlides, showSlide, initBlankDeck } from "./sorter.js";
+import { showGroupSlides, showSlide, initBlankDeck } from "./sorter/sorter.js";
 import { resolveTag } from "./tags.js";
 
 export const lib = createStore({

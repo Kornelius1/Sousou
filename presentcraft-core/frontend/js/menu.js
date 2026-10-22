@@ -1,6 +1,7 @@
 import { $, setStatus } from './utils.js';
 import { state } from './state.js';
-import { importFile, refreshThumbBackgrounds } from './sorter.js';
+import { refreshThumbBackgrounds } from './sorter/sorter.js';
+import { importFile } from "./sorter/bundle-import.js";
 import { resetConfirmations } from './confirm.js';
 import { exportSession, importSession } from './session.js';
 
