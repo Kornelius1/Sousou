@@ -1,4 +1,4 @@
-use crate::session_pack::{self, ExportRequest, Background};
+use crate::session_pack::{self, ExportRequest};
 use crate::groups::{self, Store};
 use std::path::PathBuf;
 use tauri::Manager;
@@ -51,22 +51,23 @@ fn bg_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 
 
 #[tauri::command]
-pub fn load_background_state(app: tauri::AppHandle) -> Result<Option<Background>, String> {
+pub fn load_background_state(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
     let p = bg_path(&app)?;
     let Ok(s) = fs::read_to_string(&p) else { return Ok(None) };
-    // file rusak atau format lama: anggap tidak ada background
     Ok(serde_json::from_str(&s).ok())
 }
 
 #[tauri::command]
-pub fn save_background_state(app: tauri::AppHandle, state: Option<Background>) -> Result<(), String> {
+pub fn save_background_state(
+    app: tauri::AppHandle,
+    state: Option<serde_json::Value>,
+) -> Result<(), String> {
     let p = bg_path(&app)?;
     match state {
         None => {
             let _ = fs::remove_file(&p);
         }
         Some(bg) => {
-            // tulis ke file sementara lalu rename, supaya crash tidak merusak file
             let tmp = p.with_extension("json.tmp");
             fs::write(&tmp, serde_json::to_vec_pretty(&bg).map_err(|e| e.to_string())?)
                 .map_err(|e| e.to_string())?;
@@ -74,4 +75,26 @@ pub fn save_background_state(app: tauri::AppHandle, state: Option<Background>) -
         }
     }
     Ok(())
+}
+
+fn mixer_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join("mixer.json"))
+}
+
+#[tauri::command]
+pub fn load_mixer_state(app: tauri::AppHandle) -> Result<Option<serde_json::Value>, String> {
+    let p = mixer_path(&app)?;
+    let Ok(s) = fs::read_to_string(&p) else { return Ok(None) };
+    Ok(serde_json::from_str(&s).ok())
+}
+
+#[tauri::command]
+pub fn save_mixer_state(app: tauri::AppHandle, state: serde_json::Value) -> Result<(), String> {
+    let p = mixer_path(&app)?;
+    let tmp = p.with_extension("json.tmp");
+    fs::write(&tmp, serde_json::to_vec_pretty(&state).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())?;
+    fs::rename(&tmp, &p).map_err(|e| e.to_string())
 }

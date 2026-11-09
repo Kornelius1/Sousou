@@ -7,9 +7,4 @@ export const debounce = (fn, ms = 150) => {
   return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
 };
 
-let statusTimer;
-export function setStatus(msg) {
-  $('tb-status').textContent = msg;
-  clearTimeout(statusTimer);
-  statusTimer = setTimeout(() => ($('tb-status').textContent = ''), 4000);
-}
+export function setStatus() {}

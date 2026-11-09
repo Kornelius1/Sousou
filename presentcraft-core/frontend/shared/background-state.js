@@ -6,7 +6,7 @@ const { emit, listen } = window.__TAURI__.event;
 
 export const BACKGROUND_EVENT = 'update-background-event';
 
-const KINDS = ['video', 'image', 'color'];
+const KINDS = ['video', 'image', 'color', 'input'];
 const SCALES = ['fit', 'fill'];
 
 let current = null;               // null = tidak ada background
@@ -16,15 +16,18 @@ let saveChain = Promise.resolve(); // simpan berurutan agar tidak saling timpa
 export function normalize(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (!KINDS.includes(raw.kind) || !raw.src) return null;
+  if (raw.kind === 'input' && !(raw.input && raw.input.media === 'video')) return null;
   const opacity = Number(raw.opacity);
-  return {
+  const out = {
     src: String(raw.src),
     kind: raw.kind,
-    loop: raw.loop !== false,                 // default: ulang
-    mute: raw.mute !== false,                 // default: bisu
+    loop: raw.loop !== false,
+    mute: raw.mute !== false,
     scale: SCALES.includes(raw.scale) ? raw.scale : 'fill',
     opacity: Number.isFinite(opacity) ? Math.min(1, Math.max(0, opacity)) : 1,
   };
+  if (raw.kind === 'input') out.input = raw.input;
+  return out;
 }
 
 export const getBackground = () => current;

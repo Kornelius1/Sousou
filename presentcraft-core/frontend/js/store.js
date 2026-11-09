@@ -13,9 +13,11 @@ const collator = new Intl.Collator(undefined, {
 export const itemName = (it) =>
   it.kind === "color"
     ? it.src
-    : it.kind === "text" || it.kind === "slide"
-      ? it.label || (it.text || "").slice(0, 30)
-      : it.src.split(/[\\/]/).pop();
+    : it.kind === "input"
+      ? it.input?.name || it.label || "Input"
+      : it.kind === "text" || it.kind === "slide"
+        ? it.label || (it.text || "").slice(0, 30)
+        : it.src.split(/[\\/]/).pop();
 
 export const sameItem = (a, b) =>
   a.kind === b.kind &&
@@ -137,6 +139,21 @@ export function createStore({ name, loadCmd, saveCmd }) {
     return n;
   }
 
+  function addInput(gid, cfg) {
+    const g = find(gid);
+    if (!g) return null;
+    const it = {
+      ...base(),
+      kind: "input",
+      src: `input://${cfg.media}/${uid()}`, // sintetis, unik: dedup & sort tetap jalan
+      loop: false,
+      input: cfg,
+    };
+    g.items.push(it);
+    changed();
+    return it;
+  }
+
   function addBlank(gid, name) {
     const g = find(gid);
     if (!g) return null;
@@ -245,12 +262,13 @@ export function createStore({ name, loadCmd, saveCmd }) {
     deleteGroup,
     addFiles,
     addBlank,
+    addInput,
     copyIn,
     removeItem,
     moveItem,
     sortGroup,
     ensureGroup,
     replaceSlides,
-    setTag
+    setTag,
   };
 }

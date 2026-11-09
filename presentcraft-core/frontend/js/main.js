@@ -5,7 +5,7 @@ import {
   setBackgroundVisible,
   isBackgroundVisible,
   onBackgroundVisible,
-} from "../background-state.js";
+} from "../shared/background-state.js";
 import { state } from "./state.js";
 import { initMenu } from "./menu.js";
 import { initToolbar, initShortcuts } from "./toolbar.js";
@@ -24,6 +24,11 @@ import { initLibrary, renderLibrary, lib, refreshGrid } from "./library.js";
 import { initBackgroundPanel, syncPanel } from "./background-panel.js";
 import { loadGroups, migrateBackground } from "./groups.js";
 import { initExplorer } from "./explorer.js";
+import { initPanels } from "./panels.js";
+import * as M from "./mixer-state.js";
+import { initMixerPanel } from "./mixer-panel.js";
+import { syncCamsSoon } from "./cam-usage.js";
+import { on } from "./bus.js";
 
 initMenu();
 initToolbar();
@@ -33,21 +38,25 @@ initPreview();
 initProperties();
 await lib.load();
 initLibrary();
+initPanels();
+initMixerPanel();
 
 // Listener dipasang sebelum membaca disk, agar event yang datang saat startup tidak terlewat.
 await onBackgroundChange((bg) => {
   state.bg = bg;
   refreshPreviewBackground();
   syncPanel(bg);
+  syncCamsSoon();
 });
 
-await onBackgroundVisible(() => {
+await onBackgroundVisible((v) => {
+  M.setLive(v); // sinyal live untuk Auto On / Auto Off
   refreshPreviewBackground();
-  syncPanel(state.bg);   // memanggil syncEye(), jadi ikon mata selalu cocok dengan status
+  syncPanel(state.bg);
 });
-
 
 state.bg = await loadBackground();
+await M.loadMixer();
 const hadGroups = await loadGroups();
 if (!hadGroups) migrateBackground(state.bg);
 
@@ -55,10 +64,13 @@ if (!hadGroups) migrateBackground(state.bg);
 initExplorer();
 initBackgroundPanel();
 window.__TAURI__.event.listen("audience-ready", () => {
-  setBackgroundVisible(isBackgroundVisible()); // re-send the current state
+  setBackgroundVisible(isBackgroundVisible());
+  M.broadcast(); // audience yang baru dibuka langsung dapat state mixer
 });
 syncPanel(state.bg);
 refreshThumbBackgrounds();
 renderLibrary();
 refreshGrid();
 renderPreview();
+on("groups-changed", syncCamsSoon);
+on("lib-changed", syncCamsSoon);
