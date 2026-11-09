@@ -29,6 +29,8 @@ import * as M from "./mixer-state.js";
 import { initMixerPanel } from "./mixer-panel.js";
 import { syncCamsSoon } from "./cam-usage.js";
 import { on } from "./bus.js";
+import { broadcastMessage } from "./message-state.js";
+import { initMessagePanel } from "./message-panel.js";
 
 initMenu();
 initToolbar();
@@ -40,6 +42,7 @@ await lib.load();
 initLibrary();
 initPanels();
 initMixerPanel();
+initMessagePanel(); 
 
 // Listener dipasang sebelum membaca disk, agar event yang datang saat startup tidak terlewat.
 await onBackgroundChange((bg) => {
@@ -65,7 +68,8 @@ initExplorer();
 initBackgroundPanel();
 window.__TAURI__.event.listen("audience-ready", () => {
   setBackgroundVisible(isBackgroundVisible());
-  M.broadcast(); // audience yang baru dibuka langsung dapat state mixer
+  M.broadcast();
+  broadcastMessage(); 
 });
 syncPanel(state.bg);
 refreshThumbBackgrounds();

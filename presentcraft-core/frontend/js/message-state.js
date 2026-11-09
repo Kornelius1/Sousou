@@ -8,8 +8,8 @@ export const DEFAULTS = {
   pos: "bottom",    // top | bottom (ticker & banner)
   size: 6,          // % tinggi layar
   speed: 120,       // px/detik pada layar setinggi 1080
-  color: "#ffffff",
-  bg: "#000000",
+  color: "#000000",
+  bg: "#ffffff",
 };
 
 let current = { visible: false, text: "", ...DEFAULTS };
@@ -42,4 +42,4 @@ export function hideMessage() {
 }
 
 /** Dipanggil saat "audience-ready": kirim ulang state terakhir. */
-export const broadcastMessage = () => push();
+export const broadcastMessage = () => push();   
