@@ -14,10 +14,15 @@ export const toBg = (it) => ({
   mute: it.mute,
   scale: it.scale,
   opacity: it.opacity,
+  ...(it.kind === "input" ? { input: it.input } : {}),
 });
 
 export const isLive = (it) =>
   !!ps.cur && ps.cur.kind === it.kind && ps.cur.src === it.src;
 
 export const label = (it) =>
-  it.kind === "color" ? `Warna ${it.src}` : baseName(it.src);
+  it.kind === "color"
+    ? `Warna ${it.src}`
+    : it.kind === "input"
+      ? it.input?.name || "Input"
+      : baseName(it.src);

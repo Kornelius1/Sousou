@@ -1,6 +1,6 @@
 // Tampilan panel background: grid tile, tombol mata, sinkronisasi, zoom.
 import { $ } from "../utils.js";
-import { isBackgroundVisible } from "../../background-state.js";
+import { isBackgroundVisible } from "../../shared/background-state.js";
 import * as G from "../groups.js";
 import { ps, toBg, isLive, label } from "./bg-shared.js";
 
@@ -26,8 +26,9 @@ export function applyTile(it) {
   const t = tiles.get(it.id);
   if (!t) return;
   SR.renderBackground(t.layer, toBg(it), { preview: true });
-  t.cap.textContent = label(it);
-  t.tile.title = it.src;
+  const nm = it.kind === "input" ? it.input?.name || "Input" : null;
+  t.cap.textContent = nm ?? label(it);
+  t.tile.title = nm ?? it.src;
 }
 
 function buildTile(it) {

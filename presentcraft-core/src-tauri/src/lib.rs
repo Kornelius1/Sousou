@@ -7,6 +7,8 @@ mod pro_parser;
 mod commands;
 mod groups;
 mod session_pack;
+mod ndi;
+mod camera;
 use pro_parser::{parse_pro_file, parse_pro_file_with, MediaResolver, Slide};
 
 #[derive(serde::Serialize)]
@@ -115,12 +117,16 @@ fn load_presentation_bundle(app: tauri::AppHandle, file_path: String) -> Result<
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .manage(camera::CameraHub::default())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            use tauri::Manager;
+            camera::start_server(app.state::<camera::CameraHub>().inner().clone())?;
+
             let _audience_window = tauri::WebviewWindowBuilder::new(
                 app,
                 "audience",
-                tauri::WebviewUrl::App("audience.html".into())
+                tauri::WebviewUrl::App("audience.html".into()),
             )
             .title("PresentCraft - Audience Display")
             .inner_size(1280.0, 720.0)
@@ -134,10 +140,16 @@ pub fn run() {
             commands::import_session,
             commands::load_background_state,
             commands::save_background_state,
+            commands::load_mixer_state,
+            commands::save_mixer_state, 
             commands::load_groups,
             commands::save_groups,
             commands::load_library,
             commands::save_library,
+            ndi::ndi_discover,
+            ndi::ndi_status,
+            ndi::ndi_open_download,
+            camera::cam_list, camera::cam_start, camera::cam_stop,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

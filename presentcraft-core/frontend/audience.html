@@ -20,13 +20,16 @@
     <div id="bg-layer"></div>
     <div id="stage"></div>
 
-    <script src="slide-renderer.js"></script>
+    <script src="shared/input-player.js"></script>
+    <script src="shared/audio-engine.js"></script>
+    <script src="shared/cam-source.js"></script>
+    <script src="shared/slide-renderer.js"></script>
     <script type="module">
       import {
         loadBackground,
         onBackgroundChange,
         onBackgroundVisible,
-      } from './background-state.js';
+      } from './shared/background-state.js';
 
       const { renderSlide, fitStage, renderBackground } = window.SlideRenderer;
       const stage = document.getElementById('stage');

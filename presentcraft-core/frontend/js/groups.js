@@ -135,6 +135,20 @@ export function addColor(gid, colorHex) {
   return item;
 }
 
+export function addInput(gid, cfg) {
+  const g = findGroup(gid);
+  if (!g) return null;
+  const item = {
+    ...newItem(`input://${cfg.media}/${uid()}`, 'input'),
+    loop: false,
+    mute: true,
+    input: cfg,   // lihat bentuknya di bagian 3
+  };
+  g.items.push(item);
+  changed();
+  return item;
+}
+
 export function removeItem(gid, iid) {
   const g = findGroup(gid);
   if (!g) return;
@@ -172,7 +186,10 @@ export function moveItem(fromId, iid, toId) {
 }
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
-const nameOf = (it) => (it.kind === 'color' ? it.src : it.src.split(/[\\/]/).pop());
+const nameOf = (it) =>
+  it.kind === 'color' ? it.src
+  : it.kind === 'input' ? (it.input?.name || it.src)
+  : it.src.split(/[\\/]/).pop();
 
 export function sortGroup(gid, by, dir) {
   const g = findGroup(gid);

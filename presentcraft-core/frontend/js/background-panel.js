@@ -5,7 +5,7 @@ import {
   clearBackground,
   setBackgroundVisible,
   isBackgroundVisible,
-} from "../background-state.js";
+} from "../shared/background-state.js";
 import * as G from "./groups.js";
 import { ps } from "./background/bg-shared.js";
 import {

@@ -1,5 +1,8 @@
 // Aksi pada background: pilih tile, tayangkan, edit properti, pick dari library.
-import { setBackground, patchBackground } from "../../background-state.js";
+import {
+  setBackground,
+  patchBackground,
+} from "../../shared/background-state.js";
 import * as G from "../groups.js";
 import { ps, toBg, isLive } from "./bg-shared.js";
 import { refreshArea, syncSettings } from "./bg-view.js";
@@ -23,10 +26,22 @@ export function editItem(it, patch) {
 }
 
 /** Dipakai library.js (tombol BG): masuk ke grup terpilih, lalu langsung tayang. */
-export function pick(src, kind) {
+export function pick(src, kind, input) {
   const g = G.selectedGroup() || G.createGroup("Umum");
-  G.addFiles(g.id, [src]);
-  const it = g.items.find((i) => i.src === src);
+  let it;
+  if (kind === "input") {
+    if (!input) return;
+    it =
+      g.items.find(
+        (i) =>
+          i.kind === "input" &&
+          i.input?.name === input.name &&
+          i.input?.deviceId === input.deviceId,
+      ) || G.addInput(g.id, input);
+  } else {
+    G.addFiles(g.id, [src]);
+    it = g.items.find((i) => i.src === src);
+  }
   if (!it) return;
   selectTile(it);
   air(it);

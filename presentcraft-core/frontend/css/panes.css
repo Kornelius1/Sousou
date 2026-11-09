@@ -1,10 +1,49 @@
 /* ---------- workspace: pustaka | slide | properties ---------- */
 #workspace {
-  --lib: 230px; --props: 300px;
-  display: grid; grid-template-columns: var(--lib) minmax(0, 1fr) var(--props); min-height: 0;
+  position: relative;
+  /* lebar nyata diisi JS lewat --lib-w / --props-w (inline style),
+     supaya class .no-lib / .no-props milikmu tetap bisa menimpa */
+  --lib: var(--lib-w, 230px);
+  --props: var(--props-w, 300px);
+  display: grid;
+  grid-template-columns: var(--lib) minmax(400px, 1fr) var(--props);  /* sorter min 400px */
+  min-height: 0;
+  overflow: hidden;
 }
-#workspace.no-lib { --lib: 0px; }
+#workspace.lib-collapsed   { --lib: 0px; }
+#workspace.props-collapsed { --props: 0px; }
+#workspace.no-lib   { --lib: 0px; }
 #workspace.no-props { --props: 0px; }
+
+/* ---------- splitter + tombol collapse ---------- */
+.splitter {
+  position: absolute; top: 0; bottom: 0; width: 6px; z-index: 20;
+  cursor: col-resize; background: transparent; transition: background .12s;
+}
+.splitter[data-side="left"]  { left:  calc(var(--lib)   - 3px); }
+.splitter[data-side="right"] { right: calc(var(--props) - 3px); }
+.splitter:hover, .splitter.dragging { background: rgba(255, 255, 255, .18); }
+
+#workspace.lib-collapsed   .splitter[data-side="left"],
+#workspace.props-collapsed .splitter[data-side="right"] { cursor: default; background: transparent; }
+#workspace.no-lib   .splitter[data-side="left"],
+#workspace.no-props .splitter[data-side="right"] { display: none; }
+
+.split-tab {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 44px; padding: 0; border: 1px solid #3a3a3a;
+  background: #2a2a2a; color: #aaa; font-size: 12px; line-height: 1;
+  cursor: pointer; opacity: 100; transition: opacity .12s, background .12s;
+}
+.splitter[data-side="left"]  .split-tab { left: 6px;  border-radius: 0 4px 4px 0; }
+.splitter[data-side="right"] .split-tab { right: 6px; border-radius: 4px 0 0 4px; }
+.splitter:hover .split-tab,
+.split-tab:focus-visible,
+#workspace.lib-collapsed   .splitter[data-side="left"]  .split-tab,
+#workspace.props-collapsed .splitter[data-side="right"] .split-tab { opacity: 1; }
+.split-tab:hover { background: #3d3d3d; color: #fff; }
+
+body.resizing { cursor: col-resize; user-select: none; }
 #library { grid-column: 1; grid-row: 1; }
 #sorter  { grid-column: 2; grid-row: 1; }
 #props   { grid-column: 3; grid-row: 1; }

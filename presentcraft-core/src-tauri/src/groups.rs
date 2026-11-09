@@ -5,11 +5,12 @@ fn yes() -> bool { true }
 fn fill() -> String { "fill".into() }
 fn one() -> f32 { 1.0 }
 
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Item {
     pub id: String,
     pub src: String,
-    pub kind: String, // "video" | "image" | "color"
+    pub kind: String, // "video" | "image" | "color" | "input" | "slide" | ...
     #[serde(default)]
     pub text: String,
     #[serde(default)]
@@ -24,6 +25,9 @@ pub struct Item {
     pub opacity: f32,
     #[serde(default)]
     pub added: u64,
+    /// Menampung `input`, `slide`, `tag`, `origin`, dan field apa pun yang ditambahkan nanti.
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -65,24 +69,31 @@ pub fn save(dir: &Path, file: &str, store: &Store) -> Result<(), String> {
 mod tests {
     use super::*;
 
-    #[test]
+       #[test]
     fn roundtrip_and_missing() {
         let dir = std::env::temp_dir().join("pc_groups_test");
         let _ = fs::remove_dir_all(&dir);
-        assert!(load(&dir).is_none());
+        assert!(load(&dir, "t.json").is_none());
+
+        let mut extra = serde_json::Map::new();
+        extra.insert("input".into(), serde_json::json!({ "media": "video", "name": "Cam" }));
+
         let store = Store {
             groups: vec![Group {
                 id: "g".into(),
                 name: "Natal".into(),
                 items: vec![Item {
-                    id: "i".into(), src: "a.mp4".into(), kind: "video".into(),
-                    looped: true, mute: false, scale: "fit".into(), opacity: 0.6,
+                    id: "i".into(), src: "input://video/x".into(), kind: "input".into(),
+                    text: String::new(), label: String::new(),
+                    looped: false, mute: false, scale: "fit".into(), opacity: 0.6, added: 0,
+                    extra,
                 }],
             }],
         };
-        save(&dir, &store).unwrap();
-        let back = load(&dir).unwrap();
-        assert_eq!(back.groups[0].items[0].opacity, 0.6);
-        assert!(!back.groups[0].items[0].mute);
+        save(&dir, "t.json", &store).unwrap();
+        let back = load(&dir, "t.json").unwrap();
+        let it = &back.groups[0].items[0];
+        assert_eq!(it.opacity, 0.6);
+        assert_eq!(it.extra["input"]["name"], "Cam"); // field input selamat
     }
 }

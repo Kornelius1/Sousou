@@ -7,8 +7,6 @@
 .tb kbd { color: #888; font: inherit; margin-left: 4px; }
 .tb.on kbd { color: #333; }
 #tb-bible:hover { background: #28507f; }
-#tb-status { color: #03dac6; font-size: 12px; }
-
 /* ---------- panel background (bawah): explorer | detail ---------- */
 .mp-empty { color: #888; font-style: italic; font-size: 12px; }
 
@@ -159,3 +157,20 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
 
 .pop-mark { width: 16px; margin-right: 8px; text-align: center; font-size: 13px; }
 
+
+.ex-row { cursor: default; }
+.ex-row:hover { background: rgba(255,255,255,.07); }
+
+/* item yang akan dihapus: garis di kiri + latar lebih jelas */
+.ex-row.sel {
+  background: rgba(80,140,255,.22);
+  box-shadow: inset 3px 0 0 #5a8dff;
+}
+.ex-row.sel .ex-name { font-weight: 600; }
+
+/* saat tombol hapus di-hover, tandai sasarannya dengan merah */
+#lib-list.del-target .ex-row.sel,
+#ex-list.del-target  .ex-row.sel {
+  background: rgba(220,60,60,.25);
+  box-shadow: inset 3px 0 0 #e04848;
+}

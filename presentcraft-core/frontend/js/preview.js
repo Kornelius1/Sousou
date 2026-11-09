@@ -5,7 +5,7 @@ import { state } from "./state.js";
 import { on } from "./events.js";
 import { toPayload } from "./audience.js";
 import { convertFileSrc } from "./tauri.js";
-import { isBackgroundVisible } from "../background-state.js";
+import { isBackgroundVisible } from "../shared/background-state.js";
 
 const SR = window.SlideRenderer;
 const pvHost = $("pv-host");
@@ -14,6 +14,20 @@ const bgNow = () => (isBackgroundVisible() ? state.bg : null);
 let stage = null;
 let stageW = 1366;
 let bgHolder = null;
+let buildSeq = 0;
+
+const readyMedia = (el) =>
+  new Promise((res) => {
+    if (el.tagName === "IMG") {
+      if (el.decode) el.decode().then(res, res);
+      else if (el.complete) res();
+      else el.onload = el.onerror = res;
+    } else if (el.readyState >= 2) res();
+    else {
+      el.addEventListener("loadeddata", res, { once: true });
+      el.addEventListener("error", res, { once: true });
+    }
+  });
 
 const ICON = {
   play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
@@ -40,12 +54,35 @@ function mediaEl(kind, src, { loop, fit }) {
   return m;
 }
 
+let bgDispose = null;
+const disposeBg = () => {
+  bgDispose?.();
+  bgDispose = null;
+};
+
+function inputBgEl(bg) {
+  const img = document.createElement("img");
+  img.dataset.live = "1";
+  img.style.cssText =
+    `position:absolute;inset:0;width:100%;height:100%;` +
+    `object-fit:${bg.scale === "fit" ? "contain" : "cover"};display:block`;
+  window.CamSource.url(bg.input.label)
+    .then((u) => {
+      img.src = u;
+    })
+    .catch((e) => console.warn("Preview kamera gagal:", e));
+  return img;
+}
+
 function backgroundEl(bg) {
+  disposeBg();
   if (!bg) return null;
   const el = document.createElement("div");
   el.style.cssText = `position:absolute;inset:0;overflow:hidden;opacity:${bg.opacity ?? 1}`;
   if (bg.kind === "color") el.style.background = bg.src;
-  else
+  else if (bg.kind === "input") {
+    if (bg.input?.media === "video" && !bg.input.ndi) el.append(inputBgEl(bg));
+  } else
     el.append(
       mediaEl(bg.kind, convertFileSrc(bg.src), {
         loop: bg.loop,
@@ -95,34 +132,87 @@ function applyScale() {
     stage.style.transform = `scale(${pvHost.clientWidth / stageW})`;
 }
 
+let bgKey = null;
+
+function syncBackground(bg) {
+  const key = bg
+    ? [
+        bg.kind,
+        bg.src,
+        bg.input?.deviceId || bg.input?.label || "",
+        bg.loop,
+        bg.scale,
+      ].join("|")
+    : null;
+  if (key === bgKey && bgHolder.firstElementChild) {
+    bgHolder.firstElementChild.style.opacity = bg.opacity ?? 1;
+    return;
+  }
+  bgKey = key;
+  const el = backgroundEl(bg);
+  const olds = [...bgHolder.children];
+  if (!el) {
+    bgHolder.replaceChildren();
+    return;
+  }
+  bgHolder.append(el);
+  const media = [...el.querySelectorAll("img, video")];
+  const drop = () => olds.forEach((o) => o.remove());
+  if (!media.length) drop();
+  else
+    Promise.race([
+      Promise.all(media.map(readyMedia)),
+      new Promise((r) => setTimeout(r, 1500)),
+    ]).then(drop);
+}
+
 function buildStage(slide) {
   const p = slide
     ? toPayload(slide)
     : { content: "", mediaPath: null, width: 1366, height: 768, layers: [] };
   stageW = p.width;
-  pvHost.replaceChildren();
   pvHost.style.aspectRatio = `${p.width} / ${p.height}`;
-  stage = document.createElement("div");
-  stage.className = "pv-stage";
+
+  if (!stage || stage.parentNode !== pvHost) {
+    pvHost.replaceChildren();
+    stage = document.createElement("div");
+    stage.className = "pv-stage";
+    bgHolder = document.createElement("div");
+    bgHolder.style.cssText = "position:absolute;inset:0";
+    bgKey = null;
+    stage.append(bgHolder);
+    pvHost.append(stage);
+  }
   stage.style.cssText = `width:${p.width}px;height:${p.height}px;overflow:hidden`;
 
-  bgHolder = document.createElement("div");
-  bgHolder.style.cssText = "position:absolute;inset:0";
-  const bg = backgroundEl(bgNow());
-  if (bg) bgHolder.append(bg);
-  stage.append(bgHolder);
+  const old = [...stage.children].filter((c) => c !== bgHolder);
 
+  syncBackground(bgNow());
+
+  const fresh = [];
   for (const l of state.blanked ? [] : p.layers) {
     const el = layerEl(l);
-    if (el) stage.append(el);
+    if (el) {
+      stage.append(el);
+      fresh.push(el);
+    }
   }
-  pvHost.append(stage);
   applyScale();
+
+  const seq = ++buildSeq;
+  const media = fresh.flatMap((e) => [...e.querySelectorAll("img, video")]);
+  const dropOld = () => old.forEach((c) => c.remove());
+  if (!media.length) dropOld();
+  else
+    Promise.race([
+      Promise.all(media.map(readyMedia)),
+      new Promise((r) => setTimeout(r, 400)),
+    ]).then(dropOld);
 }
 
 // ---------- transport ----------
 const RATES = [0.5, 1, 1.5, 2];
-const pvVideos = () => [...pvHost.querySelectorAll("video")];
+const pvVideos = () => [...pvHost.querySelectorAll("video:not([data-live])")];
 const pvMain = () =>
   pvVideos()
     .filter((v) => Number.isFinite(v.duration))
@@ -247,10 +337,8 @@ export const renderPreviewSoon = debounce(
 export function refreshPreviewBackground() {
   const slide = state.slides[state.activeIndex];
   if (!stage) return renderPreview();
-
-  pvHost.classList.toggle('empty', !slide && !bgNow());
-  const el = backgroundEl(bgNow());
-  bgHolder.replaceChildren(...(el ? [el] : []));
+  pvHost.classList.toggle("empty", !slide && !bgNow());
+  syncBackground(bgNow());
   applyVideoPrefs();
   if (pvVideos().length) pvPlay();
   else pvUi();

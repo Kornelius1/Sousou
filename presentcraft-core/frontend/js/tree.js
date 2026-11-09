@@ -2,6 +2,7 @@ import { $, setStatus } from "./utils.js";
 import { on } from "./bus.js";
 import { openDialog } from "./tauri.js";
 import { askConfirm } from "./confirm.js";
+import { openInputDialog } from "./inputs.js";
 
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
@@ -189,6 +190,7 @@ export function createTree(cfg) {
   const open = new Set(cfg.openByDefault || []);
   const sortPref = new Map();
   let editing = null;
+  let explicitGroup = false;
   let creating = null;
   let rendering = false;
   let drag = null;
@@ -207,6 +209,13 @@ export function createTree(cfg) {
       const sw = el("span", "ex-swatch");
       sw.style.background = it.src;
       row.appendChild(sw);
+    } else if (it.kind === "input") {
+      const ic = el(
+        "i",
+        it.input?.media === "audio" ? "fa-solid fa-microphone" : "fa-solid fa-video",
+      );
+      ic.style.cssText = "width:14px;margin-right:6px;text-align:center;font-size:11px;opacity:.8";
+      row.appendChild(ic);
     } else {
       row.appendChild(
         el("span", "ex-ico " + (ICON_KINDS.has(it.kind) ? it.kind : "file")),
@@ -307,18 +316,43 @@ export function createTree(cfg) {
   function openAddMenu() {
     const btn = $(cfg.ids.add);
     if (popupOpenFor(btn)) return closePopup();
-    if (!cfg.api.addBlank) return addFilesToSelected();
-    const target = writableTarget();
-    showPopup(
-      [
-        {
-          label: target ? "New Slide" : "New Slide (Create a group first)",
-          disabled: !target,
-          run: () => startCreate({ type: "slide", gid: target.id }),
-        },
-        { label: "Upload file…", run: addFilesToSelected },
-      ],
-      { anchor: btn },
+
+    const kinds = cfg.api.addInput ? cfg.inputKinds || ["video", "audio"] : [];
+    if (!cfg.api.addBlank && !kinds.length) return addFilesToSelected();
+
+    const entries = [];
+    if (cfg.api.addBlank) {
+      const target = writableTarget();
+      entries.push({
+        label: target ? "New Slide" : "New Slide (Create a group first)",
+        disabled: !target,
+        run: () => startCreate({ type: "slide", gid: target.id }),
+      });
+    }
+    entries.push({ label: "Upload file…", run: addFilesToSelected });
+    if (kinds.length) {
+      entries.push({ sep: true });
+      for (const k of kinds)
+        entries.push({
+          label: k === "video" ? "Video Input…" : "Audio Input…",
+          run: () => addInputToSelected(k, kinds),
+        });
+    }
+    showPopup(entries, { anchor: btn });
+  }
+
+  function addInputToSelected(kind, kinds) {
+    openInputDialog(
+      kind,
+      (c) => {
+        let g = group(cfg.sel().gid);
+        if (!g || ro(g.id))
+          g = cfg.groups().find((x) => !ro(x.id)) || cfg.api.createGroup("Umum");
+        open.add(g.id);
+        cfg.api.addInput(g.id, c);
+        render();
+      },
+      kinds,
     );
   }
 
@@ -372,31 +406,37 @@ export function createTree(cfg) {
   }
 
   // ----- hapus (dengan konfirmasi) -----
-  async function deleteSelected() {
-    const { gid } = cfg.sel();
-    const g = group(gid);
-    if (!g) return;
-    if (ro(g.id)) return setStatus("This group is read-only.");
-    const it = g.items.find((x) => x.id === cfg.sel().iid);
-    if (it) {
-      const ok = await askConfirm({
-        key: "delete",
-        title: "Delete item",
-        message: `Remove “${cfg.itemName(it)}” from “${g.name}”?\nThe original file on disk is not deleted.`,
-      });
-      if (ok) cfg.api.removeItem(g.id, it.id);
-      return;
-    }
-    const n = g.items.length;
+async function deleteSelected() {
+  const { gid, iid } = cfg.sel();
+  const g = group(gid);
+  if (!g) return setStatus("Pilih item atau grup yang ingin dihapus.");
+  if (ro(g.id)) return setStatus("This group is read-only.");
+
+  // Ada item terpilih: hapus item itu saja
+  if (iid) {
+    const it = g.items.find((x) => x.id === iid);
+    if (!it) return setStatus("Pilih item yang ingin dihapus.");
     const ok = await askConfirm({
       key: "delete",
-      title: "Delete group",
-      message: n
-        ? `Delete “${g.name}” and its ${n} item${n > 1 ? "s" : ""}?\nThe original files on disk are not deleted.`
-        : `Delete the empty group “${g.name}”?`,
+      title: "Delete item",
+      message: `Remove “${cfg.itemName(it)}” from “${g.name}”?\nThe original file on disk is not deleted.`,
     });
-    if (ok) cfg.api.deleteGroup(g.id);
+    if (ok) cfg.api.removeItem(g.id, it.id);
+    return;
   }
+
+  // Tidak ada item: hanya hapus grup jika barisnya memang dipilih eksplisit
+  if (!explicitGroup) return setStatus("Pilih item atau grup yang ingin dihapus.");
+  const n = g.items.length;
+  const ok = await askConfirm({
+    key: "delete-group",   // key beda supaya "jangan tanya lagi" item tidak ikut melewati hapus grup
+    title: "Delete group",
+    message: n
+      ? `Delete “${g.name}” and ALL ${n} item${n > 1 ? "s" : ""} inside it?\nThe original files on disk are not deleted.`
+      : `Delete the empty group “${g.name}”?`,
+  });
+  if (ok) cfg.api.deleteGroup(g.id);
+}
 
   // ----- tambah file -----
   async function addFilesToSelected() {
@@ -540,21 +580,23 @@ export function createTree(cfg) {
   }
 
   // ----- event DOM -----
-  list.addEventListener("click", (e) => {
-    if (suppressClick || e.target.closest(".ex-edit")) return;
-    const row = e.target.closest(".ex-row");
-    if (!row) return;
-    if (row.classList.contains("ex-creating")) return;
-    const gid = row.dataset.gid;
-    if (row.dataset.iid) return cfg.api.selectItem(gid, row.dataset.iid);
-    if (e.target.closest(".ex-twisty")) {
-      open.has(gid) ? open.delete(gid) : open.add(gid);
-      return render();
-    }
-    open.add(gid);
-    cfg.api.selectGroup(gid);
-    render();
-  });
+list.addEventListener("click", (e) => {
+  if (suppressClick || e.target.closest(".ex-edit")) return;
+  const row = e.target.closest(".ex-row");
+  if (!row) return;
+  if (row.classList.contains("ex-creating")) return;
+  const gid = row.dataset.gid;
+  if (row.dataset.iid) { explicitGroup = false; return cfg.api.selectItem(gid, row.dataset.iid); }
+  if (e.target.closest(".ex-twisty")) {
+    open.has(gid) ? open.delete(gid) : open.add(gid);
+    return render();
+  }
+  explicitGroup = true;
+  open.add(gid);
+  cfg.api.selectGroup(gid);
+  render();
+});
+
   list.addEventListener("mousedown", startDragWatch);
   list.addEventListener("dblclick", (e) => {
     if (e.target.closest(".ex-edit")) return;

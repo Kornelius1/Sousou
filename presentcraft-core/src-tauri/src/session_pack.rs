@@ -1,5 +1,5 @@
 use crate::pro_parser::media::safe_relative;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs::{self, File};
@@ -13,16 +13,7 @@ const VERSION: u64 = 2;
 const MAX_ENTRIES: usize = 20_000;
 const MAX_TOTAL: u64 = 20 * 1024 * 1024 * 1024; // 20 GB
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Background {
-    pub src: Option<String>,
-    pub kind: String, // "video" | "image" | "color"
-    #[serde(rename = "loop")]
-    pub looped: bool,
-    pub mute: bool,
-    pub scale: String, // "fit" | "fill"
-    pub opacity: f32,
-}
+
 
 #[derive(Deserialize)]
 pub struct ExportRequest {
