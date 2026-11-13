@@ -103,13 +103,15 @@ const FONT = {
   in: 1 / PX_PER_IN,
   "%": 100 / SLIDE_PX.h, // % tinggi slide
 };
+
 const META = {
-  "%": { label: "%", step: 0.1, dec: 2 },
-  px: { label: "px", step: 1, dec: 1 },
-  pt: { label: "pt", step: 0.5, dec: 1 },
-  cm: { label: "cm", step: 0.1, dec: 2 },
-  in: { label: "inci", step: 0.01, dec: 3 },
+  "%": { label: "%", step: 0.1, big: 1, dec: 2 },
+  px: { label: "px", step: 1, big: 10, dec: 1 },
+  pt: { label: "pt", step: 0.5, big: 1, dec: 1 },
+  cm: { label: "cm", step: 0.1, big: 0.5, dec: 2 },
+  in: { label: "inci", step: 0.01, big: 0.1, dec: 3 },
 };
+
 const optsOf = (keys) => keys.map((k) => [k, META[k].label]);
 export const POS_UNITS = optsOf(["%", "px", "pt", "cm", "in"]);
 export const SIZE_UNITS = POS_UNITS;
@@ -140,6 +142,7 @@ export const factor = (f) =>
   f.ug === "font" ? FONT[units.font] : LEN[units[f.ug]](f.dim);
 const meta = (f) => META[units[f.ug]];
 export const fieldStep = (f) => (isLen(f) ? meta(f).step : f.step);
+export const fieldBig = (f) => (isLen(f) ? meta(f).big : Math.max(f.step ?? 1, f.path === "rotation" ? 1 : f.step ?? 1));
 export const fieldMin = (f) =>
   f.min != null && isLen(f) ? +(f.min * factor(f)).toFixed(4) : f.min;
 export const fieldTip = (f) =>
@@ -356,7 +359,7 @@ export const FIELDS = [
     label: "Skala",
     t: "sel",
     span: 2,
-    when: isMedia,
+    when: (l) => isMedia(l) || isInput(l),
     opts: [
       ["SCALE_BEHAVIOR_FILL", "Fill"],
       ["SCALE_BEHAVIOR_FIT", "Fit"],
@@ -398,6 +401,9 @@ export function layerLabel(l, k) {
   let detail = "";
   if (isText(l)) detail = (l.text || "").replace(/\s+/g, " ").slice(0, 24);
   else if (l.path) detail = baseName(l.path);
+  else if (l.kind === "input") detail = l.input?.name || "";
   else if (l.kind === "color") detail = l.color || "";
   return `${k + 1}. ${l.kind}${detail ? " — " + detail : ""}`;
 }
+
+export const isInput = (l) => l.kind === "input";
