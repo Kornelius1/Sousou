@@ -210,10 +210,7 @@ export function createTree(cfg) {
       sw.style.background = it.src;
       row.appendChild(sw);
     } else if (it.kind === "input") {
-      const ic = el(
-        "i",
-        it.input?.media === "audio" ? "fa-solid fa-microphone" : "fa-solid fa-video",
-      );
+      const ic = el("i", "fa-solid fa-video");
       ic.style.cssText = "width:14px;margin-right:6px;text-align:center;font-size:11px;opacity:.8";
       row.appendChild(ic);
     } else {
@@ -317,7 +314,7 @@ export function createTree(cfg) {
     const btn = $(cfg.ids.add);
     if (popupOpenFor(btn)) return closePopup();
 
-    const kinds = cfg.api.addInput ? cfg.inputKinds || ["video", "audio"] : [];
+    const kinds = cfg.api.addInput ? cfg.inputKinds || ["video"] : [];
     if (!cfg.api.addBlank && !kinds.length) return addFilesToSelected();
 
     const entries = [];
@@ -334,7 +331,7 @@ export function createTree(cfg) {
       entries.push({ sep: true });
       for (const k of kinds)
         entries.push({
-          label: k === "video" ? "Video Input…" : "Audio Input…",
+          label: "Video Input…",
           run: () => addInputToSelected(k, kinds),
         });
     }
