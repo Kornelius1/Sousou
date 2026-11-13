@@ -81,6 +81,10 @@ export function createStore({ name, loadCmd, saveCmd }) {
       console.warn(`gagal memuat ${name}:`, err);
     }
     s.groups = store && Array.isArray(store.groups) ? store.groups : [];
+    for (const g of s.groups)
+      g.items = (g.items || []).filter(
+        (it) => !(it.kind === "input" && it.input?.media === "audio"),
+      );
     selFirst();
     return !!store;
   }

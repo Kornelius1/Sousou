@@ -137,38 +137,6 @@
 #inputs-dlg .in-foot button.primary:hover { background: #fff; color: #000; }
 #inputs-dlg button:focus-visible { outline: 1px solid #888; outline-offset: 1px; }
 
-/* ============ Mixer ============ */
-#mixer {
-  position: fixed; inset: auto 12px 56px auto; margin: 0;
-  width: 340px; max-height: 60vh; overflow: auto; padding: 10px; z-index: 40;
-}
-.mx-head { display: flex; align-items: center; gap: 6px; margin: 0 2px 8px; }
-.mx-head .sp { flex: 1; }
-.mx-head b { color: var(--d-hi); font-weight: 600; }
-.mx-head button, .mx-rm {
-  background: none; border: 0; color: var(--d-dim); border-radius: 5px;
-  width: 24px; height: 24px; cursor: pointer;
-}
-.mx-head button:hover, .mx-rm:hover { background: var(--d-hover); color: var(--d-hi); }
-#mx-empty { color: var(--d-dim); margin: 8px 4px; }
-
-.mx-row { display: flex; align-items: center; gap: 10px; background: var(--d-panel); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; }
-.mx-on { width: 30px; height: 30px; flex: none; border-radius: 50%; border: 0; background: var(--d-field); color: var(--d-dim); cursor: pointer; }
-.mx-on:hover:not(:disabled) { background: var(--d-hover); color: var(--d-hi); }
-.mx-row.active .mx-on { background: var(--d-hi); color: #111; }
-.mx-on:disabled { opacity: .5; cursor: default; }
-.mx-main { flex: 1; min-width: 0; }
-.mx-top { display: flex; justify-content: space-between; gap: 6px; }
-.mx-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--d-hi); }
-.mx-mode { color: var(--d-dim); }
-.mx-meter { height: 4px; background: #151515; border-radius: 2px; overflow: hidden; margin: 6px 0 4px; }
-.mx-meter i {
-  display: block; height: 100%; width: 100%; transform-origin: left; transform: scaleX(0);
-  background: linear-gradient(90deg, #777 0, #bbb 75%, #fff 100%);
-}
-.mx-vol { width: 100%; }
-.mx-db { width: 56px; text-align: right; font-size: 11px; color: var(--d-dim); font-variant-numeric: tabular-nums; }
-
 #in-pick { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px; padding: 12px; background: #141414; overflow-y: auto; }
 #in-pick p { margin: 0 0 2px; color: var(--d-dim); }
 #in-pick button {

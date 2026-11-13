@@ -179,9 +179,41 @@
     }
   }
 
+  // Transisi: menerima elemen lama (array) dan baru, mengembalikan Promise.
+  // Hanya opacity/transform supaya dikomposit GPU. Menambah transisi = menambah satu entri.
+  const EASE = "cubic-bezier(.2,.8,.2,1)";
+  const TRANSITIONS = {
+    cut: () => Promise.resolve(),
+    fade: (olds, el, ms) =>
+      el.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: ms,
+        easing: "ease",
+      }).finished,
+    zoom: (olds, el, ms) =>
+      el.animate(
+        [
+          { opacity: 0, transform: "scale(1.08)" },
+          { opacity: 1, transform: "scale(1)" },
+        ],
+        { duration: ms, easing: EASE },
+      ).finished,
+    slide: (olds, el, ms) => {
+      olds.forEach((o) =>
+        o.animate(
+          [{ transform: "translateX(0)" }, { transform: "translateX(-25%)" }],
+          { duration: ms, easing: EASE, fill: "forwards" },
+        ),
+      );
+      return el.animate(
+        [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
+        { duration: ms, easing: EASE },
+      ).finished;
+    },
+  };
+
   // Layar audience: siapkan slide baru di luar layar, tukar setelah media siap.
   let renderSeq = 0;
-  async function renderSlide(stage, payload) {
+  async function renderSlide(stage, payload, tr) {
     const seq = ++renderSeq;
     const w = payload.width || 1366;
     const h = payload.height || 768;
@@ -196,15 +228,33 @@
         new Promise((r) => setTimeout(r, 400)),
       ]);
     if (seq !== renderSeq) {
-      stopVideos(next); // sudah ada slide yang lebih baru
+      stopVideos(next);
       return;
     }
 
-    stopVideos(stage); // hentikan video lama sebelum dibuang
-    stage.replaceChildren(...next.childNodes);
+    // slide baru dibungkus satu div dan ditaruh DI ATAS yang lama
+    const incoming = document.createElement("div");
+    incoming.style.cssText = "position:absolute;inset:0;isolation:isolate;";
+    incoming.append(...next.childNodes);
+
+    const olds = [...stage.children];
     stage.style.width = w + "px";
     stage.style.height = h + "px";
+    stage.style.overflow = "hidden";
     fitStage(stage);
+    stage.appendChild(incoming);
+
+    const drop = () =>
+      olds.forEach((o) => {
+        stopVideos(o);
+        o.remove();
+      });
+    const run = tr && TRANSITIONS[tr.type];
+    if (!run || tr.type === "cut" || !tr.ms || !olds.length) return drop();
+
+    await run(olds, incoming, tr.ms).catch(() => {});
+    // kalau sudah ada slide lebih baru, dialah yang membersihkan (ia mengambil semua anak stage)
+    if (seq === renderSeq) drop();
   }
 
   function fitStage(stage) {
@@ -376,10 +426,10 @@
     el.style.inset = "0";
     el.style.width = "100%";
     el.style.height = "100%";
-    const fade = (opts && opts.fade) || 0; // ms; 0 = tukar langsung
-    // Elemen baru ada di atas yang lama. Video yang belum punya frame transparan,
-    // jadi yang lama tetap terlihat sampai frame pertama yang baru tergambar.
-    el.style.opacity = fade ? "0" : "";
+    const tr = (opts && opts.transition) || { type: "cut", ms: 0 };
+    const animated =
+      !preview && tr.type !== "cut" && tr.ms > 0 && TRANSITIONS[tr.type];
+    el.style.opacity = animated ? "0" : ""; // tanpa transisi: langsung di atas yang lama
     layer.appendChild(el);
     applyBackgroundSettings(layer, el, bg, preview);
 
@@ -389,24 +439,22 @@
           requestAnimationFrame(() => requestAnimationFrame(res));
         if (el.tagName === "VIDEO" && el.requestVideoFrameCallback) {
           el.requestVideoFrameCallback(twoFrames);
-          setTimeout(res, 800); // video tidak jalan: jangan menunggu selamanya
+          setTimeout(res, 800);
         } else twoFrames();
       });
 
-    const finish = () => {
-      if (bgState.get(layer) !== state) return; // sudah ada background yang lebih baru
-      if (fade) {
-        el.style.transition = `opacity ${fade}ms ease`;
+    const finish = async () => {
+      if (bgState.get(layer) !== state) return; // sudah ada background lebih baru
+      if (animated) {
         el.style.opacity = "";
-      }
-      setTimeout(() => {
+        await TRANSITIONS[tr.type](oldEls, el, tr.ms).catch(() => {});
         if (bgState.get(layer) !== state) return;
-        oldEls.forEach((o) => {
-          stopVideos(o);
-          o.remove();
-        });
-        if (oldState && oldState.dispose) oldState.dispose();
-      }, fade);
+      }
+      oldEls.forEach((o) => {
+        stopVideos(o);
+        o.remove();
+      });
+      if (oldState && oldState.dispose) oldState.dispose();
     };
 
     const isMedia = el.tagName === "VIDEO" || el.tagName === "IMG";

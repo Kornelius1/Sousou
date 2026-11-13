@@ -205,11 +205,33 @@
         </button>
       </div>
       <span class="sp"></span>
+      <div class="tb-group" id="tb-grp-trans">
+        <label class="tr-f">Slide
+          <select id="tr-fg">
+            <option value="cut">Cut</option>
+            <option value="fade">Fade</option>
+            <option value="zoom">Zoom</option>
+            <option value="slide">Slide</option>
+          </select>
+        </label>
+        <label class="tr-f">Background
+          <select id="tr-bg">
+            <option value="cut">Cut</option>
+            <option value="fade">Fade</option>
+            <option value="zoom">Zoom</option>
+            <option value="slide">Slide</option>
+          </select>
+        </label>
+        <label class="tr-f">Durasi
+          <select id="tr-ms">
+            <option value="150">150 ms</option>
+            <option value="300">300 ms</option>
+            <option value="500">500 ms</option>
+            <option value="800">800 ms</option>
+          </select>
+        </label>
+      </div>
       <span id="tb-status"></span>
-
-      <button class="tb" id="tb-mixer" title="Audio mixer" aria-label="Audio mixer">
-        <i class="fa-solid fa-sliders"></i>
-      </button>
     </div>
 
 
@@ -311,13 +333,7 @@
   <input type="color" id="bg-color" value="#000000" style="position:fixed;left:-9999px;opacity:0;pointer-events:none"
     tabindex="-1" aria-hidden="true" />
 
-  <dialog id="mixer">
-    <div class="mx-head"><b>Audio Mixer</b><span class="sp"></span>
-      <button id="mx-close" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div id="mx-strips"></div>
-    <p id="mx-empty">Belum ada input. Klik kanan item Audio Input di Media → <i>Add to mixer</i>.</p>
-  </dialog>
+ 
 
   <dialog id="inputs-dlg">
     <header class="in-head">

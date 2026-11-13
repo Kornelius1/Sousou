@@ -204,3 +204,7 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
 /* bingkai merah tipis di item yang tayang */
 .bgt.live .bgt-thumb,
 .card.live .thumb { box-shadow: 0 0 0 2px #ff3b30; }
+
+#tb-grp-trans { display: flex; gap: 10px; align-items: center; }
+.tr-f { display: flex; gap: 4px; align-items: center; font-size: 11px; opacity: .85; }
+.tr-f select { font-size: 11px; }

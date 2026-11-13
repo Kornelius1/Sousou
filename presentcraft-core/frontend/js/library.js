@@ -7,7 +7,6 @@ import { createTree } from "./tree.js";
 import { pick } from "./background-panel.js";
 import { showGroupSlides, showSlide, initBlankDeck } from "./sorter/sorter.js";
 import { resolveTag } from "./tags.js";
-import * as M from "./mixer-state.js";
 
 export const lib = createStore({
   name: "lib",
@@ -192,17 +191,6 @@ function replaceSelectedText(text) {
   setStatus("Text replaced.");
 }
 
-function addToMixer(it) {
-  const r = M.addStrip(it);
-  setStatus(
-    r === "dup"
-      ? "Sudah ada di mixer."
-      : r
-        ? `“${it.input.name}” ditambahkan ke mixer.`
-        : "Bukan audio input.",
-  );
-}
-
 export function renderLibrary() {
   if (tree) tree.render();
 }
@@ -248,8 +236,6 @@ export function initLibrary() {
       const t = textOf(it);
       if (t) addTextLayer(t);
       else if (it.kind === "image" || it.kind === "video") addMediaLayer(it);
-      else if (it.kind === "input" && it.input?.media === "audio")
-        addToMixer(it);
     },
     contextMenu: (g, it) => {
       const t = textOf(it);
@@ -259,22 +245,14 @@ export function initLibrary() {
           { label: "Replace selected text", run: () => replaceSelectedText(t) },
         ];
       }
-      if (it.kind === "image" || it.kind === "video") {
+      if (it.kind === "input" && it.input?.media === "video") {
         return [
-          { label: "Use as background", run: () => pick(it.src, it.kind) },
-          { label: "Add to slide", run: () => addMediaLayer(it) },
+          {
+            label: "Use as background",
+            run: () => pick(it.src, it.kind, it.input),
+          },
+          { label: "Add to slide", run: () => addInputLayer(it) },
         ];
-      }
-      if (it.kind === "input") {
-        return it.input?.media === "video"
-          ? [
-              {
-                label: "Use as background",
-                run: () => pick(it.src, it.kind, it.input),
-              },
-              { label: "Add to slide", run: () => addInputLayer(it) },
-            ]
-          : [{ label: "Add to mixer", run: () => addToMixer(it) }];
       }
       return [{ label: "No actions for this type", disabled: true }];
     },

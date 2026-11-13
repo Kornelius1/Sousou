@@ -1,60 +1,84 @@
 <!doctype html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <title>PresentCraft - Audience Display</title>
-    <style>
-      html, body {
-        margin: 0;
-        width: 100%;
-        height: 100%;
-        background: #000;
-        overflow: hidden;
-        cursor: none;
-      }
-      #bg-layer { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-      #stage    { position: absolute; z-index: 1; }
-    </style>
-  </head>
-  <body>
-    <div id="bg-layer"></div>
-    <div id="stage"></div>
 
-    <script src="shared/input-player.js"></script>
-    <script src="shared/audio-engine.js"></script>
-    <script src="shared/cam-source.js"></script>
-    <script src="shared/slide-renderer.js"></script>
-    <script src="shared/message-renderer.js"></script>
-    <script src="shared/message-overlay.js"></script>
-    <script type="module">
-      import {
-        loadBackground,
-        onBackgroundChange,
-        onBackgroundVisible,
-      } from './shared/background-state.js';
+<head>
+  <meta charset="UTF-8" />
+  <title>PresentCraft - Audience Display</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      overflow: hidden;
+      cursor: none;
+    }
 
-      const { renderSlide, fitStage, renderBackground } = window.SlideRenderer;
-      const stage = document.getElementById('stage');
-      const layer = document.getElementById('bg-layer');
+    #bg-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
 
-      // Slide dulu: layar hitam awal, lalu listener, supaya tidak ada event yang terlewat.
-      renderSlide(stage, { width: 1366, height: 768, layers: [] });
-      window.addEventListener('resize', () => fitStage(stage));
-      await window.__TAURI__.event.listen('update-slide-event', (e) => renderSlide(stage, e.payload));
+    #stage {
+      position: absolute;
+      z-index: 1;
+    }
+  </style>
+</head>
 
-      // Mata background: hanya menyembunyikan layer background di layar audience.
-      // visibility:hidden membuat video tetap berjalan, jadi saat dibuka lagi tidak mulai dari awal.
-      await onBackgroundVisible((v) => {
-        layer.style.visibility = v ? '' : 'hidden';
-      });
+<body>
+  <div id="bg-layer"></div>
+  <div id="stage"></div>
 
-      // Background: pasang listener sebelum membaca disk, agar perubahan yang
-      // datang saat startup tidak tertimpa hasil baca yang lebih lama.
-      let gotEvent = false;
-      await onBackgroundChange((bg) => { gotEvent = true; renderBackground(layer, bg); });
-      const saved = await loadBackground();
-      if (!gotEvent) renderBackground(layer, saved);
-      await window.__TAURI__.event.emit('audience-ready');
-    </script>
-  </body>
+  <script src="shared/input-player.js"></script>
+  <script src="shared/audio-engine.js"></script>
+  <script src="shared/cam-source.js"></script>
+  <script src="shared/slide-renderer.js"></script>
+  <script src="shared/message-renderer.js"></script>
+  <script src="shared/message-overlay.js"></script>
+  <script type="module">
+    import {
+      loadBackground,
+      onBackgroundChange,
+      onBackgroundVisible,
+    } from './shared/background-state.js';
+    import { onTransition, getTransition } from './shared/transition-state.js';
+
+    await onTransition(() => { });
+
+    const T = getTransition;
+    const { renderSlide, fitStage, renderBackground } = window.SlideRenderer;
+    const stage = document.getElementById('stage');
+    const layer = document.getElementById('bg-layer');
+
+
+
+    // Slide dulu: layar hitam awal, lalu listener, supaya tidak ada event yang terlewat.
+    renderSlide(stage, { width: 1366, height: 768, layers: [] });
+    window.addEventListener('resize', () => fitStage(stage));
+    await window.__TAURI__.event.listen('update-slide-event', (e) => renderSlide(stage, e.payload, { type: T().fg, ms: T().ms }));
+
+    // Mata background: hanya menyembunyikan layer background di layar audience.
+    // visibility:hidden membuat video tetap berjalan, jadi saat dibuka lagi tidak mulai dari awal.
+    await onBackgroundVisible((v) => {
+      layer.style.visibility = v ? '' : 'hidden';
+    });
+
+    // Background: pasang listener sebelum membaca disk, agar perubahan yang
+    // datang saat startup tidak tertimpa hasil baca yang lebih lama.
+    let gotEvent = false;
+    await onBackgroundChange((bg) => {
+      gotEvent = true;
+      renderBackground(layer, bg, { transition: { type: T().bg, ms: T().ms } });
+    });
+    const saved = await loadBackground();
+    if (!gotEvent) renderBackground(layer, saved);
+    await window.__TAURI__.event.emit('audience-ready');
+  </script>
+</body>
+
 </html>

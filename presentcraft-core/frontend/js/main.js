@@ -24,13 +24,13 @@ import { initLibrary, renderLibrary, lib, refreshGrid } from "./library.js";
 import { initBackgroundPanel, syncPanel } from "./background-panel.js";
 import { loadGroups, migrateBackground } from "./groups.js";
 import { initExplorer } from "./explorer.js";
-import * as M from "./mixer-state.js";
-import { initMixerPanel } from "./mixer-panel.js";
 import { syncCamsSoon } from "./cam-usage.js";
 import { on } from "./bus.js";
 import { broadcastMessage } from "./message-state.js";
 import { initMessagePanel } from "./message-panel.js";
 import { initResizer } from "./resizer.js";
+import { initTransitionUi } from "./transition-ui.js";
+import { setTransition } from "../shared/transition-state.js";
 
 initMenu();
 initToolbar();
@@ -40,9 +40,9 @@ initPreview();
 initProperties();
 await lib.load();
 initLibrary();
-initMixerPanel();
 initMessagePanel(); 
 initResizer(); 
+initTransitionUi();
 
 // Listener dipasang sebelum membaca disk, agar event yang datang saat startup tidak terlewat.
 await onBackgroundChange((bg) => {
@@ -53,13 +53,11 @@ await onBackgroundChange((bg) => {
 });
 
 await onBackgroundVisible((v) => {
-  M.setLive(v); // sinyal live untuk Auto On / Auto Off
   refreshPreviewBackground();
   syncPanel(state.bg);
 });
 
 state.bg = await loadBackground();
-await M.loadMixer();
 const hadGroups = await loadGroups();
 if (!hadGroups) migrateBackground(state.bg);
 
@@ -67,8 +65,8 @@ if (!hadGroups) migrateBackground(state.bg);
 initExplorer();
 initBackgroundPanel();
 window.__TAURI__.event.listen("audience-ready", () => {
+  setTransition({});
   setBackgroundVisible(isBackgroundVisible());
-  M.broadcast();
   broadcastMessage(); 
 });
 syncPanel(state.bg);
