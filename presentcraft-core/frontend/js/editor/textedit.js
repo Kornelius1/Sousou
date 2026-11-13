@@ -4,11 +4,7 @@ import { styleOf } from "./fields.js";
 import { ed, L, q, fireEd } from "./session.js";
 import { boxStyle, renderPreview } from "./canvas.js";
 import { push } from "./history.js";
-
-// Lebar acuan untuk ukuran font. Ukuran font di layer dianggap piksel pada kanvas selebar ini,
-// lalu diskalakan ke lebar kanvas editor. Kalau teks saat diedit tampak lebih besar/kecil
-// daripada hasil render, sesuaikan angka ini dengan slide-renderer.js.
-const REF_W = 1920;
+import { state } from "../state.js";
 
 const readTxt = (txt) => (txt.contentEditable === "plaintext-only" ? txt.textContent : txt.innerText);
 
@@ -20,7 +16,8 @@ export function styleEditBox() {
   const { box, txt } = ed.editing;
   Object.assign(box.style, boxStyle(l));
   const st = styleOf(l);
-  const k = q(".ed-canvas").clientWidth / REF_W;
+  const slide = state.slides[ed.items[ed.cur].index];
+  const k = q(".ed-canvas").clientWidth / (slide.slide_width || 1366);
   Object.assign(txt.style, {
     fontFamily: st.fontFamily,
     fontSize: st.fontSize * k + "px",
