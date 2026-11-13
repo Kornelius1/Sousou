@@ -6,6 +6,8 @@ import {
 import * as G from "../groups.js";
 import { ps, toBg, isLive } from "./bg-shared.js";
 import { refreshArea, syncSettings } from "./bg-view.js";
+import { state } from "../state.js";
+import { refreshPreviewBackground } from "../preview.js";
 
 export const selectTile = (it) => {
   ps.tileSel = it.id;
@@ -13,7 +15,17 @@ export const selectTile = (it) => {
   syncSettings();
 };
 
-export const air = (it) => setBackground(toBg(it));
+export const previewTile = (it) => {
+  selectTile(it);
+  state.bgPreview = toBg(it);
+  refreshPreviewBackground();
+};
+
+export const air = (it) => {
+  selectTile(it);
+  state.bgPreview = null;
+  setBackground(toBg(it));
+};
 
 export function editItem(it, patch) {
   const g = G.selectedGroup();
@@ -43,6 +55,5 @@ export function pick(src, kind, input) {
     it = g.items.find((i) => i.src === src);
   }
   if (!it) return;
-  selectTile(it);
   air(it);
 }

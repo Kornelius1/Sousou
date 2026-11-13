@@ -13,6 +13,7 @@ import {
 import { createBlankSlide, itemToSlide } from "./slide-model.js";
 import { decorateCard, openTagMenu, initSorterTags } from "./sorter-tags.js";
 import { initSorterNav } from "./sorter-nav.js";
+import { initGridNav } from "../grid-nav.js";
 
 // Kompatibilitas: file lain yang masih mengimpor createBlankSlide dari sorter.js tetap jalan.
 // Setelah semua impor diubah ke slide-model.js, baris ini boleh dihapus.
@@ -55,6 +56,13 @@ function buildCaption(cap, slide, i) {
   cap.title = [folder, name].filter(Boolean).join(" | "); // tooltip untuk teks yang terpotong
 }
 
+function syncLive() {
+  state.cards.forEach((c, idx) => {
+    if (c && c.card)
+      c.card.classList.toggle("live", idx === state.liveIndex && !state.blanked);
+  });
+}
+
 export function initBlankDeck() {
   applySlides([createBlankSlide()], [], "");
 }
@@ -89,7 +97,7 @@ function reorderSlides(fromIdx, toIdx) {
 
   applySlides(state.slides, [], state.bundleName);
   if (state.activeIndex >= 0) {
-    showSlide(state.activeIndex);
+    showSlide(state.activeIndex, false);
   }
 }
 
@@ -129,11 +137,6 @@ function makeCard(slide, i) {
     openTagMenu(e, i);
   });
 
-  card.addEventListener("click", () => {
-    showSlide(i);
-    card.focus();
-  });
-
   // Drag and drop
   card.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("text/plain", String(i));
@@ -162,23 +165,23 @@ function makeCard(slide, i) {
   return card;
 }
 
-export function showSlide(i) {
+export function showSlide(i, live = true) {
   if (i < 0 || i >= state.slides.length) return;
   const changed = i !== state.activeIndex;
   state.activeIndex = i;
-  setBlanked(false);
+  if (live) setBlanked(false);
 
   state.cards.forEach((c, idx) => {
     if (c && c.card) c.card.classList.toggle("active", idx === i);
   });
+  state.cards[i]?.card.scrollIntoView({ block: "nearest" });
 
-  const activeCard = state.cards[i]?.card;
-  if (activeCard) {
-    activeCard.scrollIntoView({ block: "nearest" });
+  emit("slide:shown", changed); // preview
+  if (live) {
+    state.liveIndex = i;
+    emitPayload(toPayload(state.slides[i]));
+    syncLive();
   }
-
-  emit("slide:shown", changed);
-  emitPayload(toPayload(state.slides[i]));
 }
 
 export function toggleBlank() {
@@ -221,6 +224,7 @@ export function applySlides(slides, warnings, bundleName) {
   state.bundleName = bundleName || "";
   state.cards = [];
   state.activeIndex = -1;
+  state.liveIndex = -1;
   state.selectedLayer = -1;
   cancelScheduledEmit();
 
@@ -230,6 +234,7 @@ export function applySlides(slides, warnings, bundleName) {
   grid.replaceChildren();
   state.slides.forEach((slide, i) => grid.appendChild(makeCard(slide, i)));
   state.slides.forEach((_, i) => renderThumb(i));
+  syncLive();
   refreshThumbBackgrounds();
 
   emit("slides:loaded");
@@ -253,10 +258,19 @@ export function showGroupSlides(g) {
 }
 
 export function initSorter() {
-  initSorterNav(grid, showSlide);
+  initSorterNav(grid);
+
+  initGridNav(grid, {
+    sel: ".card",
+    cur: () => state.activeIndex,
+    preview: (i) => showSlide(i, false),
+    air: (i) => showSlide(i),
+  });
+
   initSorterTags();
 
   on("background-changed", () => refreshThumbBackgrounds());
+  on("blank:changed", syncLive);
   on("slide:edited", ({ index, layers }) => {
     const s = state.slides[index];
     if (!s) return;
@@ -264,8 +278,11 @@ export function initSorter() {
     arr.splice(0, arr.length, ...layers); // in-place, referensi tetap sama
     renderThumb(index);
     if (state.activeIndex === index) {
-      if (!state.blanked) emitPayload(toPayload(s));
+      if (state.liveIndex === index && !state.blanked)
+        emitPayload(toPayload(s));
       emit("slide:shown", true);
     }
   });
 }
+
+

@@ -49,7 +49,7 @@ export function refreshGrid() {
 function selectInGrid() {
   if (!lib.s.iid) return;
   const idx = state.slides.findIndex((s) => s.itemId === lib.s.iid);
-  if (idx >= 0) showSlide(idx);
+  if (idx >= 0) showSlide(idx, false);
 }
 
 function onLibSelection() {
@@ -127,6 +127,33 @@ function addMediaLayer(it) {
   setStatus(`Added to slide ${slide.slide_number}.`);
 }
 
+function addInputLayer(it) {
+  const slide = curSlide();
+  if (!slide) return setStatus("Select a slide first.");
+  if (it.kind !== "input" || it.input?.media !== "video") return;
+  slide.layers = slide.layers || [];
+  const z = slide.layers.reduce((m, l) => Math.min(m, l.z), 0) - 1;
+  slide.layers.push({
+    kind: "input",
+    z,
+    rect: { x: 0, y: 0, w: 100, h: 100 },
+    rotation: 0,
+    opacity: 1,
+    path: null,
+    status: "OK",
+    inner: null,
+    scale: "SCALE_BEHAVIOR_FIT",
+    muted: true,
+    looped: null,
+    stop_on_clear: null,
+    color: null,
+    text: null,
+    input: it.input,
+  });
+  emit("layer:added", slide.layers.length - 1);
+  setStatus(`Added to slide ${slide.slide_number}.`);
+}
+
 function addTextLayer(text) {
   const slide = curSlide();
   if (!slide) return setStatus("Select a slide first.");
@@ -168,9 +195,11 @@ function replaceSelectedText(text) {
 function addToMixer(it) {
   const r = M.addStrip(it);
   setStatus(
-    r === "dup" ? "Sudah ada di mixer."
-    : r ? `“${it.input.name}” ditambahkan ke mixer.`
-    : "Bukan audio input.",
+    r === "dup"
+      ? "Sudah ada di mixer."
+      : r
+        ? `“${it.input.name}” ditambahkan ke mixer.`
+        : "Bukan audio input.",
   );
 }
 
@@ -206,7 +235,7 @@ export function initLibrary() {
         if (t) setStatus(t.replace(/\s+/g, " ").slice(0, 120));
       },
       createGroup: lib.createGroup,
-      addInput: lib.addInput,     
+      addInput: lib.addInput,
       renameGroup: lib.renameGroup,
       deleteGroup: lib.deleteGroup,
       removeItem: lib.removeItem,
@@ -219,7 +248,8 @@ export function initLibrary() {
       const t = textOf(it);
       if (t) addTextLayer(t);
       else if (it.kind === "image" || it.kind === "video") addMediaLayer(it);
-      else if (it.kind === "input" && it.input?.media === "audio") addToMixer(it);
+      else if (it.kind === "input" && it.input?.media === "audio")
+        addToMixer(it);
     },
     contextMenu: (g, it) => {
       const t = textOf(it);
@@ -237,7 +267,13 @@ export function initLibrary() {
       }
       if (it.kind === "input") {
         return it.input?.media === "video"
-          ? [{ label: "Use as background", run: () => pick(it.src, it.kind, it.input) }]
+          ? [
+              {
+                label: "Use as background",
+                run: () => pick(it.src, it.kind, it.input),
+              },
+              { label: "Add to slide", run: () => addInputLayer(it) },
+            ]
           : [{ label: "Add to mixer", run: () => addToMixer(it) }];
       }
       return [{ label: "No actions for this type", disabled: true }];

@@ -1,11 +1,5 @@
 // slide-renderer.js
-// Menggambar slide (payload dari 'update-slide-event') ke elemen `stage`,
-// ke thumbnail, dan menggambar background persisten.
-//
-// payload = { width, height, layers: [{ kind, z, rect, rotation, opacity,
-//             src, inner, scale, muted, looped, text, color, style }] }
-// style (teks) = { fontFamily, fontSize(px slide), color, align, valign, bold, italic }
-
+// Menggambar slide ke stage (audience), thumbnail, dan background persisten.
 (function () {
   const ROTATION_SIGN = -1; // jika rotasi miring ke arah salah, ubah ke 1
 
@@ -13,8 +7,8 @@
     fontFamily: "Arial, sans-serif",
     fontSize: 54,
     color: "#ffffff",
-    align: "center", // left | center | right | justify
-    valign: "middle", // top | middle | bottom
+    align: "center",
+    valign: "middle",
     bold: false,
     italic: false,
   };
@@ -40,11 +34,36 @@
     const p = el.play();
     if (p && p.catch) {
       p.catch(() => {
-        el.muted = true; // autoplay bersuara bisa diblokir webview
+        el.muted = true;
         el.play().catch(() => {});
       });
     }
   }
+
+  const readyMedia = (el) =>
+    new Promise((res) => {
+      if (el.tagName === "IMG") {
+        if (!el.getAttribute("src"))
+          res(); // belum ada sumber (mis. kamera live)
+        else if (el.decode) el.decode().then(res, res);
+        else if (el.complete) res();
+        else el.onload = el.onerror = res;
+      } else if (el.readyState >= 2) res();
+      else {
+        el.addEventListener("loadeddata", res, { once: true });
+        el.addEventListener("error", res, { once: true });
+      }
+    });
+
+  const stopVideos = (root) => {
+    const list =
+      root.tagName === "VIDEO" ? [root] : [...root.querySelectorAll("video")];
+    list.forEach((v) => {
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
+    });
+  };
 
   function mediaElement(layer, mode) {
     const isVideo = layer.kind === "video";
@@ -75,19 +94,51 @@
     }
     return el;
   }
-  function layerElement(layer, preview) {
-    const wrap = document.createElement("div");
+
+  function inputElement(layer, preview) {
+    const inp = layer.input || {};
+    let el;
+    if (preview || inp.media !== "video" || inp.ndi || !window.CamSource) {
+      el = document.createElement("div");
+      el.style.cssText =
+        "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
+        "background:#0b2a5a;color:#9db4d8;font:14px sans-serif;text-align:center;";
+      el.textContent = "Input: " + (inp.name || "Video");
+    } else {
+      el = document.createElement("img");
+      el.dataset.live = "1";
+      el.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${objectFitFor(layer.scale)};`;
+      window.CamSource.url(inp.label)
+        .then((u) => {
+          el.src = u;
+        })
+        .catch((err) => console.warn("Input gagal dibuka:", err));
+    }
+    return el;
+  }
+
+  // posisi, ukuran, rotasi, opasitas: dipakai juga oleh jalur cepat editor
+  function applyLayerBox(wrap, layer) {
     positionBox(wrap, layer.rect);
     wrap.style.zIndex = String(layer.z);
     wrap.style.opacity = String(layer.opacity);
     wrap.style.transform = `rotate(${ROTATION_SIGN * (layer.rotation || 0)}deg)`;
     wrap.style.transformOrigin = "50% 50%";
+  }
+
+  function layerElement(layer, preview) {
+    const wrap = document.createElement("div");
+    applyLayerBox(wrap, layer);
+    if (layer._i != null) wrap.dataset.li = String(layer._i);
 
     switch (layer.kind) {
       case "video":
       case "image":
         if (!layer.src) return null;
         wrap.appendChild(mediaElement(layer, preview));
+        break;
+      case "input":
+        wrap.appendChild(inputElement(layer, preview));
         break;
       case "color":
         wrap.style.background = layer.color || "transparent";
@@ -128,18 +179,34 @@
     }
   }
 
-  // Ganti isi stage dengan slide baru (layar audience).
-  function renderSlide(stage, payload) {
+  // Layar audience: siapkan slide baru di luar layar, tukar setelah media siap.
+  let renderSeq = 0;
+  async function renderSlide(stage, payload) {
+    const seq = ++renderSeq;
     const w = payload.width || 1366;
     const h = payload.height || 768;
-    stage.replaceChildren(); // hentikan & buang video lama
+
+    const next = document.createElement("div");
+    fillStage(next, payload, false);
+
+    const media = [...next.querySelectorAll("img, video")];
+    if (media.length)
+      await Promise.race([
+        Promise.all(media.map(readyMedia)),
+        new Promise((r) => setTimeout(r, 400)),
+      ]);
+    if (seq !== renderSeq) {
+      stopVideos(next); // sudah ada slide yang lebih baru
+      return;
+    }
+
+    stopVideos(stage); // hentikan video lama sebelum dibuang
+    stage.replaceChildren(...next.childNodes);
     stage.style.width = w + "px";
     stage.style.height = h + "px";
-    fillStage(stage, payload, false);
     fitStage(stage);
   }
 
-  // Skala stage agar muat di window (letterbox, di tengah).
   function fitStage(stage) {
     const w = parseFloat(stage.style.width) || 1366;
     const h = parseFloat(stage.style.height) || 768;
@@ -150,8 +217,7 @@
     stage.style.top = (window.innerHeight - h * scale) / 2 + "px";
   }
 
-  // Gambar slide ke dalam `host` (div) sebagai thumbnail yang mengikuti lebar host.
-  // host._bg = div untuk background di belakang slide (diisi lewat renderBackground).
+  // Thumbnail: stage baru ditukar setelah media siap, supaya tidak ada jeda kosong (kedip).
   function renderThumbnail(host, payload, opts) {
     const w = payload.width || 1366;
     const h = payload.height || 768;
@@ -163,7 +229,7 @@
         "position:absolute;inset:0;overflow:hidden;z-index:0;";
       host.appendChild(host._bg);
     }
-    if (host._stage) host._stage.remove();
+    const prevStage = host._stage;
 
     const stage = document.createElement("div");
     stage.style.cssText = `position:absolute;left:0;top:0;z-index:1;width:${w}px;height:${h}px;transform-origin:0 0;`;
@@ -179,11 +245,33 @@
       host._ro = new ResizeObserver(() => host._apply && host._apply());
       host._ro.observe(host);
     }
+
+    host._olds = host._olds || [];
+    if (prevStage) host._olds.push(prevStage);
+    const seq = (host._seq = (host._seq || 0) + 1);
+    const dropOlds = () => {
+      host._olds.forEach((o) => {
+        stopVideos(o);
+        o.remove();
+      });
+      host._olds = [];
+    };
+    if (!prevStage) return;
+
+    const media = [...stage.querySelectorAll("img, video")];
+    if (!media.length) return dropOlds();
+    stage.style.visibility = "hidden";
+    Promise.race([
+      Promise.all(media.map(readyMedia)),
+      new Promise((r) => setTimeout(r, 400)),
+    ]).then(() => {
+      if (host._seq !== seq) return; // render yang lebih baru yang akan membersihkan
+      stage.style.visibility = "";
+      dropOlds();
+    });
   }
 
   // ---------- background persisten ----------
-  // bg = { src, kind: 'video'|'image'|'color', loop, mute, scale: 'fit'|'fill', opacity } | null
-  // opts.preview = true: video tidak diputar (untuk thumbnail).
   const bgState = new WeakMap();
 
   function toUrl(path) {
@@ -219,71 +307,116 @@
   }
 
   function renderBackground(layer, bg, opts) {
-  const preview = !!(opts && opts.preview);
-  const manual = !!(opts && opts.manual);
-  if (!bg) { resetBackground(layer); return; }
-
-  const key = bg.kind + '|' + bg.src;
-  const prev = bgState.get(layer);
-  if (prev && prev.key === key && layer.firstElementChild) {
-    applyBackgroundSettings(layer, layer.firstElementChild, bg, preview);
-    return;
-  }
-
-  // simpan yang lama, jangan dibuang dulu
-  const oldEls = [...layer.children];
-  const oldState = prev;
-  const state = { key };
-  bgState.set(layer, state);
-
-  let el;
-  if (bg.kind === 'color') {
-    el = document.createElement('div');
-    el.style.background = bg.src;
-  } else if (bg.kind === 'input') {
-    /* ...cabang input yang sudah ada, tidak berubah... */
-  } else {
-    el = document.createElement(bg.kind === 'video' ? 'video' : 'img');
-    if (bg.kind === 'video') {
-      el.playsInline = true;
-      if (preview) { el.muted = true; el.preload = manual ? 'auto' : 'metadata'; }
-      else { el.autoplay = true; el.preload = 'auto'; }
+    const preview = !!(opts && opts.preview);
+    const manual = !!(opts && opts.manual);
+    if (!bg) {
+      resetBackground(layer);
+      return;
     }
-    el.addEventListener('error', () => {
-      if (bgState.get(layer) === state) resetBackground(layer);
-    });
-    const url = toUrl(bg.src);
-    el.src = bg.kind === 'video' && preview ? url + '#t=0.1' : url;
+
+    const key = bg.kind + "|" + bg.src;
+    const prev = bgState.get(layer);
+    if (prev && prev.key === key && layer.firstElementChild) {
+      applyBackgroundSettings(layer, layer.firstElementChild, bg, preview);
+      return;
+    }
+
+    const oldEls = [...layer.children];
+    const oldState = prev;
+    const state = { key };
+    bgState.set(layer, state);
+
+    let el;
+    if (bg.kind === "color") {
+      el = document.createElement("div");
+      el.style.background = bg.src;
+    } else if (bg.kind === "input") {
+      const inp = bg.input || {};
+      if (preview || inp.media !== "video" || inp.ndi || !window.CamSource) {
+        el = document.createElement("div");
+        el.style.cssText =
+          "display:flex;align-items:center;justify-content:center;background:#0b2a5a;" +
+          "color:#9db4d8;font:12px sans-serif;text-align:center;padding:4px;";
+        el.textContent = "Input: " + (inp.name || "Video");
+      } else {
+        el = document.createElement("img");
+        el.dataset.live = "1";
+        window.CamSource.url(inp.label)
+          .then((u) => {
+            if (bgState.get(layer) === state) el.src = u;
+          })
+          .catch((err) => {
+            console.warn("Input gagal dibuka:", err);
+            if (bgState.get(layer) === state) resetBackground(layer);
+          });
+      }
+    } else {
+      el = document.createElement(bg.kind === "video" ? "video" : "img");
+      if (bg.kind === "video") {
+        el.playsInline = true;
+        if (preview) {
+          el.muted = true;
+          el.preload = manual ? "auto" : "metadata";
+        } else {
+          el.autoplay = true;
+          el.preload = "auto";
+        }
+      }
+      el.addEventListener("error", () => {
+        if (bgState.get(layer) === state) resetBackground(layer);
+      });
+      const url = toUrl(bg.src);
+      el.src = bg.kind === "video" && preview ? url + "#t=0.1" : url;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.style.background = "#111";
+    }
+    el.style.position = "absolute";
+    el.style.inset = "0";
+    el.style.width = "100%";
+    el.style.height = "100%";
+    const fade = (opts && opts.fade) || 0; // ms; 0 = tukar langsung
+    // Elemen baru ada di atas yang lama. Video yang belum punya frame transparan,
+    // jadi yang lama tetap terlihat sampai frame pertama yang baru tergambar.
+    el.style.opacity = fade ? "0" : "";
+    layer.appendChild(el);
+    applyBackgroundSettings(layer, el, bg, preview);
+
+    const painted = () =>
+      new Promise((res) => {
+        const twoFrames = () =>
+          requestAnimationFrame(() => requestAnimationFrame(res));
+        if (el.tagName === "VIDEO" && el.requestVideoFrameCallback) {
+          el.requestVideoFrameCallback(twoFrames);
+          setTimeout(res, 800); // video tidak jalan: jangan menunggu selamanya
+        } else twoFrames();
+      });
+
+    const finish = () => {
+      if (bgState.get(layer) !== state) return; // sudah ada background yang lebih baru
+      if (fade) {
+        el.style.transition = `opacity ${fade}ms ease`;
+        el.style.opacity = "";
+      }
+      setTimeout(() => {
+        if (bgState.get(layer) !== state) return;
+        oldEls.forEach((o) => {
+          stopVideos(o);
+          o.remove();
+        });
+        if (oldState && oldState.dispose) oldState.dispose();
+      }, fade);
+    };
+
+    const isMedia = el.tagName === "VIDEO" || el.tagName === "IMG";
+    Promise.race([
+      isMedia
+        ? readyMedia(el).then(() => (preview ? null : painted()))
+        : Promise.resolve(),
+      new Promise((r) => setTimeout(r, preview ? 1500 : 5000)),
+    ]).then(finish);
   }
-  el.style.position = 'absolute';
-  el.style.inset = '0';
-  el.style.width = '100%';
-  el.style.height = '100%';
-  el.style.opacity = '0';
-  layer.appendChild(el);
-  applyBackgroundSettings(layer, el, bg, preview);
-
-  const finish = () => {
-    if (bgState.get(layer) !== state) return; // sudah diganti lagi
-    el.style.opacity = '';
-    oldEls.forEach((o) => {
-      const v = o.tagName === 'VIDEO' ? o : o.querySelector?.('video');
-      if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
-      o.remove();
-    });
-    if (oldState && oldState.dispose) oldState.dispose();
-  };
-
-  const ready = el.tagName === 'VIDEO' || el.tagName === 'IMG'
-    ? new Promise((res) => {
-        if (el.tagName === 'IMG') {
-          el.decode ? el.decode().then(res, res) : (el.onload = el.onerror = res);
-        } else if (el.readyState >= 2) res();
-        else { el.addEventListener('loadeddata', res, { once: true }); el.addEventListener('error', res, { once: true }); }
-      })
-    : Promise.resolve();
-  Promise.race([ready, new Promise((r) => setTimeout(r, 1500))]).then(finish);
-}
 
   window.SlideRenderer = {
     renderSlide,
@@ -291,42 +424,7 @@
     renderThumbnail,
     renderBackground,
     TEXT_DEFAULTS,
+    applyLayerBox,
+    ROTATION_SIGN,
   };
 })();
-
-const readyMedia = (el) =>
-  new Promise((res) => {
-    if (el.tagName === 'IMG') {
-      if (el.decode) el.decode().then(res, res);
-      else if (el.complete) res();
-      else { el.onload = el.onerror = res; }
-    } else if (el.readyState >= 2) res();
-    else {
-      el.addEventListener('loadeddata', res, { once: true });
-      el.addEventListener('error', res, { once: true });
-    }
-  });
-
-let renderSeq = 0;
-
-async function renderSlide(stage, payload) {
-  const seq = ++renderSeq;
-  const w = payload.width || 1366;
-  const h = payload.height || 768;
-
-  const next = document.createElement('div');
-  fillStage(next, payload, false);
-
-  const media = [...next.querySelectorAll('img, video')];
-  if (media.length)
-    await Promise.race([
-      Promise.all(media.map(readyMedia)),
-      new Promise((r) => setTimeout(r, 400)),
-    ]);
-  if (seq !== renderSeq) return; // sudah ada slide yang lebih baru
-
-  stage.replaceChildren(...next.childNodes);
-  stage.style.width = w + 'px';
-  stage.style.height = h + 'px';
-  fitStage(stage);
-}

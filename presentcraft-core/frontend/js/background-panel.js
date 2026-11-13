@@ -15,10 +15,11 @@ import {
   syncSettings,
   initBgZoom,
 } from "./background/bg-view.js";
-import { selectTile, air } from "./background/bg-actions.js";
+import { previewTile, air } from "./background/bg-actions.js";
 import { initDropzone } from "./background/bg-dropzone.js";
 import { initBgKeys } from "./background/bg-keys.js";
 import { initBgMenu } from "./background/bg-menu.js";
+import { initGridNav } from "./grid-nav.js";
 
 // Kompatibilitas: library.js dan background-state.js masih mengimpor dari file ini.
 export { pick } from "./background/bg-actions.js";
@@ -34,15 +35,12 @@ export function initBackgroundPanel() {
   on("selection-changed", refresh);
   on("item-updated", (it) => applyTile(it));
 
-  // klik thumbnail = pilih + tayangkan
-  $("bg-grid").addEventListener("click", (e) => {
-    const tile = e.target.closest(".bgt");
-    const g = G.selectedGroup();
-    if (!tile || !g) return;
-    const it = g.items.find((i) => String(i.id) === tile.dataset.iid);
-    if (!it) return;
-    selectTile(it);
-    air(it);
+  const items = () => G.selectedGroup()?.items || [];
+  initGridNav($("bg-slides"), {
+    sel: ".bgt",
+    cur: () => items().findIndex((i) => i.id === ps.tileSel),
+    preview: (i) => previewTile(items()[i]),
+    air: (i) => air(items()[i]),
   });
 
   initBgKeys();

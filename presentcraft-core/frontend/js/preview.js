@@ -10,7 +10,7 @@ import { isBackgroundVisible } from "../shared/background-state.js";
 const SR = window.SlideRenderer;
 const pvHost = $("pv-host");
 const pv = { dir: 0, raf: 0, loop: null, rate: 1 }; // dir: 1 putar, 0 jeda; loop null = ikut layer
-const bgNow = () => (isBackgroundVisible() ? state.bg : null);
+const bgNow = () => state.bgPreview || (isBackgroundVisible() ? state.bg : null);
 let stage = null;
 let stageW = 1366;
 let bgHolder = null;
@@ -99,7 +99,7 @@ function layerEl(l) {
   const r = l.rect;
   el.style.cssText =
     `position:absolute;left:${r.x}%;top:${r.y}%;width:${r.w}%;height:${r.h}%;` +
-    `opacity:${l.opacity ?? 1};transform:rotate(${l.rotation || 0}deg);overflow:hidden`;
+    `opacity:${l.opacity ?? 1};transform:rotate(${(SR.ROTATION_SIGN ?? -1) * (l.rotation || 0)}deg);overflow:hidden`;
 
   if (l.kind === "video" || l.kind === "image") {
     if (!l.src) return null;
@@ -123,6 +123,18 @@ function layerEl(l) {
       `color:${st.color};font-weight:${st.bold ? 700 : 400};font-style:${st.italic ? "italic" : "normal"};` +
       `text-align:${st.align}`;
     el.append(t);
+  } else if (l.kind === "input") {
+    if (l.input?.media === "video" && !l.input.ndi && window.CamSource) {
+      const img = document.createElement("img");
+      img.dataset.live = "1";
+      img.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${FIT[l.scale] || "contain"};display:block`;
+      window.CamSource.url(l.input.label)
+        .then((u) => {
+          img.src = u;
+        })
+        .catch(() => {});
+      el.append(img);
+    }
   }
   return el;
 }

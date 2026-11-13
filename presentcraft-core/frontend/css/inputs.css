@@ -244,3 +244,111 @@
 #msg-panel { color-scheme: dark; }
 
 #pv-host { position: relative; overflow: hidden; }
+
+/* ============ Layout yang bisa diubah ukurannya ============ */
+:root { --libW: 240px; --propsW: 300px; --bgW: 240px; --msgW: 300px; --bottomH: 260px; }
+
+#app { display: flex !important; flex-direction: column; height: 100vh; }
+#menubar, #toolbar { flex: none; }
+
+#workspace {
+  display: grid !important; flex: 1; min-height: 0;
+  grid-template-columns: var(--libW) 6px minmax(0, 1fr) 6px var(--propsW);
+}
+#workspace > :is(#library, #sorter, #props) { width: auto; min-width: 0; min-height: 0; }
+
+#media-panel {
+  flex: none; min-height: 0;
+  height: var(--bottomH) !important;
+  grid-template-columns: var(--bgW) 6px minmax(0, 1fr) 6px var(--msgW) !important;
+}
+#bg-explorer { border-right: 0 !important; }
+#msg-panel { border-left: 0 !important; }
+
+/* pembagi */
+.rz { position: relative; flex: none; background: #1b1b1b; z-index: 5; touch-action: none; }
+.rz::after { content: ""; position: absolute; background: #2a2a2a; transition: background .12s; }
+.rz-col { width: 6px; cursor: col-resize; }
+.rz-col::after { left: 2px; right: 2px; top: 0; bottom: 0; }
+.rz-row { height: 6px; cursor: row-resize; }
+.rz-row::after { top: 2px; bottom: 2px; left: 0; right: 0; }
+.rz:hover::after, body.rz-drag .rz:active::after { background: #888; }
+body.rz-drag { user-select: none !important; -webkit-user-select: none !important; }
+body.rz-h, body.rz-h * { cursor: col-resize !important; }
+body.rz-v, body.rz-v * { cursor: row-resize !important; }
+body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
+
+/* ---------- editor: handle, panduan, input angka ---------- */
+.ed-ov { user-select: none; -webkit-user-select: none; touch-action: none; }
+.ed-hit { pointer-events: auto; cursor: move; }
+.ed-h { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; box-sizing: border-box;
+  background: #fff; border: 1px solid #111; border-radius: 2px; z-index: 3; }
+.ed-h[data-h="nw"] { left: 0;    top: 0;    cursor: nwse-resize; }
+.ed-h[data-h="n"]  { left: 50%;  top: 0;    cursor: ns-resize; }
+.ed-h[data-h="ne"] { left: 100%; top: 0;    cursor: nesw-resize; }
+.ed-h[data-h="e"]  { left: 100%; top: 50%;  cursor: ew-resize; }
+.ed-h[data-h="se"] { left: 100%; top: 100%; cursor: nwse-resize; }
+.ed-h[data-h="s"]  { left: 50%;  top: 100%; cursor: ns-resize; }
+.ed-h[data-h="sw"] { left: 0;    top: 100%; cursor: nesw-resize; }
+.ed-h[data-h="w"]  { left: 0;    top: 50%;  cursor: ew-resize; }
+.ed-rot { position: absolute; left: 50%; top: -28px; width: 12px; height: 12px; margin-left: -6px;
+  box-sizing: border-box; background: #fff; border: 1px solid #111; border-radius: 50%; cursor: grab; z-index: 3; }
+.ed-rot::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 16px; background: #fff9; }
+.ed-guide { position: absolute; background: #ff4d4d; pointer-events: none; z-index: 5; }
+.ed-guide.v { top: 0; bottom: 0; width: 1px; }
+.ed-guide.h { left: 0; right: 0; height: 1px; }
+
+.ed-fl.scrub { cursor: ew-resize; user-select: none; -webkit-user-select: none; }
+
+.ed-help { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: #0009; }
+.ed-help-card { width: min(520px, 92vw); max-height: 86vh; overflow: auto; padding: 14px 18px 18px;
+  background: #1e1e1e; color: #d8d8d8; border: 1px solid #343434; border-radius: 10px;
+  font-size: 12.5px; box-shadow: 0 18px 50px #000a; }
+.ed-help-card h3 { margin: 0 0 4px; color: #f0f0f0; font-size: 14px; }
+.ed-help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.ed-help-table caption {
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 0 6px;
+}
+.ed-help-table th {
+  text-align: left;
+  font-weight: 600;
+  opacity: 0.7;
+  padding: 6px 10px;
+  border-bottom: 1px solid #8884;
+}
+.ed-help-table td {
+  padding: 6px 10px;
+  vertical-align: top;
+  border-bottom: 1px solid #8882;
+}
+.ed-help-table tbody tr:nth-child(even) {
+  background: #8881;
+}
+.ed-help-table td:first-child {
+  width: 42%;
+}
+.ed-help-table .hk-key {
+  white-space: nowrap;
+}
+.ed-help-table kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid #8886;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #8881;
+  font: 12px ui-monospace, Consolas, monospace;
+}
+.ed-help-table .hk-act {
+  font-weight: 500;
+}
+.ed-help-grid kbd { justify-self: start; padding: 2px 7px; background: #2f2f2f; border: 1px solid #3a3a3a;
+  border-radius: 4px; color: #f0f0f0; font: inherit; }

@@ -7,19 +7,26 @@ import {
   isLen,
   factor,
   fieldStep,
+  fieldBig,
   fieldMin,
   fieldTip,
   getUnit,
   setUnit,
 } from "./fields.js";
 import { ed, L, q, onEd, fireEd } from "./session.js";
-import { renderOverlay, renderPreview } from "./canvas.js";
+import { renderOverlay, renderPreview, updateGeometry } from "./canvas.js";
 import { push } from "./history.js";
 import { round } from "../utils.js";
 
 const closedSecs = new Set(); // bagian yang sedang dilipat; diingat antar render
 
 // Menulis nilai ke layer, lalu menyegarkan bagian lain yang bergantung padanya.
+let changedT;
+const changedSoon = () => {
+  clearTimeout(changedT);
+  changedT = setTimeout(() => ed.root && fireEd("changed"), 250);
+};
+
 function setVal(f, l, val) {
   if (typeof val === "number") {
     if (!Number.isFinite(val)) return false;
@@ -29,9 +36,14 @@ function setVal(f, l, val) {
   }
   setPath(l, f.path, val);
   if (f.path === "text") fireEd("text:changed", { i: ed.sel });
-  if (f.path.startsWith("rect.") || f.path === "rotation") renderOverlay();
-  renderPreview();
-  fireEd("changed");
+  if (
+    f.path.startsWith("rect.") ||
+    f.path === "rotation" ||
+    f.path === "opacity"
+  )
+    updateGeometry(ed.sel);
+  else renderPreview();
+  changedSoon();
   return true;
 }
 
@@ -172,18 +184,15 @@ function fieldRow(f, l) {
     inp = el("input");
     inp.type = f.t === "color" ? "color" : f.t === "range" ? "range" : "number";
     if (f.t === "num" && isLen(f)) {
-      inp.step = fieldStep(f);
       const m = fieldMin(f);
       if (m != null) inp.min = m;
       row.title = fieldTip(f);
     } else {
-      if (f.step != null) inp.step = f.step;
       if (f.min != null) inp.min = f.min;
     }
     if (f.max != null) inp.max = f.max;
-    if (f.step != null) inp.step = f.step;
-    if (f.min != null) inp.min = f.min;
-    if (f.max != null) inp.max = f.max;
+    inp.step = f.t === "num" ? "any" : (f.step ?? "any");
+    if (f.t === "num") inp.step = fieldBig(f);
     if (f.t === "color") {
       inp.value = /^#[0-9a-f]{6}$/i.test(v) ? v : "#ffffff";
     } else {
@@ -206,14 +215,118 @@ function fieldRow(f, l) {
     if (val !== null) setVal(f, l, val);
     push();
   });
+
+  // modifier: Shift = 10 satuan, Alt = 0,1 satuan, biasa = 1 satuan
+  const mult = (e) => (e.shiftKey ? 10 : e.altKey ? 0.1 : 1);
+  let prev = Number(inp.value);
+  let mods = { shiftKey: false, altKey: false }; // modifier saat klik spinner
+
+  inp.addEventListener("pointerdown", (e) => {
+    mods = { shiftKey: e.shiftKey, altKey: e.altKey };
+  });
+
+  inp.addEventListener("input", (ev) => {
+    // klik spinner native (bukan ketikan): skala deltanya sesuai Shift/Alt
+    if (f.t === "num" && !ev.inputType && Number.isFinite(prev)) {
+      const delta = Number(inp.value) - prev;
+      inp.value = +(prev + delta * mult(mods)).toFixed(4);
+    }
+    const val = read();
+    if (val !== null) setVal(f, l, val);
+    prev = Number(inp.value);
+  });
+  inp.addEventListener("change", () => {
+    const val = read();
+    if (val !== null) setVal(f, l, val);
+    push();
+  });
+
+  if (f.t === "num") {
+    const fine = fieldStep(f);
+    const show = () => {
+      const n = Number(readValue(l, f));
+      if (Number.isFinite(n)) {
+        inp.value = round(f.show ? f.show(n) : n);
+        prev = Number(inp.value);
+      }
+    };
+
+    // panah keyboard: 1 / Shift 10 / Alt 0,1
+    let pushT;
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        inp.blur();
+        ed.root.focus();
+        return;
+      }
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault();
+      e.stopPropagation(); // jangan sampai menggeser layer di kanvas
+      const cur = Number(inp.value);
+      const base = Number.isFinite(cur) ? cur : 0;
+      const dir = e.key === "ArrowUp" ? 1 : -1;
+      if (setVal(f, l, +(base + dir * mult(e)).toFixed(4))) show();
+      clearTimeout(pushT);
+      pushT = setTimeout(push, 300); // satu entri undo per rentetan tekan
+    });
+
+    // seret label: kontinu, Shift = halus (x0,1)
+    const lab = row.querySelector(".ed-fl");
+    if (lab) {
+      lab.classList.add("scrub");
+      lab.title = "Geser kiri/kanan untuk mengubah nilai (Shift: halus)";
+      lab.addEventListener("pointerdown", (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        lab.setPointerCapture(e.pointerId);
+        let x0 = e.clientX;
+        let v0 = Number(inp.value) || 0;
+        let lastM = 1;
+        const move = (ev) => {
+          const m = ev.shiftKey ? 0.1 : 1;
+          if (m !== lastM) {
+            // Shift ditekan/dilepas di tengah geser: jangan melompat
+            v0 = Number(inp.value) || 0;
+            x0 = ev.clientX;
+            lastM = m;
+          }
+          setVal(f, l, +(v0 + (ev.clientX - x0) * fine * 5 * m).toFixed(4));
+          show();
+        };
+        const up = () => {
+          lab.removeEventListener("pointermove", move);
+          lab.removeEventListener("pointerup", up);
+          lab.removeEventListener("pointercancel", up);
+          push();
+        };
+        lab.addEventListener("pointermove", move);
+        lab.addEventListener("pointerup", up);
+        lab.addEventListener("pointercancel", up);
+      });
+    }
+  }
   row.appendChild(inp);
   return row;
 }
 
+let lastLayer = null;
 export function renderFields() {
   const box = q(".ed-fields");
-  box.replaceChildren();
   const l = L()[ed.sel];
+  const a = document.activeElement;
+  if (
+    l &&
+    l === lastLayer &&
+    a &&
+    box.contains(a) &&
+    (a.tagName === "TEXTAREA" || (a.tagName === "INPUT" && a.type !== "range"))
+  ) {
+    syncNumbers(); // sudah melewati input yang sedang fokus
+    return;
+  }
+  lastLayer = l;
+  box.replaceChildren();
   if (!l) return;
   let grp = null;
   let grid = null;
@@ -240,3 +353,18 @@ onEd(
   "text:changed",
   ({ i }) => ed.root && i === ed.sel && syncField("text", L()[i]?.text),
 );
+
+const ALL_FIELDS = FIELDS.flatMap((f) => (f.t === "line" ? f.items : [f]));
+
+export function syncNumbers() {
+  const l = L()[ed.sel];
+  if (!l) return;
+  for (const f of ALL_FIELDS) {
+    if (!f.path || (f.t !== "num" && f.t !== "range")) continue;
+    const inp = q(`.ed-f[data-path="${f.path}"] input`);
+    if (!inp || document.activeElement === inp) continue;
+    const n = Number(readValue(l, f));
+    if (Number.isFinite(n)) inp.value = round(f.show ? f.show(n) : n);
+  }
+}
+onEd("geom", () => ed.root && syncNumbers());

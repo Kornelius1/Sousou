@@ -14,6 +14,12 @@ import { startEdit, endEdit, styleEditBox } from "./textedit.js";
 import { buildFilmstrip, markCurrent, disposeFilmstrip } from "./filmstrip.js";
 import { renderLayers } from "./layers.js";
 import { renderFields } from "./inspector.js";
+import {
+  handleShortcut,
+  toggleHelp,
+  closeHelp,
+  helpOpen,
+} from "./shortcuts.js";
 
 let ro = null; // ResizeObserver kanvas
 
@@ -25,7 +31,8 @@ function syncHistoryButtons() {
 
 function updateHeader() {
   const s = state.slides[ed.items[ed.cur].index];
-  q(".ed-title").textContent = s.folder_name || state.bundleName || "Edit slide";
+  q(".ed-title").textContent =
+    s.folder_name || state.bundleName || "Edit slide";
   q(".ed-count").textContent = `${ed.cur + 1} / ${ed.items.length}`;
   markCurrent();
 }
@@ -73,9 +80,15 @@ const redo = () => {
 
 onEd("layer:request", (i) => ed.root && selectLayer(i));
 onEd("slide:request", (k) => ed.root && selectSlide(k));
-onEd("stage:blank", () => ed.root && endEdit());
+onEd("stage:blank", () => {
+  if (!ed.root) return;
+  endEdit();
+  if (ed.sel !== -1) selectLayer(-1); // klik area kosong: sembunyikan kotak seleksi
+});
+onEd("edit:end", () => ed.root && endEdit());
 onEd("history", () => ed.root && syncHistoryButtons());
 onEd("restored", () => ed.root && renderAll());
+onEd("structure", () => ed.root && renderAll());
 // klik layer di kanvas: pilih; kalau teks, langsung diedit di tempat
 onEd("hit", ({ i, x, y }) => {
   if (!ed.root) return;
@@ -86,6 +99,7 @@ onEd("hit", ({ i, x, y }) => {
 // ---------- tutup / simpan / batal ----------
 function close() {
   if (!ed.root) return;
+  window.removeEventListener("keydown", onKeyCapture, true);
   ro?.disconnect();
   ro = null;
   disposeFilmstrip();
@@ -102,15 +116,22 @@ function save() {
   for (const it of ed.items) {
     if (JSON.stringify(it.layers) === it.orig) continue;
     const s = state.slides[it.index];
-    emit("slide:edited", { index: it.index, groupId: s.groupId, itemId: s.itemId, layers: it.layers });
+    emit("slide:edited", {
+      index: it.index,
+      groupId: s.groupId,
+      itemId: s.itemId,
+      layers: it.layers,
+    });
     n++;
     if (!s.itemId) mem++;
   }
   close();
   setStatus(
-    !n ? "Tidak ada perubahan."
-    : mem ? `${n} slide diubah (${mem} belum ada di library, hanya di memori).`
-    : `${n} slide disimpan.`,
+    !n
+      ? "Tidak ada perubahan."
+      : mem
+        ? `${n} slide diubah (${mem} belum ada di library, hanya di memori).`
+        : `${n} slide disimpan.`,
   );
 }
 
@@ -127,10 +148,13 @@ async function cancel() {
 
 function onKey(e) {
   e.stopPropagation(); // jangan bocor ke pintasan global (B, panah, dst.)
-  const typing = e.target.isContentEditable || e.target.matches("textarea, input[type=text], input[type=number]");
+  const typing =
+    e.target.isContentEditable || e.target.matches("textarea, select, input");
   const mod = e.ctrlKey || e.metaKey;
   const k = e.key.toLowerCase();
-  if (e.key === "Escape") return cancel();
+  // webview memuat ulang halaman pada Ctrl+R: cegah di semua kondisi
+  if (mod && (k === "r" || k === "d")) e.preventDefault();
+  if (e.key === "Escape") return helpOpen() ? closeHelp() : cancel();
   if (mod && k === "s") {
     e.preventDefault();
     return save();
@@ -148,7 +172,26 @@ function onKey(e) {
   } else if (e.key === "PageUp") {
     e.preventDefault();
     selectSlide(ed.cur - 1);
-  }
+  } else if (!mod && (e.key === "ArrowRight" || e.key === "ArrowDown")) {
+    e.preventDefault();
+    selectSlide(ed.cur + 1);
+  } else if (!mod && (e.key === "ArrowLeft" || e.key === "ArrowUp")) {
+    e.preventDefault();
+    selectSlide(ed.cur - 1);
+  } else handleShortcut(e);
+}
+
+// Fase capture di window: editor mendapat tombol lebih dulu daripada pintasan global
+// (panah tidak lagi memindah slide). Saat mengetik di kolom isian, biarkan alur normal.
+function onKeyCapture(e) {
+  if (!ed.root) return;
+  const t = e.target;
+  const inside = ed.root.contains(t) || t === document.body || t === document.documentElement;
+  if (!inside) return; // mis. dialog konfirmasi di luar editor
+  const typing = t.isContentEditable || (t.matches && t.matches("textarea, select, input"));
+  if (typing) return;
+  e.stopImmediatePropagation();
+  onKey(e);
 }
 
 // ---------- buka ----------
@@ -160,6 +203,8 @@ const SKELETON = `
     <button class="ed-btn" data-a="redo" title="Redo (Ctrl+Y)">Redo</button>
     <span class="ed-vr"></span>
     <button class="ed-btn" data-a="bg" aria-pressed="true" title="Tampilkan / sembunyikan background">Background</button>
+    <span class="ed-vr"></span>
+    <button class="ed-btn" data-a="help" title="Pintasan keyboard (F1)">?</button>
     <span class="ed-vr"></span>
     <button class="ed-btn" data-a="cancel" title="Batal (Esc)">Batal</button>
     <button class="ed-btn primary" data-a="save" title="Simpan (Ctrl+S)">Simpan</button>
@@ -185,10 +230,18 @@ export function openEditor(i) {
   if (!s0) return setStatus("Pilih sebuah slide dulu.");
 
   // semua slide dalam grup yang sama; slide tanpa groupId (hasil import) = seluruh grid
-  const idxs = state.slides.map((_, k) => k).filter((k) => s0.groupId == null || state.slides[k].groupId === s0.groupId);
+  const idxs = state.slides
+    .map((_, k) => k)
+    .filter(
+      (k) => s0.groupId == null || state.slides[k].groupId === s0.groupId,
+    );
   ed.items = idxs.map((k) => {
     const layers = state.slides[k].layers || [];
-    return { index: k, layers: structuredClone(layers), orig: JSON.stringify(layers) };
+    return {
+      index: k,
+      layers: structuredClone(layers),
+      orig: JSON.stringify(layers),
+    };
   });
   ed.cur = Math.max(0, idxs.indexOf(i));
   ed.sel = initialSel();
@@ -202,6 +255,7 @@ export function openEditor(i) {
   ed.root = root;
 
   root.addEventListener("keydown", onKey);
+  window.addEventListener("keydown", onKeyCapture, true);
   root.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-a]");
     if (!btn) return;
@@ -214,7 +268,7 @@ export function openEditor(i) {
       ed.showBg = !ed.showBg;
       btn.setAttribute("aria-pressed", String(ed.showBg));
       renderPreview();
-    }
+    } else if (a === "help") toggleHelp();
   });
 
   document.body.appendChild(root);

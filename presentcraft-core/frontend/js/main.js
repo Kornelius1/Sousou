@@ -24,13 +24,13 @@ import { initLibrary, renderLibrary, lib, refreshGrid } from "./library.js";
 import { initBackgroundPanel, syncPanel } from "./background-panel.js";
 import { loadGroups, migrateBackground } from "./groups.js";
 import { initExplorer } from "./explorer.js";
-import { initPanels } from "./panels.js";
 import * as M from "./mixer-state.js";
 import { initMixerPanel } from "./mixer-panel.js";
 import { syncCamsSoon } from "./cam-usage.js";
 import { on } from "./bus.js";
 import { broadcastMessage } from "./message-state.js";
 import { initMessagePanel } from "./message-panel.js";
+import { initResizer } from "./resizer.js";
 
 initMenu();
 initToolbar();
@@ -40,9 +40,9 @@ initPreview();
 initProperties();
 await lib.load();
 initLibrary();
-initPanels();
 initMixerPanel();
 initMessagePanel(); 
+initResizer(); 
 
 // Listener dipasang sebelum membaca disk, agar event yang datang saat startup tidak terlewat.
 await onBackgroundChange((bg) => {

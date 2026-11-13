@@ -85,10 +85,6 @@
 .bgt.sel { border-color: var(--select-color); }
 .bgt-thumb { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; isolation: isolate; }
 .bgt-layer { position: absolute; inset: 0; overflow: hidden; }
-.bgt.live .bgt-thumb::after {
-  content: 'show'; position: absolute; top: 4px; left: 4px; z-index: 5;
-  background: #cf6679; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 3px;
-}
 .bgt-cap { margin-top: 3px; font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .ex-row.ex-item { box-shadow: inset 20px 0 0 #1e1e1e, inset 21px 0 0 #333; }
@@ -174,3 +170,37 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
   background: rgba(220,60,60,.25);
   box-shadow: inset 3px 0 0 #e04848;
 }
+.bgt-thumb,
+.card .thumb { position: relative; }
+
+/* pill LIVE */
+.bgt.live .bgt-thumb::after,
+.card.live .thumb::after {
+  content: "LIVE";
+  position: absolute; top: 6px; left: 6px; z-index: 5;
+  padding: 2px 7px 2px 17px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .65);
+  color: #fff;
+  font: 700 9px/1.5 system-ui, sans-serif;
+  letter-spacing: .08em;
+  pointer-events: none;
+}
+/* titik merah berdenyut */
+.bgt.live .bgt-thumb::before,
+.card.live .thumb::before {
+  content: "";
+  position: absolute; top: 12px; left: 12px; z-index: 6;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #ff3b30;
+  box-shadow: 0 0 0 0 rgba(255, 59, 48, .6);
+  animation: live-pulse 1.6s infinite;
+  pointer-events: none;
+}
+@keyframes live-pulse {
+  70%  { box-shadow: 0 0 0 5px rgba(255, 59, 48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+}
+/* bingkai merah tipis di item yang tayang */
+.bgt.live .bgt-thumb,
+.card.live .thumb { box-shadow: 0 0 0 2px #ff3b30; }

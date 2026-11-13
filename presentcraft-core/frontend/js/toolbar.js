@@ -16,6 +16,7 @@ export function initToolbar() {
 
 export function initShortcuts() {
   window.addEventListener('keydown', (e) => {
+    if (document.querySelector(".ed-root")) return;
     if (e.key === 'Escape') closeMenus();
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
       e.preventDefault();
