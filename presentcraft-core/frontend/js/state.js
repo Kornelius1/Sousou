@@ -1,16 +1,13 @@
 // State bersama. Semua modul membaca/menulis lewat objek ini.
 export const state = {
   slides: [],
-  cards: [],            // [{ card, thumb }]
+  cards: [], 
   activeIndex: -1,
   selectedLayer: -1,
   blanked: false,
   bg: null,
   showBgInThumbs: false,
-  bundleMedia: [],      // [{ path, kind }]
-  groups: [],
-  selectedGroup: null,
-  selectedItem: null,
+  bundleMedia: [],    
   bundleName: '',
   mediaGroups: [],
   selectedMediaGroup: null,

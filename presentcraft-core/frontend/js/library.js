@@ -2,17 +2,14 @@ import { state } from "./state.js";
 import { emit, on } from "./bus.js";
 import { setStatus } from "./utils.js";
 import { LIB_FILTER, libKindOf } from "./media.js";
-import { createStore, itemName } from "./store.js";
 import { createTree } from "./tree.js";
 import { pick } from "./background-panel.js";
 import { showGroupSlides, showSlide, initBlankDeck } from "./sorter/sorter.js";
 import { resolveTag } from "./tags.js";
+import { itemName } from "./store.js";
+import { createRemoteStore } from "./remote-store.js";
 
-export const lib = createStore({
-  name: "lib",
-  loadCmd: "load_library",
-  saveCmd: "save_library",
-});
+export const lib = createRemoteStore({ name: "lib", prefix: "library" });
 
 let tree = null;
 let syncing = false;
@@ -30,6 +27,16 @@ function withSync(fn) {
   syncing = true;
   try {
     fn();
+  } finally {
+    syncing = false;
+  }
+}
+
+async function withSyncAsync(fn) {
+  if (syncing) return;
+  syncing = true;
+  try {
+    await fn();
   } finally {
     syncing = false;
   }
@@ -56,15 +63,16 @@ function onLibSelection() {
   else refreshGrid();
 }
 
-/** Salin isi bundel yang baru dimuat ke grup permanen (nama = nama file). */
-function syncBundle() {
-  if (!state.slides.length) return;
-  const g = lib.ensureGroup(state.bundleName || "Bundle");
+async function syncBundle() {
+  const slides = state.slides;
+  if (!slides.length) return;
+  const g = await lib.ensureGroup(state.bundleName || "Bundle");
+  if (!g) return;
 
-  lib.replaceSlides(
+  await lib.replaceSlides(
     g.id,
     "bundle",
-    state.slides.map((s) => {
+    slides.map((s) => {
       const first = (s.content || "").trim().split("\n")[0].slice(0, 40);
       return {
         label: first || `Slide ${s.slide_number}`,
@@ -75,15 +83,18 @@ function syncBundle() {
   );
 
   const seen = new Set();
-  for (const s of state.slides) {
+  const media = [];
+  for (const s of slides) {
     for (const l of s.layers || []) {
       if ((l.kind !== "video" && l.kind !== "image") || l.status !== "OK")
         continue;
       if (!l.path || seen.has(l.path)) continue;
       seen.add(l.path);
-      lib.copyIn(g.id, { kind: l.kind, src: l.path });
+      media.push({ kind: l.kind, src: l.path });
     }
   }
+  if (media.length) await lib.copyInMany(g.id, media);
+
   tree.openGroup(g.id);
   lib.s.gid = g.id;
   lib.s.iid = null;
@@ -268,19 +279,18 @@ export function initLibrary() {
 
   on("lib-changed", refreshGrid);
   on("lib-selection", onLibSelection);
-  on("bundle:imported", () => {
-    withSync(syncBundle); // lib-changed selama sinkron diabaikan oleh flag
-    refreshGrid(); // bangun ulang dari library supaya tiap slide punya itemId
+  on("bundle:imported", async () => {
+    await withSyncAsync(syncBundle);
+    refreshGrid();
   });
-  on("tag:set", ({ groupId, itemId, tag }) => {
+  on("tag:set", async ({ groupId, itemId, tag }) => {
     let ok = false;
-    withSync(() => {
-      ok = lib.setTag(groupId, itemId, tag);
-    }); // lib-changed selama ini tidak membangun ulang grid
+    await withSyncAsync(async () => {
+      ok = await lib.setTag(groupId, itemId, tag);
+    });
     if (ok) emit("tag:applied", { itemId, tag });
   });
   on("slide:edited", ({ index, itemId, groupId, layers }) => {
-    console.log("slide:edited", { index, itemId, groupId, n: layers.length });
     const s = state.slides[index];
     if (s) {
       s.layers = structuredClone(layers);
@@ -296,7 +306,6 @@ export function initLibrary() {
       .filter((l) => l.kind === "text" && l.text)
       .map((l) => l.text)
       .join("\n");
-    withSync(() => lib.updateItem(gid, itemId, { slide: next }));
-    console.log("updateItem:", typeof lib.updateItem, "slide tersimpan:", it.slide?.layers?.[0]?.rect);
+    withSyncAsync(() => lib.updateItem(gid, itemId, { slide: next }));
   });
 }

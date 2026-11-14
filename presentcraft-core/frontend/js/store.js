@@ -1,7 +1,7 @@
 import { emit } from "./bus.js";
 import { invoke } from "./tauri.js";
 
-const uid = () =>
+export const uid = () =>
   crypto.randomUUID
     ? crypto.randomUUID()
     : Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -41,10 +41,16 @@ const base = () => ({
   added: Date.now(),
 });
 
-export function createStore({ name, loadCmd, saveCmd }) {
+export function createStore({
+  name,
+  loadCmd,
+  saveCmd,
+  events = {},
+  quietUpdate = false,
+}) {
   const s = { groups: [], gid: null, iid: null };
-  const evChanged = `${name}-changed`;
-  const evSel = `${name}-selection`;
+  const evChanged = events.changed || `${name}-changed`;
+  const evSel = events.selection || `${name}-selection`;
 
   const find = (id) => s.groups.find((g) => g.id === id);
   const selectedGroup = () => find(s.gid);
@@ -58,7 +64,7 @@ export function createStore({ name, loadCmd, saveCmd }) {
   function persist() {
     clearTimeout(timer);
     timer = setTimeout(() => {
-      const store = JSON.parse(JSON.stringify({ groups: s.groups }));
+      const store = structuredClone({ groups: s.groups });
       chain = chain
         .then(() => invoke(saveCmd, { store }))
         .catch((err) => console.warn(`gagal menyimpan ${name}:`, err));
@@ -191,7 +197,12 @@ export function createStore({ name, loadCmd, saveCmd }) {
     const it = g && g.items.find((x) => x.id === iid);
     if (!it) return false;
     Object.assign(it, patch);
-    changed(); // simpan ke disk (300 ms) dan pancarkan lib-changed
+    if (quietUpdate) {
+      persist(); // simpan saja, jangan picu render ulang seluruh daftar
+      emit("item-updated", it);
+    } else {
+      changed(); // perilaku lama untuk library
+    }
     return true;
   }
 
@@ -280,5 +291,6 @@ export function createStore({ name, loadCmd, saveCmd }) {
     replaceSlides,
     setTag,
     updateItem,
+    changed,
   };
 }

@@ -6,9 +6,13 @@ use tauri::Manager;
 mod pro_parser;
 mod commands;
 mod groups;
+mod store_ops;
 mod session_pack;
 mod ndi;
 mod camera;
+mod jsonfile;
+mod background;
+mod lib_commands;
 use pro_parser::{parse_pro_file, parse_pro_file_with, MediaResolver, Slide};
 
 #[derive(serde::Serialize)]
@@ -121,6 +125,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             use tauri::Manager;
+
+            let dir = app.path().app_data_dir()?;
+            app.manage(lib_commands::LibState::load(&dir));
+
             camera::start_server(app.state::<camera::CameraHub>().inner().clone())?;
 
             let _audience_window = tauri::WebviewWindowBuilder::new(
@@ -140,16 +148,27 @@ pub fn run() {
             commands::import_session,
             commands::load_background_state,
             commands::save_background_state,
-            commands::load_mixer_state,
-            commands::save_mixer_state, 
             commands::load_groups,
             commands::save_groups,
-            commands::load_library,
-            commands::save_library,
             ndi::ndi_discover,
             ndi::ndi_status,
             ndi::ndi_open_download,
             camera::cam_list, camera::cam_start, camera::cam_stop,
+            lib_commands::library_get,
+            lib_commands::library_create_group,
+            lib_commands::library_rename_group,
+            lib_commands::library_delete_group,
+            lib_commands::library_ensure_group,
+            lib_commands::library_add_files,
+            lib_commands::library_add_input,
+            lib_commands::library_add_blank,
+            lib_commands::library_replace_slides,
+            lib_commands::library_set_tag,
+            lib_commands::library_copy_in_many,
+            lib_commands::library_remove_item,
+            lib_commands::library_move_item,
+            lib_commands::library_sort_group,
+            lib_commands::library_update_item,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

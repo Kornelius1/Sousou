@@ -87,7 +87,7 @@ export async function exportSession() {
     data.library = { groups: lib.s.groups };
   }
   if (opt.background)
-    data.background = { groups: state.groups, active: state.bg };
+    data.background = { groups: G.state.s.groups, active: state.bg };
 
   const dest = await saveDialog({
     filters: FILTERS,
@@ -121,10 +121,11 @@ export async function importSession() {
 
     if (d.library) {
       for (const g of d.library.groups || []) {
-        const t = lib.ensureGroup(g.name);
-        for (const it of g.items || []) lib.copyIn(t.id, it);
+        const t = await lib.ensureGroup(g.name);
+        if (t) await lib.copyInMany(t.id, g.items || []);
       }
     }
+    
     if (d.background) {
       G.mergeGroups(
         d.background.groups && d.background.groups.groups

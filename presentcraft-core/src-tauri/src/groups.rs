@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path};
+use std::{path::Path};
 
 fn yes() -> bool { true }
 fn fill() -> String { "fill".into() }
@@ -10,7 +10,7 @@ fn one() -> f32 { 1.0 }
 pub struct Item {
     pub id: String,
     pub src: String,
-    pub kind: String, // "video" | "image" | "color" | "input" | "slide" | ...
+    pub kind: String, 
     #[serde(default)]
     pub text: String,
     #[serde(default)]
@@ -38,36 +38,24 @@ pub struct Group {
     pub items: Vec<Item>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Store {
     #[serde(default)]
     pub groups: Vec<Group>,
 }
 
 pub fn load(dir: &Path, file: &str) -> Option<Store> {
-    let p = dir.join(file);
-    let s = fs::read_to_string(&p).ok()?;
-    match serde_json::from_str(&s) {
-        Ok(v) => Some(v),
-        Err(_) => {
-            let _ = fs::rename(&p, dir.join(format!("{file}.bad")));
-            None
-        }
-    }
+    crate::jsonfile::load(dir, file)
 }
 
 pub fn save(dir: &Path, file: &str, store: &Store) -> Result<(), String> {
-    fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-    let p = dir.join(file);
-    let tmp = dir.join(format!("{file}.tmp"));
-    fs::write(&tmp, serde_json::to_vec_pretty(store).map_err(|e| e.to_string())?)
-        .map_err(|e| e.to_string())?;
-    fs::rename(&tmp, &p).map_err(|e| e.to_string())
+    crate::jsonfile::save(dir, file, store)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
        #[test]
     fn roundtrip_and_missing() {

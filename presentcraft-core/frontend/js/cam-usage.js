@@ -2,6 +2,7 @@ import { getBackground } from "../shared/background-state.js";
 import { debounce } from "./utils.js";
 import { state } from "./state.js";
 import { lib } from "./library.js";
+import * as G from "./groups.js";
 
 const wantedCams = () => {
   const wanted = new Set();
@@ -18,7 +19,7 @@ const wantedCams = () => {
     for (const it of g.items) if (it.kind === "input") add(it.input);
 
   // 3. item di grup Background (groups.js)
-  for (const g of state.groups || [])
+  for (const g of G.store.s.groups || [])
     for (const it of g.items) if (it.kind === "input") add(it.input);
 
   // 4. layer di slide, kalau ada yang membawa input

@@ -105,7 +105,7 @@ function fillMenu(m, entries) {
       if (e.dot && e.color) dot.style.color = e.color; // tag dot keeps working
     }
     if (e.color) b.style.boxShadow = `inset 3px 0 0 ${e.color}`;
-    b.append(dot, el("span", null, e.label)); 
+    b.append(dot, el("span", null, e.label));
 
     if (e.submenu) {
       b.classList.add("has-sub");
@@ -211,7 +211,8 @@ export function createTree(cfg) {
       row.appendChild(sw);
     } else if (it.kind === "input") {
       const ic = el("i", "fa-solid fa-video");
-      ic.style.cssText = "width:14px;margin-right:6px;text-align:center;font-size:11px;opacity:.8";
+      ic.style.cssText =
+        "width:14px;margin-right:6px;text-align:center;font-size:11px;opacity:.8";
       row.appendChild(ic);
     } else {
       row.appendChild(
@@ -289,7 +290,7 @@ export function createTree(cfg) {
     render();
   }
 
-  function finishCreate(commit) {
+  async function finishCreate(commit) {
     if (!creating) return;
     const c = creating;
     creating = null; // null dulu, supaya render dari event tidak membuat input lagi
@@ -297,10 +298,11 @@ export function createTree(cfg) {
     if (commit && name) {
       try {
         if (c.type === "group") {
-          open.add(cfg.api.createGroup(name).id);
+          const g = await cfg.api.createGroup(name);
+          if (g) open.add(g.id);
         } else if (cfg.api.addBlank) {
           open.add(c.gid);
-          const it = cfg.api.addBlank(c.gid, name);
+          const it = await cfg.api.addBlank(c.gid, name);
           if (it) cfg.api.selectItem(c.gid, it.id);
         }
       } catch (err) {
@@ -341,12 +343,15 @@ export function createTree(cfg) {
   function addInputToSelected(kind, kinds) {
     openInputDialog(
       kind,
-      (c) => {
+      async (c) => {
         let g = group(cfg.sel().gid);
         if (!g || ro(g.id))
-          g = cfg.groups().find((x) => !ro(x.id)) || cfg.api.createGroup("Umum");
+          g =
+            cfg.groups().find((x) => !ro(x.id)) ||
+            (await cfg.api.createGroup("Umum"));
+        if (!g) return;
         open.add(g.id);
-        cfg.api.addInput(g.id, c);
+        await cfg.api.addInput(g.id, c);
         render();
       },
       kinds,
@@ -403,47 +408,51 @@ export function createTree(cfg) {
   }
 
   // ----- hapus (dengan konfirmasi) -----
-async function deleteSelected() {
-  const { gid, iid } = cfg.sel();
-  const g = group(gid);
-  if (!g) return setStatus("Pilih item atau grup yang ingin dihapus.");
-  if (ro(g.id)) return setStatus("This group is read-only.");
+  async function deleteSelected() {
+    const { gid, iid } = cfg.sel();
+    const g = group(gid);
+    if (!g) return setStatus("Pilih item atau grup yang ingin dihapus.");
+    if (ro(g.id)) return setStatus("This group is read-only.");
 
-  // Ada item terpilih: hapus item itu saja
-  if (iid) {
-    const it = g.items.find((x) => x.id === iid);
-    if (!it) return setStatus("Pilih item yang ingin dihapus.");
+    // Ada item terpilih: hapus item itu saja
+    if (iid) {
+      const it = g.items.find((x) => x.id === iid);
+      if (!it) return setStatus("Pilih item yang ingin dihapus.");
+      const ok = await askConfirm({
+        key: "delete",
+        title: "Delete item",
+        message: `Remove “${cfg.itemName(it)}” from “${g.name}”?\nThe original file on disk is not deleted.`,
+      });
+      if (ok) cfg.api.removeItem(g.id, it.id);
+      return;
+    }
+
+    // Tidak ada item: hanya hapus grup jika barisnya memang dipilih eksplisit
+    if (!explicitGroup)
+      return setStatus("Pilih item atau grup yang ingin dihapus.");
+    const n = g.items.length;
     const ok = await askConfirm({
-      key: "delete",
-      title: "Delete item",
-      message: `Remove “${cfg.itemName(it)}” from “${g.name}”?\nThe original file on disk is not deleted.`,
+      key: "delete-group", // key beda supaya "jangan tanya lagi" item tidak ikut melewati hapus grup
+      title: "Delete group",
+      message: n
+        ? `Delete “${g.name}” and ALL ${n} item${n > 1 ? "s" : ""} inside it?\nThe original files on disk are not deleted.`
+        : `Delete the empty group “${g.name}”?`,
     });
-    if (ok) cfg.api.removeItem(g.id, it.id);
-    return;
+    if (ok) cfg.api.deleteGroup(g.id);
   }
-
-  // Tidak ada item: hanya hapus grup jika barisnya memang dipilih eksplisit
-  if (!explicitGroup) return setStatus("Pilih item atau grup yang ingin dihapus.");
-  const n = g.items.length;
-  const ok = await askConfirm({
-    key: "delete-group",   // key beda supaya "jangan tanya lagi" item tidak ikut melewati hapus grup
-    title: "Delete group",
-    message: n
-      ? `Delete “${g.name}” and ALL ${n} item${n > 1 ? "s" : ""} inside it?\nThe original files on disk are not deleted.`
-      : `Delete the empty group “${g.name}”?`,
-  });
-  if (ok) cfg.api.deleteGroup(g.id);
-}
 
   // ----- tambah file -----
   async function addFilesToSelected() {
     let g = group(cfg.sel().gid);
     if (!g || ro(g.id))
-      g = cfg.groups().find((x) => !ro(x.id)) || cfg.api.createGroup("Umum");
+      g =
+        cfg.groups().find((x) => !ro(x.id)) ||
+        (await cfg.api.createGroup("Umum"));
+    if (!g) return;
     const r = await openDialog({ multiple: true, filters: cfg.filters });
     if (!r) return;
     open.add(g.id);
-    cfg.api.addFiles(g.id, Array.isArray(r) ? r : [r]);
+    await cfg.api.addFiles(g.id, Array.isArray(r) ? r : [r]);
     render();
   }
 
@@ -531,7 +540,8 @@ async function deleteSelected() {
     drag.ghost.style.top = e.clientY + 8 + "px";
     setDropTarget(groupRowAt(e.clientX, e.clientY));
   }
-  function onDragUp() {
+
+  async function onDragUp() {
     if (!drag) return;
     const d = drag;
     endDrag();
@@ -539,7 +549,7 @@ async function deleteSelected() {
     suppressClick = true;
     setTimeout(() => (suppressClick = false), 0);
     if (!d.target) return;
-    const r = cfg.api.moveItem(d.gid, d.iid, d.target); // grup baca-saja: disalin, bukan dipindah
+    const r = await cfg.api.moveItem(d.gid, d.iid, d.target);
     const name = (group(d.target) || {}).name || "";
     if (r === "ok") {
       open.add(d.target);
@@ -577,22 +587,25 @@ async function deleteSelected() {
   }
 
   // ----- event DOM -----
-list.addEventListener("click", (e) => {
-  if (suppressClick || e.target.closest(".ex-edit")) return;
-  const row = e.target.closest(".ex-row");
-  if (!row) return;
-  if (row.classList.contains("ex-creating")) return;
-  const gid = row.dataset.gid;
-  if (row.dataset.iid) { explicitGroup = false; return cfg.api.selectItem(gid, row.dataset.iid); }
-  if (e.target.closest(".ex-twisty")) {
-    open.has(gid) ? open.delete(gid) : open.add(gid);
-    return render();
-  }
-  explicitGroup = true;
-  open.add(gid);
-  cfg.api.selectGroup(gid);
-  render();
-});
+  list.addEventListener("click", (e) => {
+    if (suppressClick || e.target.closest(".ex-edit")) return;
+    const row = e.target.closest(".ex-row");
+    if (!row) return;
+    if (row.classList.contains("ex-creating")) return;
+    const gid = row.dataset.gid;
+    if (row.dataset.iid) {
+      explicitGroup = false;
+      return cfg.api.selectItem(gid, row.dataset.iid);
+    }
+    if (e.target.closest(".ex-twisty")) {
+      open.has(gid) ? open.delete(gid) : open.add(gid);
+      return render();
+    }
+    explicitGroup = true;
+    open.add(gid);
+    cfg.api.selectGroup(gid);
+    render();
+  });
 
   list.addEventListener("mousedown", startDragWatch);
   list.addEventListener("dblclick", (e) => {
