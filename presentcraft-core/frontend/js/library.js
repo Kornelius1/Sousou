@@ -236,6 +236,8 @@ export function initLibrary() {
       const t = textOf(it);
       if (t) addTextLayer(t);
       else if (it.kind === "image" || it.kind === "video") addMediaLayer(it);
+      else if (it.kind === "input" && it.input?.media === "video")
+        addInputLayer(it);
     },
     contextMenu: (g, it) => {
       const t = textOf(it);
@@ -243,6 +245,12 @@ export function initLibrary() {
         return [
           { label: "Add as new text layer", run: () => addTextLayer(t) },
           { label: "Replace selected text", run: () => replaceSelectedText(t) },
+        ];
+      }
+      if (it.kind === "image" || it.kind === "video") {
+        return [
+          { label: "Use as background", run: () => pick(it.src, it.kind) },
+          { label: "Add to slide", run: () => addMediaLayer(it) },
         ];
       }
       if (it.kind === "input" && it.input?.media === "video") {
@@ -270,5 +278,25 @@ export function initLibrary() {
       ok = lib.setTag(groupId, itemId, tag);
     }); // lib-changed selama ini tidak membangun ulang grid
     if (ok) emit("tag:applied", { itemId, tag });
+  });
+  on("slide:edited", ({ index, itemId, groupId, layers }) => {
+    console.log("slide:edited", { index, itemId, groupId, n: layers.length });
+    const s = state.slides[index];
+    if (s) {
+      s.layers = structuredClone(layers);
+      syncContent(s);
+    }
+    if (!itemId) return;
+    const gid = groupId ?? lib.s.gid;
+    const g = lib.s.groups.find((x) => x.id === gid);
+    const it = g && g.items.find((x) => x.id === itemId);
+    if (!it) return;
+    const next = { ...(it.slide || s || {}), layers: structuredClone(layers) };
+    next.content = next.layers
+      .filter((l) => l.kind === "text" && l.text)
+      .map((l) => l.text)
+      .join("\n");
+    withSync(() => lib.updateItem(gid, itemId, { slide: next }));
+    console.log("updateItem:", typeof lib.updateItem, "slide tersimpan:", it.slide?.layers?.[0]?.rect);
   });
 }

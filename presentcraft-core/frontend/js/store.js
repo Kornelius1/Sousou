@@ -81,10 +81,6 @@ export function createStore({ name, loadCmd, saveCmd }) {
       console.warn(`gagal memuat ${name}:`, err);
     }
     s.groups = store && Array.isArray(store.groups) ? store.groups : [];
-    for (const g of s.groups)
-      g.items = (g.items || []).filter(
-        (it) => !(it.kind === "input" && it.input?.media === "audio"),
-      );
     selFirst();
     return !!store;
   }
@@ -190,6 +186,15 @@ export function createStore({ name, loadCmd, saveCmd }) {
     return true;
   }
 
+  function updateItem(gid, iid, patch) {
+    const g = find(gid);
+    const it = g && g.items.find((x) => x.id === iid);
+    if (!it) return false;
+    Object.assign(it, patch);
+    changed(); // simpan ke disk (300 ms) dan pancarkan lib-changed
+    return true;
+  }
+
   /** Salin item (mis. dari grup bundel) ke grup ini. 'ok' | 'dup' | null */
   function copyIn(gid, it) {
     const g = find(gid);
@@ -274,5 +279,6 @@ export function createStore({ name, loadCmd, saveCmd }) {
     ensureGroup,
     replaceSlides,
     setTag,
+    updateItem,
   };
 }

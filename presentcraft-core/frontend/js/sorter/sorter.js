@@ -59,7 +59,10 @@ function buildCaption(cap, slide, i) {
 function syncLive() {
   state.cards.forEach((c, idx) => {
     if (c && c.card)
-      c.card.classList.toggle("live", idx === state.liveIndex && !state.blanked);
+      c.card.classList.toggle(
+        "live",
+        idx === state.liveIndex && !state.blanked,
+      );
   });
 }
 
@@ -249,7 +252,14 @@ export function showGroupSlides(g) {
   const kinds = fromBundle ? ["slide"] : ["slide", "image", "video"];
   const slides = all
     .filter((it) => kinds.includes(it.kind))
-    .map((it, i) => itemToSlide(it, g, i + 1));
+    .map((it, i) => {
+      const s = itemToSlide(it, g, i + 1);
+      // item media yang pernah diedit: pakai layer tersimpan, jangan bangun ulang dari src
+      if (it.kind !== "slide" && Array.isArray(it.slide?.layers)) {
+        s.layers = structuredClone(it.slide.layers);
+      }
+      return s;
+    });
   applySlides(
     slides.length ? slides : [createBlankSlide()],
     [],
@@ -284,5 +294,3 @@ export function initSorter() {
     }
   });
 }
-
-
