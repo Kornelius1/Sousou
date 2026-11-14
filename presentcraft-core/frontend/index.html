@@ -206,24 +206,34 @@
       </div>
       <span class="sp"></span>
       <div class="tb-group" id="tb-grp-trans">
-        <label class="tr-f">Slide
+        <label class="tr-f">Foreground
           <select id="tr-fg">
-            <option value="cut">Cut</option>
+            <option value="none">None</option>
             <option value="fade">Fade</option>
             <option value="zoom">Zoom</option>
             <option value="slide">Slide</option>
+            <option value="blur">Blur</option>
+            <option value="wipe">Wipe</option>
+            <option value="dip">Black fade</option>
+          </select>
+          <select id="tr-ms-fg" title="Durasi slide">
+            <option value="150">150 ms</option>
+            <option value="300">300 ms</option>
+            <option value="500">500 ms</option>
+            <option value="800">800 ms</option>
           </select>
         </label>
         <label class="tr-f">Background
           <select id="tr-bg">
-            <option value="cut">Cut</option>
+            <option value="none">None</option>
             <option value="fade">Fade</option>
             <option value="zoom">Zoom</option>
             <option value="slide">Slide</option>
+            <option value="blur">Blur</option>
+            <option value="wipe">Wipe</option>
+            <option value="dip">Black fade</option>
           </select>
-        </label>
-        <label class="tr-f">Durasi
-          <select id="tr-ms">
+          <select id="tr-ms-bg" title="Durasi background">
             <option value="150">150 ms</option>
             <option value="300">300 ms</option>
             <option value="500">500 ms</option>
@@ -333,7 +343,7 @@
   <input type="color" id="bg-color" value="#000000" style="position:fixed;left:-9999px;opacity:0;pointer-events:none"
     tabindex="-1" aria-hidden="true" />
 
- 
+
 
   <dialog id="inputs-dlg">
     <header class="in-head">

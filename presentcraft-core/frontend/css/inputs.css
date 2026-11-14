@@ -320,3 +320,21 @@ body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
 }
 .ed-help-grid kbd { justify-self: start; padding: 2px 7px; background: #2f2f2f; border: 1px solid #3a3a3a;
   border-radius: 4px; color: #f0f0f0; font: inherit; }
+
+:root { --accent: #4da3ff; }
+
+.tr-f {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-left: 12px; padding-left: 12px;
+  border-left: 1px solid #333;
+  color: #9a9a9a; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.tr-f select {
+  background: #202020; color: #e6e6e6;
+  border: 1px solid #353535; border-radius: 4px;
+  padding: 3px 8px; font: inherit; text-transform: none; letter-spacing: 0;
+  color-scheme: dark;
+}
+.tr-f select:hover { border-color: #555; }
+.tr-f select:focus { outline: none; border-color: var(--accent); }

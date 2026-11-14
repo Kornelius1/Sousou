@@ -44,7 +44,7 @@
     new Promise((res) => {
       if (el.tagName === "IMG") {
         if (!el.getAttribute("src"))
-          res(); // belum ada sumber (mis. kamera live)
+          res(); // belum ada sumber (kamera live)
         else if (el.decode) el.decode().then(res, res);
         else if (el.complete) res();
         else el.onload = el.onerror = res;
@@ -55,16 +55,146 @@
       }
     });
 
+  // ---------- kamera live ----------
+  function attachCam(el, name, stale) {
+    el.dataset.live = "1";
+    window.CamSource.url(name)
+      .then((u) => {
+        if (el.dataset.dead === "1" || stale()) {
+          window.CamSource.release(name); // elemen sudah dibuang sebelum kamera siap
+          return;
+        }
+        el.dataset.cam = name;
+        el.src = u;
+      })
+      .catch((err) => console.warn("Input gagal dibuka:", err));
+  }
+
+  // hentikan video dan lepas kamera di dalam root sebelum dibuang
   const stopVideos = (root) => {
-    const list =
+    const vids =
       root.tagName === "VIDEO" ? [root] : [...root.querySelectorAll("video")];
-    list.forEach((v) => {
+    vids.forEach((v) => {
       v.pause();
       v.removeAttribute("src");
       v.load();
     });
+    const cams = [...root.querySelectorAll("img[data-live]")];
+    if (root.matches && root.matches("img[data-live]")) cams.push(root);
+    cams.forEach((im) => {
+      im.dataset.dead = "1";
+      if (im.dataset.cam && window.CamSource) {
+        window.CamSource.release(im.dataset.cam);
+        delete im.dataset.cam;
+      }
+      im.removeAttribute("src");
+    });
   };
 
+  // ---------- transisi (foreground dan background terpisah) ----------
+  const T = { fg: "fade", bg: "fade", msFg: 300, msBg: 300 };
+  function setTransition(t) {
+    if (!t || typeof t !== "object") return;
+    const n = { ...t };
+    if (n.ms != null) {
+      // format lama: satu durasi untuk keduanya
+      n.msFg ??= n.ms;
+      n.msBg ??= n.ms;
+      delete n.ms;
+    }
+    Object.assign(T, n);
+  }
+
+  const EASE_OUT = "cubic-bezier(.22,1,.36,1)";
+  const EASE_IO = "cubic-bezier(.65,0,.35,1)";
+  const EASE_IN = "cubic-bezier(.64,0,.78,0)";
+  const DIP_COLOR = "#000"; // ganti ke #fff untuk dip to white
+
+  const FX = {
+    cut: null,
+    none: null,
+    fade: {
+      in: [{ opacity: 0 }, { opacity: 1 }],
+      out: [{ opacity: 1 }, { opacity: 0 }],
+      ein: EASE_IO,
+      eout: EASE_IO,
+    },
+    blur: {
+      in: [
+        { opacity: 0, filter: "blur(14px)" },
+        { opacity: 1, filter: "blur(0)" },
+      ],
+      out: [
+        { opacity: 1, filter: "blur(0)" },
+        { opacity: 0, filter: "blur(14px)" },
+      ],
+      ein: EASE_OUT,
+      eout: EASE_IN,
+    },
+    zoom: {
+      in: [
+        { opacity: 0, transform: "scale(1.08)" },
+        { opacity: 1, transform: "none" },
+      ],
+      out: [
+        { opacity: 1, transform: "none" },
+        { opacity: 0, transform: "scale(.96)" },
+      ],
+      ein: EASE_OUT,
+      eout: EASE_IN,
+    },
+    slide: {
+      in: [{ transform: "translateX(100%)" }, { transform: "none" }],
+      out: [
+        { transform: "none", opacity: 1 },
+        { transform: "translateX(-30%)", opacity: 0.4 },
+      ],
+      ein: EASE_OUT,
+      eout: EASE_OUT,
+    },
+    wipe: {
+      in: [{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }],
+      out: null,
+      ein: EASE_IO,
+    },
+    dip: { dip: true }, // black fade: lama memudar ke hitam, lalu baru muncul dari hitam
+  };
+
+  const play = (el, kf, ms, easing, delay = 0) =>
+    el
+      .animate(kf, { duration: ms, easing: easing || EASE_IO, fill: "both", delay })
+      .finished.catch(() => {});
+
+  const afterPaint = () =>
+    new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+  // dua tahap berurutan; durasi dibagi dua
+  async function dipTransition(host, olds, incoming, ms, stale) {
+    const half = Math.max(1, ms / 2);
+    const veil = document.createElement("div");
+    veil.style.cssText =
+      `position:absolute;inset:0;background:${DIP_COLOR};opacity:0;` +
+      "z-index:2147483000;pointer-events:none;";
+    host.appendChild(veil);
+    incoming.style.visibility = "hidden";
+
+    await play(veil, [{ opacity: 0 }, { opacity: 1 }], half, EASE_IN);
+    if (stale()) {
+      // sudah ada render lebih baru yang mengurus yang lama
+      veil.remove();
+      incoming.style.visibility = "";
+      return false;
+    }
+    olds.forEach((o) => {
+      stopVideos(o);
+      o.remove();
+    });
+    incoming.style.visibility = "";
+    await play(veil, [{ opacity: 1 }, { opacity: 0 }], half, EASE_OUT);
+    veil.remove();
+    return true;
+  }
+
+  // ---------- layer ----------
   function mediaElement(layer, mode) {
     const isVideo = layer.kind === "video";
     const el = document.createElement(isVideo ? "video" : "img");
@@ -106,13 +236,8 @@
       el.textContent = "Input: " + (inp.name || "Video");
     } else {
       el = document.createElement("img");
-      el.dataset.live = "1";
       el.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${objectFitFor(layer.scale)};`;
-      window.CamSource.url(inp.label)
-        .then((u) => {
-          el.src = u;
-        })
-        .catch((err) => console.warn("Input gagal dibuka:", err));
+      attachCam(el, inp.label, () => false);
     }
     return el;
   }
@@ -179,42 +304,11 @@
     }
   }
 
-  // Transisi: menerima elemen lama (array) dan baru, mengembalikan Promise.
-  // Hanya opacity/transform supaya dikomposit GPU. Menambah transisi = menambah satu entri.
-  const EASE = "cubic-bezier(.2,.8,.2,1)";
-  const TRANSITIONS = {
-    cut: () => Promise.resolve(),
-    fade: (olds, el, ms) =>
-      el.animate([{ opacity: 0 }, { opacity: 1 }], {
-        duration: ms,
-        easing: "ease",
-      }).finished,
-    zoom: (olds, el, ms) =>
-      el.animate(
-        [
-          { opacity: 0, transform: "scale(1.08)" },
-          { opacity: 1, transform: "scale(1)" },
-        ],
-        { duration: ms, easing: EASE },
-      ).finished,
-    slide: (olds, el, ms) => {
-      olds.forEach((o) =>
-        o.animate(
-          [{ transform: "translateX(0)" }, { transform: "translateX(-25%)" }],
-          { duration: ms, easing: EASE, fill: "forwards" },
-        ),
-      );
-      return el.animate(
-        [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
-        { duration: ms, easing: EASE },
-      ).finished;
-    },
-  };
-
-  // Layar audience: siapkan slide baru di luar layar, tukar setelah media siap.
+  // ---------- layar audience (foreground) ----------
   let renderSeq = 0;
-  async function renderSlide(stage, payload, tr) {
+  async function renderSlide(stage, payload) {
     const seq = ++renderSeq;
+    const stale = () => seq !== renderSeq;
     const w = payload.width || 1366;
     const h = payload.height || 768;
 
@@ -227,34 +321,59 @@
         Promise.all(media.map(readyMedia)),
         new Promise((r) => setTimeout(r, 400)),
       ]);
-    if (seq !== renderSeq) {
+    if (stale()) {
       stopVideos(next);
       return;
     }
 
-    // slide baru dibungkus satu div dan ditaruh DI ATAS yang lama
-    const incoming = document.createElement("div");
-    incoming.style.cssText = "position:absolute;inset:0;isolation:isolate;";
-    incoming.append(...next.childNodes);
+    const group = document.createElement("div");
+    group.style.cssText =
+      "position:absolute;inset:0;isolation:isolate;will-change:transform,opacity;";
+    group.append(...next.childNodes);
+    group.dataset.txt = media.length ? "" : "1"; 
 
     const olds = [...stage.children];
     stage.style.width = w + "px";
     stage.style.height = h + "px";
-    stage.style.overflow = "hidden";
+    stage.style.overflow = "hidden"; // slide yang bergeser tidak keluar kanvas
+    stage.appendChild(group);
     fitStage(stage);
-    stage.appendChild(incoming);
 
     const drop = () =>
       olds.forEach((o) => {
         stopVideos(o);
         o.remove();
       });
-    const run = tr && TRANSITIONS[tr.type];
-    if (!run || tr.type === "cut" || !tr.ms || !olds.length) return drop();
 
-    await run(olds, incoming, tr.ms).catch(() => {});
-    // kalau sudah ada slide lebih baru, dialah yang membersihkan (ia mengambil semua anak stage)
-    if (seq === renderSeq) drop();
+    const fx = FX[T.fg];
+    if (!fx || !T.msFg || !olds.length) {
+      await afterPaint();
+      if (!stale()) drop();
+      return;
+    }
+
+    if (fx.dip) {
+      await dipTransition(stage, olds, group, T.msFg, stale);
+      return;
+    }
+
+    const seq2 = group.dataset.txt === "1" && olds.every((o) => o.dataset.txt === "1") && 
+    fx.in[0].opacity === 0 && !!fx.out;
+
+    const jobs = [];
+    if (seq2) {
+      const half = T.msFg /2;
+      olds.forEach((o) => jobs.push(play(o, fx.out, half, fx.eout)));
+      jobs.push(play(group, fx.in, half, fx.ein, half));
+    } else {
+      jobs.push(play(group, fx.in, T.msFg, fx.ein));
+      if (fx.out) olds.forEach((o) => jobs.push(play(o, fx.out, T.msFg, fx.eout)));
+    }
+    await Promise.all(jobs);
+
+    if (stale()) return; // render yang lebih baru yang membersihkan
+    group.getAnimations().forEach((a) => a.cancel());
+    drop();
   }
 
   function fitStage(stage) {
@@ -267,7 +386,7 @@
     stage.style.top = (window.innerHeight - h * scale) / 2 + "px";
   }
 
-  // Thumbnail: stage baru ditukar setelah media siap, supaya tidak ada jeda kosong (kedip).
+  // ---------- thumbnail (tanpa transisi) ----------
   function renderThumbnail(host, payload, opts) {
     const w = payload.width || 1366;
     const h = payload.height || 768;
@@ -296,6 +415,7 @@
       host._ro.observe(host);
     }
 
+    // tukar stage setelah media siap, supaya tidak ada jeda kosong (kedip)
     host._olds = host._olds || [];
     if (prevStage) host._olds.push(prevStage);
     const seq = (host._seq = (host._seq || 0) + 1);
@@ -315,7 +435,7 @@
       Promise.all(media.map(readyMedia)),
       new Promise((r) => setTimeout(r, 400)),
     ]).then(() => {
-      if (host._seq !== seq) return; // render yang lebih baru yang akan membersihkan
+      if (host._seq !== seq) return;
       stage.style.visibility = "";
       dropOlds();
     });
@@ -333,13 +453,7 @@
   function resetBackground(layer) {
     const st = bgState.get(layer);
     if (st && st.dispose) st.dispose();
-    const v = layer.querySelector("video");
-    if (v) {
-      v.pause();
-      v.srcObject = null;
-      v.removeAttribute("src");
-      v.load();
-    }
+    stopVideos(layer);
     layer.replaceChildren();
     layer.style.opacity = "";
     bgState.delete(layer);
@@ -375,6 +489,7 @@
     const oldState = prev;
     const state = { key };
     bgState.set(layer, state);
+    const stale = () => bgState.get(layer) !== state;
 
     let el;
     if (bg.kind === "color") {
@@ -390,15 +505,7 @@
         el.textContent = "Input: " + (inp.name || "Video");
       } else {
         el = document.createElement("img");
-        el.dataset.live = "1";
-        window.CamSource.url(inp.label)
-          .then((u) => {
-            if (bgState.get(layer) === state) el.src = u;
-          })
-          .catch((err) => {
-            console.warn("Input gagal dibuka:", err);
-            if (bgState.get(layer) === state) resetBackground(layer);
-          });
+        attachCam(el, inp.label, stale);
       }
     } else {
       el = document.createElement(bg.kind === "video" ? "video" : "img");
@@ -413,7 +520,7 @@
         }
       }
       el.addEventListener("error", () => {
-        if (bgState.get(layer) === state) resetBackground(layer);
+        if (!stale()) resetBackground(layer);
       });
       const url = toUrl(bg.src);
       el.src = bg.kind === "video" && preview ? url + "#t=0.1" : url;
@@ -426,43 +533,54 @@
     el.style.inset = "0";
     el.style.width = "100%";
     el.style.height = "100%";
-    const tr = (opts && opts.transition) || { type: "cut", ms: 0 };
-    const animated =
-      !preview && tr.type !== "cut" && tr.ms > 0 && TRANSITIONS[tr.type];
-    el.style.opacity = animated ? "0" : ""; // tanpa transisi: langsung di atas yang lama
+    el.style.opacity = "0";
     layer.appendChild(el);
     applyBackgroundSettings(layer, el, bg, preview);
 
-    const painted = () =>
-      new Promise((res) => {
-        const twoFrames = () =>
-          requestAnimationFrame(() => requestAnimationFrame(res));
-        if (el.tagName === "VIDEO" && el.requestVideoFrameCallback) {
-          el.requestVideoFrameCallback(twoFrames);
-          setTimeout(res, 800);
-        } else twoFrames();
-      });
+    const finish = () => {
+      if (stale()) return;
+      el.style.opacity = "";
+      const disposeOld = () => {
+        if (oldState && oldState.dispose) oldState.dispose();
+      };
+      const drop = () => {
+        oldEls.forEach((o) => {
+          stopVideos(o);
+          o.remove();
+        });
+        disposeOld();
+      };
 
-    const finish = async () => {
-      if (bgState.get(layer) !== state) return; // sudah ada background lebih baru
-      if (animated) {
-        el.style.opacity = "";
-        await TRANSITIONS[tr.type](oldEls, el, tr.ms).catch(() => {});
-        if (bgState.get(layer) !== state) return;
+      const fx = FX[T.bg];
+      if (preview || !fx || !T.msBg || !oldEls.length) {
+        afterPaint().then(() => {
+          if (!stale()) drop();
+        });
+        return;
       }
-      oldEls.forEach((o) => {
-        stopVideos(o);
-        o.remove();
+
+      layer.style.overflow = "hidden";
+      if (fx.dip) {
+        dipTransition(layer, oldEls, el, T.msBg, stale).then((done) => {
+          if (done) disposeOld();
+        });
+        return;
+      }
+      const jobs = [play(el, fx.in, T.msBg, fx.ein)];
+      if (fx.out)
+        oldEls.forEach((o) => jobs.push(play(o, fx.out, T.msBg, fx.eout)));
+      Promise.all(jobs).then(() => {
+        if (stale()) return;
+        el.getAnimations().forEach((a) => a.cancel());
+        drop();
       });
-      if (oldState && oldState.dispose) oldState.dispose();
     };
 
-    const isMedia = el.tagName === "VIDEO" || el.tagName === "IMG";
     Promise.race([
-      isMedia
-        ? readyMedia(el).then(() => (preview ? null : painted()))
+      el.tagName === "VIDEO" || el.tagName === "IMG"
+        ? readyMedia(el)
         : Promise.resolve(),
-      new Promise((r) => setTimeout(r, preview ? 1500 : 5000)),
+      new Promise((r) => setTimeout(r, 1500)),
     ]).then(finish);
   }
 
@@ -474,5 +592,7 @@
     TEXT_DEFAULTS,
     applyLayerBox,
     ROTATION_SIGN,
+    setTransition,
+    getTransition: () => ({ ...T }),
   };
 })();

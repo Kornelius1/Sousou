@@ -55,12 +55,13 @@
     const stage = document.getElementById('stage');
     const layer = document.getElementById('bg-layer');
 
-
-
     // Slide dulu: layar hitam awal, lalu listener, supaya tidak ada event yang terlewat.
     renderSlide(stage, { width: 1366, height: 768, layers: [] });
     window.addEventListener('resize', () => fitStage(stage));
     await window.__TAURI__.event.listen('update-slide-event', (e) => renderSlide(stage, e.payload, { type: T().fg, ms: T().ms }));
+
+    window.SlideRenderer.setTransition(getTransition());  
+    onTransition((t) => window.SlideRenderer.setTransition(t));
 
     // Mata background: hanya menyembunyikan layer background di layar audience.
     // visibility:hidden membuat video tetap berjalan, jadi saat dibuka lagi tidak mulai dari awal.
