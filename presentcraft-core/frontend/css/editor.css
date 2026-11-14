@@ -23,7 +23,7 @@
 .ed-root * { box-sizing: border-box; }
 
 /* ---- scrollbar: monokrom & tipis ---- */
-.ed-root * { scrollbar-width: thin; scrollbar-color: #4a4a4a transparent; } /* Firefox */
+.ed-root * { scrollbar-width: thin; scrollbar-color: #4a4a4a transparent; }
 .ed-root *::-webkit-scrollbar { width: 4px; height: 4px; }
 .ed-root *::-webkit-scrollbar-track { background: transparent; }
 .ed-root *::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 2px; }
@@ -59,11 +59,13 @@
 .ed-btn[aria-pressed="true"] { background: var(--bg3); color: var(--hi); }
 .ed-btn.primary { background: var(--hi); color: #111; font-weight: 600; }
 .ed-btn.primary:hover { background: #fff; }
+
 .ed-root button:focus-visible,
 .ed-root input:focus-visible,
 .ed-root select:focus-visible,
 .ed-root textarea:focus-visible,
 .ed-root summary:focus-visible { outline: 1px solid var(--hi); outline-offset: 1px; }
+.ed-root input[type="range"]:focus-visible { outline: none; } /* slider punya cincin sendiri di gagangnya */
 
 /* ---- badan ---- */
 .ed-body {
@@ -121,7 +123,7 @@
 .ed-canvas > .ed-eb { pointer-events: none; }
 .ed-canvas > .ed-eb > * { pointer-events: auto; }
 
-.ed-hit { position: absolute; cursor: default; }
+.ed-hit { position: absolute; }
 .ed-hit.txt { cursor: text; }
 .ed-hit:hover { outline: 1px solid rgba(255, 255, 255, 0.35); }
 .ed-hit.sel { outline: 1px solid var(--hi); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
@@ -180,8 +182,7 @@
 .ed-sec > summary:hover { background: var(--bg2); }
 
 /* Grid 4 kolom: [label][input][label][input].
-   Kolom label pertama selebar --lw, jadi input X, W, Rotasi, Opasitas, Font, dan Ukuran
-   semua mulai dari garis kiri yang sama. */
+   Kolom label pertama selebar --lw, jadi semua input mulai dari garis kiri yang sama. */
 .ed-grid {
   --lw: 52px;
   --gap-x: 8px;
@@ -191,23 +192,23 @@
   gap: 6px var(--gap-x);
   padding: 4px 10px 10px;
 }
-.ed-f { display: contents; } /* label dan input jadi sel grid langsung */
+.ed-f { display: contents; }
 .ed-fl { color: var(--dim); white-space: nowrap; }
 
 /* baris span 2: label kolom 1, input membentang sampai tepi kanan */
 .ed-f.s2 > .ed-fl { grid-column: 1; }
 .ed-f.s2 > :not(.ed-fl) { grid-column: 2 / -1; }
 
-/* tombol B / I / Ulang / Bisu: yang pertama di kolom input kiri, berikutnya di kolom input kanan */
+/* tombol B / I / Ulang / Bisu */
 .ed-f:has(> .ed-tog) { display: block; grid-column: 2; }
 .ed-f:has(> .ed-tog) + .ed-f:has(> .ed-tog) { grid-column: 4; }
 
-/* area teks: label di kolom 1, textarea sampai tepi kanan */
+/* area teks */
 .ed-f.area > .ed-fl { grid-column: 1; align-self: start; padding-top: 5px; }
 .ed-f.area > textarea { grid-column: 2 / -1; }
 
+/* input angka & textarea (dropdown ikut gaya seragam di inputs.css) */
 .ed-f input[type="number"],
-.ed-f select,
 .ed-f textarea {
   width: 100%;
   min-width: 0;
@@ -218,17 +219,15 @@
   background: var(--bg2);
   color: var(--hi);
   font: inherit;
+  color-scheme: dark;
 }
+.ed-f select { width: 100%; min-width: 0; }
 .ed-f textarea { height: auto; min-height: 84px; padding: 6px; resize: vertical; }
 
 /* spin box: tersembunyi, muncul saat hover/fokus */
 .ed-f input[type="number"]::-webkit-inner-spin-button { opacity: 0; filter: grayscale(1); }
 .ed-f input[type="number"]:hover::-webkit-inner-spin-button,
 .ed-f input[type="number"]:focus::-webkit-inner-spin-button { opacity: 0.6; }
-.ed-f input[type="number"] {
-  color-scheme: dark;
-}
-
 
 .ed-f input[type="color"] {
   width: 100%;
@@ -242,32 +241,7 @@
 .ed-f input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
 .ed-f input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 1px; }
 
-/* slider: monokrom & tipis */
-.ed-f input[type="range"] {
-  --track: #555;
-  --thumb: var(--txt);
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  min-width: 0;
-  height: 14px; /* area klik; garis aslinya tetap 1px */
-  margin: 0;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.ed-f input[type="range"]::-webkit-slider-runnable-track { height: 1px; border: 0; background: var(--track); }
-.ed-f input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 8px;
-  height: 8px;
-  margin-top: -3.5px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--thumb);
-}
-.ed-f input[type="range"]:hover { --track: #808080; }
-.ed-f input[type="range"]:focus-visible { outline-offset: 2px; --thumb: var(--hi); }
+/* (slider: tidak ada aturan di sini, memakai gaya global di panes.css) */
 
 /* tombol B / I dan kontrol segmen (rata teks) */
 .ed-tog,
@@ -301,8 +275,9 @@
 .ed-seg button[aria-pressed="true"] { background: var(--hi); border-color: var(--hi); color: #111; }
 
 /* ---- baris input + satuan: X/Y, W/H, Ukuran ----
-   Pakai flex (bukan grid) supaya satuan selalu sebaris, apa pun struktur HTML-nya.
-   Field pertama memakai lebar label --lw, jadi inputnya lurus dengan Rotasi/Font. */
+   .ed-lines dan .ed-f memakai display: contents, jadi label dan input
+   menjadi item flex langsung dari .ed-line. */
+.ed-lines { display: contents; }
 .ed-line {
   grid-column: 1 / -1;
   display: flex;
@@ -311,19 +286,13 @@
   gap: var(--gap-x, 8px);
   min-width: 0;
 }
-.ed-line .ed-f {
-  display: flex;
-  flex: 1 1 0;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-}
-.ed-line .ed-f:first-child { gap: 0; }
-.ed-line .ed-f:first-child > .ed-fl { flex: 0 0 var(--lw, 52px); }
 .ed-line .ed-fl { flex: 0 0 auto; }
+.ed-line .ed-f:first-child > .ed-fl { flex: 0 0 var(--lw, 52px); }
+.ed-line .ed-f:nth-child(2) > .ed-fl { flex: 0 0 14px; }
 .ed-line .ed-f > input,
-.ed-line .ed-f > select { flex: 1 1 auto; width: 100%; min-width: 0; }
+.ed-line .ed-f > select { flex: 1 1 0; width: auto; min-width: 0; }
 .ed-line .ed-unit { flex: 0 0 56px; width: 56px; min-width: 0; height: 24px; }
+.ed-line:not(:has(.ed-unit)) { padding-right: calc(56px + var(--gap-x, 8px)); }
 
 /* ---- daftar layer ---- */
 .ed-layer {
@@ -342,13 +311,3 @@
 }
 .ed-layer:hover { background: var(--bg2); }
 .ed-layer.sel { background: var(--bg3); color: var(--hi); }
-
-.ed-line .ed-f { display: contents; }
-.ed-line .ed-f:first-child > .ed-fl { flex: 0 0 var(--lw, 52px); }
-.ed-line .ed-f:nth-child(2) > .ed-fl { flex: 0 0 14px; }
-.ed-line .ed-f > input,
-.ed-line .ed-f > select { flex: 1 1 0; width: auto; min-width: 0; }
-
-.ed-lines { display: contents; }  /* tiap .ed-line jadi baris langsung di .ed-grid */
-.ed-line:not(:has(.ed-unit)) { padding-right: calc(56px + var(--gap-x, 8px)); }
-
