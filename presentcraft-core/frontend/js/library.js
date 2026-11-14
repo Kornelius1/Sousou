@@ -59,6 +59,10 @@ function selectInGrid() {
 }
 
 function onLibSelection() {
+  const it = lib.selectedItem();
+  const isMedia =
+    it && (it.kind === "image" || it.kind === "video" || it.kind === "input");
+  if (isMedia && lib.s.gid === shownGid) return; // jangan ganti slide aktif
   if (lib.s.gid === shownGid) selectInGrid();
   else refreshGrid();
 }
@@ -90,7 +94,7 @@ async function syncBundle() {
         continue;
       if (!l.path || seen.has(l.path)) continue;
       seen.add(l.path);
-      media.push({ kind: l.kind, src: l.path });
+      media.push({ kind: l.kind, src: l.path, origin: "bundle" });
     }
   }
   if (media.length) await lib.copyInMany(g.id, media);
@@ -191,17 +195,6 @@ function addTextLayer(text) {
   setStatus(`Text added to slide ${slide.slide_number}.`);
 }
 
-function replaceSelectedText(text) {
-  const slide = curSlide();
-  const l = slide && slide.layers ? slide.layers[state.selectedLayer] : null;
-  if (!l || l.kind !== "text")
-    return setStatus("Select a text layer in Properties first.");
-  l.text = text;
-  syncContent(slide);
-  emit("layer:added", state.selectedLayer);
-  setStatus("Text replaced.");
-}
-
 export function renderLibrary() {
   if (tree) tree.render();
 }
@@ -251,13 +244,6 @@ export function initLibrary() {
         addInputLayer(it);
     },
     contextMenu: (g, it) => {
-      const t = textOf(it);
-      if (t) {
-        return [
-          { label: "Add as new text layer", run: () => addTextLayer(t) },
-          { label: "Replace selected text", run: () => replaceSelectedText(t) },
-        ];
-      }
       if (it.kind === "image" || it.kind === "video") {
         return [
           { label: "Use as background", run: () => pick(it.src, it.kind) },

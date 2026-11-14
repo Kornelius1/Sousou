@@ -143,6 +143,7 @@ function startDrag(ov, e, i, mode) {
   const py = e.clientY;
   let moved = false;
   ov.setPointerCapture(e.pointerId);
+  ov.classList.add("dragging");
 
   const move = (ev) => {
     const dx = ev.clientX - px;
@@ -207,6 +208,7 @@ function startDrag(ov, e, i, mode) {
   };
 
   const up = () => {
+    ov.classList.remove("dragging");
     ov.removeEventListener("pointermove", move);
     ov.removeEventListener("pointerup", up);
     ov.removeEventListener("pointercancel", up);

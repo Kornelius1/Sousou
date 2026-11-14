@@ -47,6 +47,28 @@ function insert(src) {
   structure();
 }
 
+export function addText() {
+  L().push({
+    kind: "text",
+    z: topZ() + 1,
+    rect: { x: 10, y: 25, w: 80, h: 50 },
+    rotation: 0,
+    opacity: 1,
+    path: null,
+    status: null,
+    inner: null,
+    scale: null,
+    muted: null,
+    looped: null,
+    stop_on_clear: null,
+    color: null,
+    text: "Teks",
+    style: null,
+  });
+  ed.sel = L().length - 1;
+  structure();
+}
+
 function reorder(mode) {
   const ls = L();
   if (!cur()) return;
@@ -240,7 +262,10 @@ const MOUSE = [
   ["Seret lingkaran di atas kotak", "Putar (Shift: kelipatan 15°)"],
   ["Klik teks", "Edit teks langsung"],
   ["Klik area kosong", "Sembunyikan kotak seleksi"],
-  ["Seret label (X, Y, W, H, Rotasi)", "Ubah nilai kontinu (Shift: halus ×0,1)"],
+  [
+    "Seret label (X, Y, W, H, Rotasi)",
+    "Ubah nilai kontinu (Shift: halus ×0,1)",
+  ],
   ["↑ ↓ / klik ▲▼ di kolom angka", "± 1 satuan (Shift: 10, Alt: 0,1)"],
   ["Ketik di kolom angka", "Nilai persis, Enter untuk menerapkan"],
 ];
@@ -259,8 +284,8 @@ export function toggleHelp() {
   const wrap = el("div", "ed-help");
   const card = el("div", "ed-help-card");
   card.appendChild(el("h3", null, "Pintasan & kontrol"));
-  
-    // kolom kiri keyboard: tiap kombinasi (dipisah " / ") jadi <kbd> sendiri
+
+  // kolom kiri keyboard: tiap kombinasi (dipisah " / ") jadi <kbd> sendiri
   const keyCell = (text) => {
     const td = el("td", "hk-key");
     text.split(" / ").forEach((combo, i) => {
@@ -293,7 +318,7 @@ export function toggleHelp() {
   };
   sect("Keyboard", KEYS);
   sect("Mouse & panel Properties", MOUSE, true);
-  
+
   wrap.appendChild(card);
   wrap.addEventListener("pointerdown", (e) => {
     if (e.target === wrap) closeHelp();

@@ -5,6 +5,7 @@ import { setBackground } from "../shared/background-state.js";
 import { applySlides } from "./sorter/sorter.js";
 import { lib } from "./library.js";
 import * as G from "./groups.js";
+import { emit } from "./bus.js";
 
 const FILTERS = [{ name: "PresentCraft session", extensions: ["ppsession"] }];
 
@@ -125,7 +126,7 @@ export async function importSession() {
         if (t) await lib.copyInMany(t.id, g.items || []);
       }
     }
-    
+
     if (d.background) {
       G.mergeGroups(
         d.background.groups && d.background.groups.groups
@@ -134,9 +135,10 @@ export async function importSession() {
       );
       if (d.background.active) await setBackground(d.background.active);
     }
-    if (d.workspace)
+    if (d.workspace) {
       applySlides(d.workspace.slides || [], [], d.workspace.bundleName);
-
+      emit("bundle:imported"); // simpan slide + propertinya ke library
+    }
     setStatus("Session imported.");
   } catch (err) {
     console.error(err);

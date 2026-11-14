@@ -1,11 +1,17 @@
-// Panel Layers (kanan bawah): daftar layer slide aktif.
 import { el } from "./dom.js";
 import { layerLabel } from "./fields.js";
 import { ed, L, q, onEd, fireEd } from "./session.js";
+import { addText } from "./shortcuts.js";
 
 export function renderLayers() {
   const box = q(".ed-list");
   box.replaceChildren();
+
+  const add = el("button", "ed-btn", "+ Teks");
+  add.type = "button";
+  add.addEventListener("click", addText);
+  box.appendChild(add);
+
   if (!L().length) {
     box.appendChild(el("p", "ed-empty", "Slide ini belum punya layer."));
     return;
@@ -17,11 +23,3 @@ export function renderLayers() {
     box.appendChild(row);
   });
 }
-
-// pembaruan label di tempat (tanpa membangun ulang daftar) supaya klik yang sedang berlangsung tidak hilang
-export function updateLayerLabel(i) {
-  const row = q(".ed-list").querySelectorAll(".ed-layer")[i];
-  if (row && L()[i]) row.textContent = layerLabel(L()[i], i);
-}
-
-onEd("text:changed", ({ i }) => ed.root && updateLayerLabel(i));

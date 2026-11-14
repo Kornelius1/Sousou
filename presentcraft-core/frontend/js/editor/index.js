@@ -186,9 +186,13 @@ function onKey(e) {
 function onKeyCapture(e) {
   if (!ed.root) return;
   const t = e.target;
-  const inside = ed.root.contains(t) || t === document.body || t === document.documentElement;
+  const inside =
+    ed.root.contains(t) ||
+    t === document.body ||
+    t === document.documentElement;
   if (!inside) return; // mis. dialog konfirmasi di luar editor
-  const typing = t.isContentEditable || (t.matches && t.matches("textarea, select, input"));
+  const typing =
+    t.isContentEditable || (t.matches && t.matches("textarea, select, input"));
   if (typing) return;
   e.stopImmediatePropagation();
   onKey(e);
@@ -243,6 +247,27 @@ export function openEditor(i) {
       orig: JSON.stringify(layers),
     };
   });
+  for (const it of ed.items) {
+    if (!it.layers.length) {
+      it.layers.push({
+        kind: "text",
+        z: 1,
+        rect: { x: 10, y: 25, w: 80, h: 50 },
+        rotation: 0,
+        opacity: 1,
+        path: null,
+        status: null,
+        inner: null,
+        scale: null,
+        muted: null,
+        looped: null,
+        stop_on_clear: null,
+        color: null,
+        text: "Teks",
+        style: null,
+      });
+    }
+  }
   ed.cur = Math.max(0, idxs.indexOf(i));
   ed.sel = initialSel();
   ed.showBg = true;

@@ -245,13 +245,13 @@ export function applySlides(slides, warnings, bundleName) {
 
 export function showGroupSlides(g) {
   const all = g ? g.items : [];
-  // grup hasil import: hanya slide-nya. File media di dalamnya hanyalah bahan.
-  const fromBundle = all.some(
-    (it) => it.kind === "slide" && it.origin === "bundle",
-  );
-  const kinds = fromBundle ? ["slide"] : ["slide", "image", "video"];
   const slides = all
-    .filter((it) => kinds.includes(it.kind))
+    .filter(
+      (it) =>
+        it.kind === "slide" ||
+        ((it.kind === "image" || it.kind === "video") &&
+          it.origin !== "bundle"),
+    )
     .map((it, i) => {
       const s = itemToSlide(it, g, i + 1);
       // item media yang pernah diedit: pakai layer tersimpan, jangan bangun ulang dari src
