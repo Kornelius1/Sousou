@@ -1,7 +1,7 @@
 // Mengirim payload slide ke jendela audience.
-import { $ } from "./utils.js";
+import { $, setStatus } from "./utils.js";
 import { state } from "./state.js";
-import { convertFileSrc, emitEvent } from "./tauri.js";
+import { convertFileSrc, emitEvent, invoke } from "./tauri.js"
 
 export function emitPayload(payload) {
   emitEvent("update-slide-event", payload).catch((err) =>
@@ -52,3 +52,28 @@ export function scheduleEmit(i) {
       emitPayload(toPayload(state.slides[i]));
   }, 250);
 }
+
+// Tombol #tb-audience: nyalakan / matikan window audience.
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest?.("#tb-audience");
+  if (!b) return;
+  try {
+    const external = await invoke("toggle_audience");
+    const on = b.getAttribute("aria-pressed") !== "true";
+    b.setAttribute("aria-pressed", String(on));
+    if (on) {
+      // kirim ulang slide yang sedang tayang supaya layar tidak kosong
+      const i = state.liveIndex;
+      if (i >= 0 && !state.blanked && state.slides[i])
+        emitPayload(toPayload(state.slides[i]));
+      setStatus(
+        external
+          ? "Audience: layar kedua (fullscreen)."
+          : "Audience: window uji (1 monitor).",
+      );
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus("Gagal membuka audience: " + err);
+  }
+});

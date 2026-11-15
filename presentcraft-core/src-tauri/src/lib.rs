@@ -118,6 +118,45 @@ fn load_presentation_bundle(app: tauri::AppHandle, file_path: String) -> Result<
     Ok(LoadResult { slides: all, warnings })
 }
 
+#[tauri::command]
+fn toggle_audience(app: tauri::AppHandle) -> Result<bool, String> {
+    use tauri::{LogicalSize, Manager};
+    let e = |x: tauri::Error| x.to_string();
+    let win = app
+        .get_webview_window("audience")
+        .ok_or("window audience tidak ditemukan")?;
+
+    // sedang tampil -> sembunyikan
+    if win.is_visible().map_err(e)? {
+        let _ = win.set_fullscreen(false);
+        win.hide().map_err(e)?;
+        return Ok(false);
+    }
+
+    // cari monitor yang BUKAN tempat window utama berada
+    let main_mon = app
+        .get_webview_window("main")
+        .and_then(|m| m.current_monitor().ok().flatten());
+    let monitors = win.available_monitors().map_err(e)?;
+    let external = monitors.iter().find(|m| match &main_mon {
+        Some(mm) => m.position() != mm.position(),
+        None => false,
+    });
+
+    win.show().map_err(e)?;
+    if let Some(m) = external {
+        // proyektor / layar kedua: pindah ke sana lalu fullscreen
+        win.set_position(*m.position()).map_err(e)?;
+        win.set_fullscreen(true).map_err(e)?;
+    } else {
+        // satu monitor: window biasa agar bisa dites tanpa proyektor
+        win.set_fullscreen(false).map_err(e)?;
+        win.set_size(LogicalSize::new(960.0, 540.0)).map_err(e)?;
+        win.center().map_err(e)?;
+    }
+    Ok(external.is_some())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -131,18 +170,40 @@ pub fn run() {
 
             camera::start_server(app.state::<camera::CameraHub>().inner().clone())?;
 
-            let _audience_window = tauri::WebviewWindowBuilder::new(
-                app,
-                "audience",
-                tauri::WebviewUrl::App("audience.html".into()),
-            )
-            .title("PresentCraft - Audience Display")
-            .inner_size(1280.0, 720.0)
-            .build()?;
+            let audience = tauri::WebviewWindowBuilder::new(
+    app,
+    "audience",
+    tauri::WebviewUrl::App("audience.html".into()),
+)
+.title("PresentCraft - Audience Display")
+.inner_size(1280.0, 720.0)
+.visible(false)
+.build()?;
+
+// klik X pada window audience hanya menyembunyikan, tidak menghancurkannya
+let a = audience.clone();
+audience.on_window_event(move |ev| {
+    if let tauri::WindowEvent::CloseRequested { api, .. } = ev {
+        api.prevent_close();
+        let _ = a.set_fullscreen(false);
+        let _ = a.hide();
+    }
+});
+
+
+if let Some(main) = app.get_webview_window("main") {
+    let h = app.handle().clone();
+    main.on_window_event(move |ev| {
+        if let tauri::WindowEvent::CloseRequested { .. } = ev {
+            h.exit(0);
+        }
+    });
+}
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            toggle_audience,
             load_presentation_bundle,
             commands::export_session,
             commands::import_session,

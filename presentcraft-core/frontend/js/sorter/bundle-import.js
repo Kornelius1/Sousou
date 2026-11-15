@@ -18,7 +18,7 @@ export async function importFile() {
   const filePath = await openDialog({
     multiple: false,
     filters: [
-      { name: "ProPresenter", extensions: ["proBundle", "zip", "pro"] },
+      { name: "Presentcraft", extensions: ["zip"] },
     ],
   });
   if (!filePath) return;

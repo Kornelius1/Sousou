@@ -31,6 +31,8 @@ import { initMessagePanel } from "./message-panel.js";
 import { initResizer } from "./resizer.js";
 import { initTransitionUi } from "./transition-ui.js";
 import { setTransition } from "../shared/transition-state.js";
+import "./songs.js";
+import "./song-import.js";
 
 /* ---- Slider: isi --fill supaya trek yang terisi ikut posisi gagang ---- */
 const setFill = (el) => {

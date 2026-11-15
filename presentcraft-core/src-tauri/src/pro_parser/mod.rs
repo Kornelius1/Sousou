@@ -1,16 +1,3 @@
-//! Parser file .pro (ProPresenter 7+) → daftar slide untuk PresentCraft.
-//!
-//! Peta modul:
-//!   model.rs   tipe keluaran (Slide, Layer, Rect, ParsedPro)
-//!   reflect.rs descriptor pool + helper pembaca field protobuf
-//!   rtf.rs     RTF → teks biasa
-//!   media.rs   keamanan path + pencarian file media
-//!   layers.rs  cue → lapisan → Slide
-//!   mod.rs     alur utama: decode, urutan grup/arrangement, rakit hasil
-//!
-//! Prinsip: semua setelan dibaca per elemen dari data, tanpa asumsi nomor
-//! slide. Yang belum dikenali dicatat di `warnings`, bukan dibuang diam-diam.
-
 mod layers;
 pub(crate) mod media;
 mod model;

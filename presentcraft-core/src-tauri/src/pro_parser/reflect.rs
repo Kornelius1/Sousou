@@ -1,6 +1,3 @@
-//! Akses skema protobuf ProPresenter: descriptor pool + helper pembaca field
-//! berdasarkan nama. Tidak tahu apa pun soal slide/layer; hanya "alat baca".
-
 use prost_reflect::{DescriptorPool, DynamicMessage, Kind, ReflectMessage, Value};
 use std::sync::OnceLock;
 

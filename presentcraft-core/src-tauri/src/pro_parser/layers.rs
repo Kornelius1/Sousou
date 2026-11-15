@@ -155,8 +155,6 @@ fn collect_base_slide(
             warnings.push(format!("elemen z={z}: bounds tidak valid, dilewati"));
             continue;
         };
-        // Catatan: proto3 menghilangkan nilai 0. ProPresenter menulis opacity: 1
-        // secara eksplisit, jadi opacity yang hilang berarti 0 (tak terlihat).
         let rotation = num(&e, "rotation");
         let opacity = num(&e, "opacity");
         let skeleton = |kind: &str| Layer::new(kind, z, rect.clone(), rotation, opacity);
