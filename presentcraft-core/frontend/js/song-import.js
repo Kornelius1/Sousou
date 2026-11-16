@@ -3,10 +3,28 @@ import { setStatus } from "./utils.js";
 import { lib } from "./library.js";
 import { splitLyrics, normalizeNames, addSongParts } from "./songs.js";
 
+const ALLOWED_EXT = new Set(["xml", "txt"]); // OpenLyrics/OpenSong = .xml, plain text = .txt
+const MAX_BYTES = 1024 * 1024; // 1 MB per file; a song is a few KB at most
+const extOf = (name) => (/\.([^.]+)$/.exec(name)?.[1] || "").toLowerCase();
+
 const FOLLOW_ORDER = true; // repeat sections following the file's verse order (e.g. v1 c v2 c)
 
-const OL_NAMES = { v: "Verse", c: "Chorus", p: "Pre-Chorus", b: "Bridge", i: "Intro", e: "Outro", o: "Misc" };
-const OS_NAMES = { V: "Verse", C: "Chorus", P: "Pre-Chorus", B: "Bridge", T: "Tag" };
+const OL_NAMES = {
+  v: "Verse",
+  c: "Chorus",
+  p: "Pre-Chorus",
+  b: "Bridge",
+  i: "Intro",
+  e: "Outro",
+  o: "Misc",
+};
+const OS_NAMES = {
+  V: "Verse",
+  C: "Chorus",
+  P: "Pre-Chorus",
+  B: "Bridge",
+  T: "Tag",
+};
 
 // text of a <lines> element: <br/> becomes a newline, chords and comments are skipped
 function linesText(el) {
@@ -49,7 +67,11 @@ function parseOpenLyrics(doc) {
     title: first("title")?.textContent.trim() || "",
     natural,
     lookup,
-    order: (first("verseOrder")?.textContent || "").trim().toUpperCase().split(/\s+/).filter(Boolean),
+    order: (first("verseOrder")?.textContent || "")
+      .trim()
+      .toUpperCase()
+      .split(/\s+/)
+      .filter(Boolean),
   };
 }
 
@@ -92,7 +114,11 @@ function parseOpenSong(doc) {
     title: tag("title").trim(),
     natural: natural.filter(keep),
     lookup,
-    order: tag("presentation").trim().toUpperCase().split(/\s+/).filter(Boolean),
+    order: tag("presentation")
+      .trim()
+      .toUpperCase()
+      .split(/\s+/)
+      .filter(Boolean),
   };
 }
 
@@ -110,8 +136,14 @@ async function parseFile(file) {
   if (raw.includes("\u0000")) return null; // binary file: not supported
   if (/^\s*<\?xml|^\s*<song[\s>]/i.test(raw)) {
     const doc = new DOMParser().parseFromString(raw, "application/xml");
-    if (doc.querySelector("parsererror") || doc.documentElement.localName !== "song") return null;
-    return doc.getElementsByTagNameNS("*", "verse").length ? parseOpenLyrics(doc) : parseOpenSong(doc);
+    if (
+      doc.querySelector("parsererror") ||
+      doc.documentElement.localName !== "song"
+    )
+      return null;
+    return doc.getElementsByTagNameNS("*", "verse").length
+      ? parseOpenLyrics(doc)
+      : parseOpenSong(doc);
   }
   return parseText(raw, file.name);
 }
@@ -119,21 +151,38 @@ async function parseFile(file) {
 function arrange(song) {
   if (!song.order.length) return song.natural;
   const out = [];
-  for (const k of song.order) for (const p of song.lookup.get(k) || []) out.push(p);
+  for (const k of song.order)
+    for (const p of song.lookup.get(k) || []) out.push(p);
   return out.length ? out : song.natural;
 }
 
 export async function importSongFiles(files) {
-  let added = 0, skipped = 0, failed = 0;
+  let added = 0,
+    skipped = 0,
+    failed = 0,
+    rejected = 0;
   for (const f of files) {
+    if (!ALLOWED_EXT.has(extOf(f.name)) || f.size > MAX_BYTES) {
+      rejected++;
+      continue;
+    }
     try {
       const song = await parseFile(f);
-      if (!song) { failed++; continue; }
+      if (!song) {
+        failed++;
+        continue;
+      }
       normalizeNames(song.natural); // before repeating sections, so numbering stays correct
       const title = (song.title || f.name.replace(/\.[^.]+$/, "")).trim();
       const parts = FOLLOW_ORDER ? arrange(song) : song.natural;
-      if (!title || !parts.length) { failed++; continue; }
-      if (lib.s.groups.some((g) => g.name === title)) { skipped++; continue; }
+      if (!title || !parts.length) {
+        failed++;
+        continue;
+      }
+      if (lib.s.groups.some((g) => g.name === title)) {
+        skipped++;
+        continue;
+      }
       if (await addSongParts(title, parts)) added++;
       else failed++;
     } catch (err) {
@@ -145,6 +194,7 @@ export async function importSongFiles(files) {
     `Songs imported: ${added}` +
       (skipped ? `, ${skipped} already in library` : "") +
       (failed ? `, ${failed} failed or unsupported` : "") +
+      (rejected ? `, ${rejected} rejected (only .xml/.txt up to 1 MB)` : "") +
       ".",
   );
 }
@@ -154,6 +204,7 @@ document.addEventListener("click", (e) => {
   const inp = document.createElement("input");
   inp.type = "file";
   inp.multiple = true;
+  inp.accept = ".xml,.txt";
   inp.addEventListener("change", () => {
     if (inp.files.length) importSongFiles([...inp.files]);
   });

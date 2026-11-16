@@ -143,21 +143,18 @@ function askSong() {
       if (text != null) e.textContent = text;
       return e;
     };
-    const title = mk("input");
+    const title = mk("input", "song-title");
     title.placeholder = "Song title";
-    title.style.cssText = "width:100%;margin-bottom:8px";
-    const body = mk("textarea");
+    const body = mk("textarea", "song-body");
     body.placeholder =
       "Paste lyrics here.\nSeparate verses with a blank line.\nA [Chorus] or [Verse 1] line becomes the slide name.";
-    body.style.cssText = "width:100%;height:260px;resize:vertical";
-    const per = mk("input");
+    const per = mk("input", "song-per");
     per.type = "number";
     per.min = "0";
     per.value = "0";
-    per.style.width = "56px";
     const perRow = mk(
       "label",
-      "cf-msg",
+      "cf-msg song-opts",
       "Max lines per slide (0 = follow blank lines): ",
     );
     perRow.appendChild(per);
@@ -165,8 +162,7 @@ function askSong() {
     const ok = mk("button", "cf-btn", "Add");
     const btns = mk("div", "cf-btns");
     btns.append(cancel, ok);
-    const box = mk("div", "cf-box");
-    box.style.width = "min(560px, 92vw)";
+    const box = mk("div", "cf-box song-box");
     box.append(mk("div", "cf-title", "Add song"), title, body, perRow, btns);
     const overlay = mk("div", "cf-overlay");
     overlay.appendChild(box);

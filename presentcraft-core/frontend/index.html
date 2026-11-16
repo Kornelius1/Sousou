@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/fontawesome/css/all.min.css" />
   <link rel="stylesheet" href="css/inputs.css" />
   <link rel="stylesheet" href="css/bible.css" />
+  <link rel="stylesheet" href="css/song.css" />
 </head>
 
 <body>
@@ -23,12 +24,12 @@
         <div class="ex-head">
           <span>Media</span><span id="lib-count"></span>
           <span class="sp"></span>
-          <button class="ex-act" id="lib-new" title="Grup baru" aria-label="Grup baru">
+          <button class="ex-act" id="lib-new" title="New group" aria-label="New group">
             <svg viewBox="0 0 16 16">
               <path d="M1 3h5l1.5 1.5H15V13H1z" />
             </svg>
           </button>
-          <button class="ex-act" id="lib-add" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
+          <button class="ex-act" id="lib-add" title="Add files to selected group…" aria-label="Add files">
             <svg viewBox="0 0 16 16">
               <path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z" />
             </svg>
@@ -40,12 +41,12 @@
             aria-label="Import songs">
             <i class="fa-solid fa-file-import"></i>
           </button>
-          <button class="ex-act" id="lib-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
+          <button class="ex-act" id="lib-sort" title="Sort selected group" aria-label="Sort">
             <svg viewBox="0 0 16 16">
               <path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z" />
             </svg>
           </button>
-          <button class="ex-act" id="lib-del" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
+          <button class="ex-act" id="lib-del" title="Delete selected group / item (Del)" aria-label="Delete">
             <svg viewBox="0 0 16 16">
               <path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z" />
             </svg>
@@ -83,7 +84,7 @@
             </svg>
           </button>
 
-          <button class="clear-btn" id="tb-audience" aria-pressed="false" title="Nyalakan / matikan layar audience"
+          <button class="clear-btn" id="tb-audience" aria-pressed="false" title="Turn audience screen on / off"
             aria-label="Toggle audience window">
             <i class="fa-solid fa-display"></i>
           </button>
@@ -98,7 +99,7 @@
                 <path d="M3.5 8h9" />
               </svg>
             </button>
-            <input type="range" id="zoom" min="120" max="380" value="200" aria-label="Ukuran thumbnail" />
+            <input type="range" id="zoom" min="120" max="380" value="200" aria-label="Thumbnail size" />
             <button class="zoom-btn" id="zoom-in" title="Zoom in" aria-label="Zoom in">
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"
                 aria-hidden="true">
@@ -120,7 +121,7 @@
           <div class="body" id="props-body" hidden>
             <div class="ed-grid">
               <div class="ed-f s2">
-                <label class="ed-fl" for="p-rotation">Rotasi</label>
+                <label class="ed-fl" for="p-rotation">Rotation</label>
                 <input type="number" id="p-rotation" step="0.1" />
               </div>
 
@@ -135,7 +136,7 @@
               <div class="ed-f s2">
                 <span class="ed-fl">Align</span>
                 <div class="ed-seg">
-                  <button type="button" data-ralign="Left" title="Left-aligned" aria-label="Left-aligned">
+                  <button type="button" data-ralign="left" title="Left-aligned" aria-label="Left-aligned">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M2 1.5V14.5" />
@@ -151,7 +152,7 @@
                       <rect x="5" y="9" width="6" height="3" />
                     </svg>
                   </button>
-                  <button type="button" data-ralign="Right" title="Right-aligned" aria-label="Right-aligned">
+                  <button type="button" data-ralign="right" title="Right-aligned" aria-label="Right-aligned">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M14 1.5V14.5" />
@@ -159,7 +160,7 @@
                       <rect x="6" y="9" width="6" height="3" />
                     </svg>
                   </button>
-                  <button type="button" data-ralign="Top" title="Top-aligned" aria-label="Top-aligned">
+                  <button type="button" data-ralign="top" title="Top-aligned" aria-label="Top-aligned">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M1.5 2H14.5" />
@@ -175,7 +176,7 @@
                       <rect x="9" y="5" width="3" height="6" />
                     </svg>
                   </button>
-                  <button type="button" data-ralign="Bottom" title="Bottom-aligned" aria-label="Bottom-aligned">
+                  <button type="button" data-ralign="bottom" title="Bottom-aligned" aria-label="Bottom-aligned">
                     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2"
                       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                       <path d="M1.5 14H14.5" />
@@ -193,17 +194,17 @@
             <div id="pv-host" class="thumb"></div>
 
             <div class="pv-seekrow">
-              <input type="range" id="pv-seek" min="0" max="1000" value="0" aria-label="Posisi video" />
+              <input type="range" id="pv-seek" min="0" max="1000" value="0" aria-label="Video position" />
               <span id="pv-time">0:00 / 0:00</span>
             </div>
             <div class="pv-controls">
-              <button class="pv-btn" id="pv-restart" title="Ulang dari awal" aria-label="Ulang dari awal"></button>
-              <button class="pv-btn pill" id="pv-back" title="Mundur 5 detik">−5s</button>
-              <button class="pv-btn primary" id="pv-toggle" title="Putar / Jeda (klik preview juga bisa)"
-                aria-label="Putar / Jeda"></button>
-              <button class="pv-btn pill" id="pv-fwd" title="Maju 5 detik">+5s</button>
-              <button class="pv-btn" id="pv-loop" title="Ulang terus (loop)" aria-label="Loop"></button>
-              <button class="pv-btn pill" id="pv-speed" title="Kecepatan putar">1×</button>
+              <button class="pv-btn" id="pv-restart" title="Restart from beginning" aria-label="Restart from beginning"></button>
+              <button class="pv-btn pill" id="pv-back" title="Rewind 5 seconds">-5s</button>
+              <button class="pv-btn primary" id="pv-toggle" title="Play / Pause (clicking preview also works)"
+                aria-label="Play / Pause"></button>
+              <button class="pv-btn pill" id="pv-fwd" title="Fast forward 5 seconds">+5s</button>
+              <button class="pv-btn" id="pv-loop" title="Loop continuously (loop)" aria-label="Loop"></button>
+              <button class="pv-btn pill" id="pv-speed" title="Playback speed">1x</button>
             </div>
           </div>
         </div>
@@ -213,7 +214,7 @@
     <!-- ================= TOOLBAR (Bible only, kept separate) ================= -->
     <div id="toolbar">
       <div class="tb-group" id="tb-grp-bible">
-        <button class="tb" id="tb-bible" title="Alkitab" aria-label="Alkitab">
+        <button class="tb" id="tb-bible" title="Bible" aria-label="Bible">
           <i class="fa-solid fa-book-bible"></i>
         </button>
       </div>
@@ -229,7 +230,7 @@
             <option value="wipe">Wipe</option>
             <option value="dip">Black fade</option>
           </select>
-          <select id="tr-ms-fg" title="Durasi slide">
+          <select id="tr-ms-fg" title="Slide duration">
             <option value="150">150 ms</option>
             <option value="300">300 ms</option>
             <option value="500">500 ms</option>
@@ -246,7 +247,7 @@
             <option value="wipe">Wipe</option>
             <option value="dip">Black fade</option>
           </select>
-          <select id="tr-ms-bg" title="Durasi background">
+          <select id="tr-ms-bg" title="Background duration">
             <option value="150">150 ms</option>
             <option value="300">300 ms</option>
             <option value="500">500 ms</option>
@@ -266,22 +267,22 @@
         <div class="ex-head">
           <span>Background</span><span id="ex-count"></span>
           <span class="sp"></span>
-          <button class="ex-act" id="ex-new" title="Grup baru" aria-label="Grup baru">
+          <button class="ex-act" id="ex-new" title="New group" aria-label="New group">
             <svg viewBox="0 0 16 16">
               <path d="M1 3h5l1.5 1.5H15V13H1z" />
             </svg>
           </button>
-          <button class="ex-act" id="ex-add-file" title="Tambah file ke grup terpilih…" aria-label="Tambah file">
+          <button class="ex-act" id="ex-add-file" title="Add file to selected group…" aria-label="Add file">
             <svg viewBox="0 0 16 16">
               <path d="M7.5 2h1v5.5H14v1H8.5V14h-1V8.5H2v-1h5.5z" />
             </svg>
           </button>
-          <button class="ex-act" id="ex-sort" title="Urutkan grup terpilih" aria-label="Urutkan">
+          <button class="ex-act" id="ex-sort" title="Sort selected groups" aria-label="Sort">
             <svg viewBox="0 0 16 16">
               <path d="M2 3.5h12V5H2zM2 7.25h8.5v1.5H2zM2 11h5v1.5H2z" />
             </svg>
           </button>
-          <button class="ex-act" id="ex-delete" title="Hapus grup / item terpilih (Del)" aria-label="Hapus">
+          <button class="ex-act" id="ex-delete" title="Delete selected groups / items (Del)" aria-label="Delete">
             <svg viewBox="0 0 16 16">
               <path d="M5 1h6v1.5h3.5V4h-13V2.5H5zM3 5h10l-.7 9.5H3.7z" />
             </svg>
@@ -338,8 +339,8 @@
                 d="M19 15v4H5v-4H3v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4zM11 4.8L7.4 8.4 6 7l6-6 6 6-1.4 1.4L13 4.8V16h-2z"
                 transform="translate(0 1)" />
             </svg>
-            <b>Seret file ke sini</b>
-            <span>atau klik untuk upload (video / gambar)</span>
+            <b>Drag files here</b>
+            <span>or click to upload (video / image)</span>   
           </div>
         </div>
       </section>
@@ -370,8 +371,8 @@
       <div class="in-list-wrap">
         <ul id="in-items" class="in-list"></ul>
         <div class="in-listbar">
-          <button id="in-add" title="Tambah input" aria-label="Tambah input"><i class="fa-solid fa-plus"></i></button>
-          <button id="in-rm" title="Hapus input" aria-label="Hapus input"><i class="fa-solid fa-minus"></i></button>
+          <button id="in-add" title="Add input" aria-label="Add input"><i class="fa-solid fa-plus"></i></button>
+          <button id="in-rm" title="Remove input" aria-label="Remove input"><i class="fa-solid fa-minus"></i></button>
         </div>
       </div>
 
@@ -447,8 +448,8 @@
     </div>
 
     <footer class="in-foot">
-      <button id="in-cancel" type="button">Batal</button>
-      <button id="in-close" type="button" class="primary">Selesai</button>
+      <button id="in-cancel" type="button">Cancel</button>
+      <button id="in-close" type="button" class="primary">Done</button>
     </footer>
   </dialog>
   <script src="shared/input-player.js"></script>

@@ -1,0 +1,73 @@
+/* Add-song dialog. Same look as bible.css. Load after the file that defines cf-*. */
+.cf-box.song-box {
+  --sb-bg: var(--panel, #1f2023);
+  --sb-field: var(--field, #2a2b2f);
+  --sb-line: var(--line, #3a3b40);
+  --sb-text: var(--text, #d8d9dc);
+  --sb-dim: var(--text-dim, #8d8f96);
+  --sb-hover: rgba(255, 255, 255, 0.06);
+  --sb-focus: #9a9ca3;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(560px, 92vw);
+  max-height: 92vh;
+  overflow: auto;
+  background: var(--sb-bg);
+  color: var(--sb-text);
+  border: 1px solid var(--sb-line);
+  color-scheme: dark;
+}
+
+.song-box,
+.song-box * {
+  scrollbar-width: thin;
+  scrollbar-color: #55565b transparent;
+}
+
+/* all controls share the same look */
+.song-box input,
+.song-box textarea,
+.song-box .cf-btn {
+  box-sizing: border-box;
+  min-width: 0;
+  background: var(--sb-field);
+  color: var(--sb-text);
+  border: 1px solid var(--sb-line);
+  border-radius: 4px;
+  font: inherit;
+}
+.song-box input,
+.song-box .cf-btn {
+  height: 30px;
+  padding: 0 10px;
+  line-height: normal;
+}
+.song-box .cf-btn { padding: 0 16px; }
+.song-box .cf-btn:hover:not(:disabled) { background: var(--sb-hover); }
+.song-box .cf-btn:disabled { opacity: 0.45; }
+.song-box ::placeholder { color: var(--sb-dim); opacity: 1; }
+
+.song-title { width: 100%; }
+.song-body {
+  width: 100%;
+  height: clamp(200px, 40vh, 320px);
+  padding: 8px 10px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+/* "Max lines per slide" row */
+.song-opts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--sb-dim);
+}
+.song-per { width: 64px; }
+
+.song-box :is(input, textarea, .cf-btn):focus-visible {
+  outline: 2px solid var(--sb-focus);
+  outline-offset: -2px;
+}
