@@ -128,10 +128,10 @@ function save() {
   close();
   setStatus(
     !n
-      ? "Tidak ada perubahan."
+      ? "No changes."
       : mem
-        ? `${n} slide diubah (${mem} belum ada di library, hanya di memori).`
-        : `${n} slide disimpan.`,
+        ? `${n} slide(s) changed (${mem} not in the library yet, in memory only).`
+        : `${n} slide(s) saved.`,
   );
 }
 
@@ -140,8 +140,8 @@ async function cancel() {
   if (!isDirty()) return close();
   const ok = await askConfirm({
     key: "discard-edit",
-    title: "Buang perubahan",
-    message: "Perubahan pada slide-slide ini belum disimpan. Buang?",
+    title: "Discard changes",
+    message: "Changes to these slides have not been saved. Discard?",
   });
   if (ok) close();
 }
@@ -206,12 +206,12 @@ const SKELETON = `
     <button class="ed-btn" data-a="undo" title="Undo (Ctrl+Z)">Undo</button>
     <button class="ed-btn" data-a="redo" title="Redo (Ctrl+Y)">Redo</button>
     <span class="ed-vr"></span>
-    <button class="ed-btn" data-a="bg" aria-pressed="true" title="Tampilkan / sembunyikan background">Background</button>
+    <button class="ed-btn" data-a="bg" aria-pressed="true" title="Show / hide background">Background</button>
     <span class="ed-vr"></span>
-    <button class="ed-btn" data-a="help" title="Pintasan keyboard (F1)">?</button>
+    <button class="ed-btn" data-a="help" title="Keyboard shortcuts (F1)">?</button>
     <span class="ed-vr"></span>
-    <button class="ed-btn" data-a="cancel" title="Batal (Esc)">Batal</button>
-    <button class="ed-btn primary" data-a="save" title="Simpan (Ctrl+S)">Simpan</button>
+    <button class="ed-btn" data-a="cancel" title="Cancel (Esc)">Cancel</button>
+    <button class="ed-btn primary" data-a="save" title="Save (Ctrl+S)">Save</button>
   </header>
   <div class="ed-body">
     <aside class="ed-fs" aria-label="Slide dalam grup"></aside>
@@ -231,7 +231,7 @@ const SKELETON = `
 export function openEditor(i) {
   if (ed.root) return;
   const s0 = state.slides[i];
-  if (!s0) return setStatus("Pilih sebuah slide dulu.");
+  if (!s0) return setStatus("Select a slide first.");
 
   // semua slide dalam grup yang sama; slide tanpa groupId (hasil import) = seluruh grid
   const idxs = state.slides
@@ -263,7 +263,7 @@ export function openEditor(i) {
         looped: null,
         stop_on_clear: null,
         color: null,
-        text: "Teks",
+        text: "Text",
         style: null,
       });
     }
@@ -308,6 +308,6 @@ export function openEditor(i) {
 // Tombol pensil (#tb-edit): didelegasikan di sini, jadi tidak bergantung pada urutan inisialisasi.
 document.addEventListener("click", (e) => {
   if (!e.target.closest?.("#tb-edit")) return;
-  if (!state.slides.length) return setStatus("Belum ada slide.");
+  if (!state.slides.length) return setStatus("No slides yet.");
   openEditor(state.activeIndex >= 0 ? state.activeIndex : 0);
 });

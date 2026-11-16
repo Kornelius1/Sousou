@@ -7,7 +7,7 @@ export function renderLayers() {
   const box = q(".ed-list");
   box.replaceChildren();
 
-  const add = el("button", "ed-btn", "+ Teks");
+  const add = el("button", "ed-btn", "+ Text");
   add.type = "button";
   add.addEventListener("click", addText);
   box.appendChild(add);

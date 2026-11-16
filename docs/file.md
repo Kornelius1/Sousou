@@ -11,3 +11,6 @@ explorer.js: explorer
 properties
 
 global
+
+
+Requires protoc (winget install Google.Protobuf) to build from source

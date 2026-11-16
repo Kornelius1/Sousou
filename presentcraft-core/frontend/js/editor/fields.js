@@ -109,7 +109,7 @@ const META = {
   px: { label: "px", step: 1, big: 10, dec: 1 },
   pt: { label: "pt", step: 0.5, big: 1, dec: 1 },
   cm: { label: "cm", step: 0.1, big: 0.5, dec: 2 },
-  in: { label: "inci", step: 0.01, big: 0.1, dec: 3 },
+  in: { label: "in", step: 0.01, big: 0.1, dec: 3 },
 };
 
 const optsOf = (keys) => keys.map((k) => [k, META[k].label]);
@@ -142,7 +142,10 @@ export const factor = (f) =>
   f.ug === "font" ? FONT[units.font] : LEN[units[f.ug]](f.dim);
 const meta = (f) => META[units[f.ug]];
 export const fieldStep = (f) => (isLen(f) ? meta(f).step : f.step);
-export const fieldBig = (f) => (isLen(f) ? meta(f).big : Math.max(f.step ?? 1, f.path === "rotation" ? 1 : f.step ?? 1));
+export const fieldBig = (f) =>
+  isLen(f)
+    ? meta(f).big
+    : Math.max(f.step ?? 1, f.path === "rotation" ? 1 : (f.step ?? 1));
 export const fieldMin = (f) =>
   f.min != null && isLen(f) ? +(f.min * factor(f)).toFixed(4) : f.min;
 export const fieldTip = (f) =>
@@ -163,7 +166,7 @@ export function alignLayer(l, how) {
 }
 
 export const FIELDS = [
-  // ---------- Transform ----------
+  // Transform
   {
     grp: "Transform",
     t: "line",
@@ -175,7 +178,7 @@ export const FIELDS = [
         ug: "pos",
         dim: "w",
         label: "X",
-        tip: "Posisi X",
+        tip: "Position X",
         t: "num",
         step: 0.1,
       },
@@ -184,7 +187,7 @@ export const FIELDS = [
         ug: "pos",
         dim: "h",
         label: "Y",
-        tip: "Posisi Y",
+        tip: "Position Y",
         t: "num",
         step: 0.1,
       },
@@ -201,7 +204,7 @@ export const FIELDS = [
         ug: "size",
         dim: "w",
         label: "W",
-        tip: "Lebar",
+        tip: "Width",
         t: "num",
         step: 0.1,
         min: 0.1,
@@ -211,7 +214,7 @@ export const FIELDS = [
         ug: "size",
         dim: "h",
         label: "H",
-        tip: "Tinggi",
+        tip: "Height",
         t: "num",
         step: 0.1,
         min: 0.1,
@@ -221,7 +224,7 @@ export const FIELDS = [
   {
     grp: "Transform",
     path: "rotation",
-    label: "Rotasi",
+    label: "Rotation",
     t: "num",
     span: 2,
     step: 0.1,
@@ -230,7 +233,7 @@ export const FIELDS = [
   {
     grp: "Transform",
     path: "opacity",
-    label: "Opasitas",
+    label: "Opacity",
     t: "range",
     span: 2,
     min: 0,
@@ -240,30 +243,30 @@ export const FIELDS = [
   {
     grp: "Transform",
     t: "act",
-    label: "Ratakan",
+    label: "Align",
     span: 2,
     run: alignLayer,
     opts: [
-      ["left", ICON_A_LEFT, "Rata kiri slide"],
-      ["center", ICON_A_CENTER, "Tengah horizontal"],
-      ["right", ICON_A_RIGHT, "Rata kanan slide"],
-      ["top", ICON_A_TOP, "Rata atas slide"],
-      ["middle", ICON_A_MIDDLE, "Tengah vertikal"],
-      ["bottom", ICON_A_BOTTOM, "Rata bawah slide"],
+      ["left", ICON_A_LEFT, "Align left"],
+      ["center", ICON_A_CENTER, "Center horizontally"],
+      ["right", ICON_A_RIGHT, "Align right"],
+      ["top", ICON_A_TOP, "Align top"],
+      ["middle", ICON_A_MIDDLE, "Center vertically"],
+      ["bottom", ICON_A_BOTTOM, "Align bottom"],
     ],
   },
 
-  // ---------- Teks ----------
+  // Text
   {
-    grp: "Teks",
+    grp: "Text",
     path: "text",
-    label: "Isi teks",
+    label: "Content",
     t: "area",
     span: 2,
     when: isText,
   },
   {
-    grp: "Teks",
+    grp: "Text",
     path: "style.fontFamily",
     label: "Font",
     t: "sel",
@@ -272,7 +275,7 @@ export const FIELDS = [
     when: isText,
   },
   {
-    grp: "Teks",
+    grp: "Text",
     t: "line",
     ug: "font",
     opts: FONT_UNITS,
@@ -281,8 +284,8 @@ export const FIELDS = [
       {
         path: "style.fontSize",
         ug: "font",
-        label: "Ukuran",
-        tip: "Ukuran font",
+        label: "Size",
+        tip: "Font size",
         t: "num",
         step: 1,
         min: 1,
@@ -290,73 +293,73 @@ export const FIELDS = [
     ],
   },
   {
-    grp: "Teks",
+    grp: "Text",
     path: "style.color",
-    label: "Warna",
+    label: "Color",
     t: "color",
     when: isText,
   },
   {
-    grp: "Teks",
+    grp: "Text",
     path: "style.bold",
     label: "B",
-    tip: "Tebal",
+    tip: "Bold",
     t: "tog",
     cls: "b",
     when: isText,
   },
   {
-    grp: "Teks",
+    grp: "Text",
     path: "style.italic",
     label: "I",
-    tip: "Miring",
+    tip: "Italic",
     t: "tog",
     cls: "i",
     when: isText,
   },
   {
-    grp: "Teks",
+    grp: "Text",
     path: "style.align",
-    label: "Rata",
+    label: "Align",
     t: "seg",
     span: 2,
     when: isText,
     opts: [
-      ["left", ICON_LEFT, "Rata kiri"],
-      ["center", ICON_CENTER, "Rata tengah"],
-      ["right", ICON_RIGHT, "Rata kanan"],
-      ["justify", ICON_JUSTIFY, "Rata kiri-kanan (justify)"],
+      ["left", ICON_LEFT, "Align left"],
+      ["center", ICON_CENTER, "Align center"],
+      ["right", ICON_RIGHT, "Align right"],
+      ["justify", ICON_JUSTIFY, "Justify"],
     ],
   },
   {
-    grp: "Teks",
+    grp: "Text",
     path: "style.valign",
-    label: "Vertikal",
+    label: "Vertical",
     t: "seg",
     span: 2,
     when: isText,
     opts: [
-      ["top", ICON_TOP, "Rata atas"],
-      ["middle", ICON_MIDDLE, "Rata tengah"],
-      ["bottom", ICON_BOTTOM, "Rata bawah"],
+      ["top", ICON_TOP, "Align top"],
+      ["middle", ICON_MIDDLE, "Align middle"],
+      ["bottom", ICON_BOTTOM, "Align bottom"],
     ],
   },
 
-  // ---------- Warna ----------
+  // Color
   {
-    grp: "Warna",
+    grp: "Color",
     path: "color",
-    label: "Warna polos",
+    label: "Solid color",
     t: "color",
     span: 2,
     when: (l) => l.kind === "color",
   },
 
-  // ---------- Media ----------
+  // Media
   {
     grp: "Media",
     path: "scale",
-    label: "Skala",
+    label: "Scale",
     t: "sel",
     span: 2,
     when: (l) => isMedia(l) || isInput(l),
@@ -365,8 +368,8 @@ export const FIELDS = [
       ["SCALE_BEHAVIOR_FIT", "Fit"],
     ],
   },
-  { grp: "Media", path: "looped", label: "Ulang", t: "tog", when: isVideo },
-  { grp: "Media", path: "muted", label: "Bisu", t: "tog", when: isVideo },
+  { grp: "Media", path: "looped", label: "Loop", t: "tog", when: isVideo },
+  { grp: "Media", path: "muted", label: "Mute", t: "tog", when: isVideo },
 ];
 
 // ---------- akses nilai lewat path ----------

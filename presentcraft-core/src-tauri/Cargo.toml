@@ -16,7 +16,6 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.7.3", features = [] }
 prost-build = "0.13"
 
-
 [features]
 default = []
 ndi = ["dep:grafton-ndi"]
