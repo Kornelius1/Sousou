@@ -162,7 +162,12 @@
 
   const play = (el, kf, ms, easing, delay = 0) =>
     el
-      .animate(kf, { duration: ms, easing: easing || EASE_IO, fill: "both", delay })
+      .animate(kf, {
+        duration: ms,
+        easing: easing || EASE_IO,
+        fill: "both",
+        delay,
+      })
       .finished.catch(() => {});
 
   const afterPaint = () =>
@@ -251,6 +256,27 @@
     wrap.style.transformOrigin = "50% 50%";
   }
 
+  function fillText(el, layer) {
+    if (Array.isArray(layer.runs) && layer.runs.length) {
+      el.textContent = "";
+      for (const r of layer.runs) {
+        if (r.sup) {
+          const s = document.createElement("span");
+          s.textContent = r.text;
+          s.style.fontSize = "0.55em";
+          s.style.verticalAlign = "0.55em";
+          s.style.lineHeight = "0";
+          s.style.opacity = "0.85";
+          el.appendChild(s);
+        } else {
+          el.appendChild(document.createTextNode(r.text));
+        }
+      }
+    } else {
+      el.textContent = layer.text || "";
+    }
+  }
+
   function layerElement(layer, preview) {
     const wrap = document.createElement("div");
     applyLayerBox(wrap, layer);
@@ -286,7 +312,7 @@
         inner.style.width = "100%";
         inner.style.textAlign = st.align;
         inner.style.whiteSpace = "pre-line";
-        inner.textContent = layer.text || "";
+        fillText(inner, layer);
         wrap.appendChild(inner);
         break;
       }
@@ -330,7 +356,7 @@
     group.style.cssText =
       "position:absolute;inset:0;isolation:isolate;will-change:transform,opacity;";
     group.append(...next.childNodes);
-    group.dataset.txt = media.length ? "" : "1"; 
+    group.dataset.txt = media.length ? "" : "1";
 
     const olds = [...stage.children];
     stage.style.width = w + "px";
@@ -357,17 +383,21 @@
       return;
     }
 
-    const seq2 = group.dataset.txt === "1" && olds.every((o) => o.dataset.txt === "1") && 
-    fx.in[0].opacity === 0 && !!fx.out;
+    const seq2 =
+      group.dataset.txt === "1" &&
+      olds.every((o) => o.dataset.txt === "1") &&
+      fx.in[0].opacity === 0 &&
+      !!fx.out;
 
     const jobs = [];
     if (seq2) {
-      const half = T.msFg /2;
+      const half = T.msFg / 2;
       olds.forEach((o) => jobs.push(play(o, fx.out, half, fx.eout)));
       jobs.push(play(group, fx.in, half, fx.ein, half));
     } else {
       jobs.push(play(group, fx.in, T.msFg, fx.ein));
-      if (fx.out) olds.forEach((o) => jobs.push(play(o, fx.out, T.msFg, fx.eout)));
+      if (fx.out)
+        olds.forEach((o) => jobs.push(play(o, fx.out, T.msFg, fx.eout)));
     }
     await Promise.all(jobs);
 
@@ -589,6 +619,7 @@
     fitStage,
     renderThumbnail,
     renderBackground,
+    fillText,
     TEXT_DEFAULTS,
     applyLayerBox,
     ROTATION_SIGN,

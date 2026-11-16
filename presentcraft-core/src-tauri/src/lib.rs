@@ -13,6 +13,8 @@ mod camera;
 mod jsonfile;
 mod background;
 mod lib_commands;
+mod bible;
+// mod lyrics;
 use pro_parser::{parse_pro_file, parse_pro_file_with, MediaResolver, Slide};
 
 #[derive(serde::Serialize)]
@@ -167,6 +169,7 @@ pub fn run() {
 
             let dir = app.path().app_data_dir()?;
             app.manage(lib_commands::LibState::load(&dir));
+            app.manage(bible::BibleState::default());
 
             camera::start_server(app.state::<camera::CameraHub>().inner().clone())?;
 
@@ -230,6 +233,17 @@ if let Some(main) = app.get_webview_window("main") {
             lib_commands::library_move_item,
             lib_commands::library_sort_group,
             lib_commands::library_update_item,
+            bible::commands::bible_list,
+            bible::commands::bible_passage,
+            bible::commands::bible_search,
+            bible::commands::bible_import_usfm,
+            bible::commands::bible_download_usfm, 
+            bible::commands::bible_remove,
+            // lyrics::lyrics_status,
+            // lyrics::lyrics_set_key,
+            // lyrics::lyrics_test,
+            // lyrics::lyrics_search,
+            // lyrics::lyrics_get,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

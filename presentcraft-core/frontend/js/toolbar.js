@@ -1,13 +1,9 @@
-import { $, setStatus } from './utils.js';
+import { $ } from './utils.js';
 import { state } from './state.js';
 import { showSlide, toggleBlank } from './sorter/sorter.js';
 import { importFile } from "./sorter/bundle-import.js";
 import { closeMenus } from './menu.js';
-
-// Hook Alkitab: ganti isi fungsi ini saat fitur Alkitab dibuat.
-function openBible() {
-  setStatus('Fitur Alkitab belum dibuat. Tombolnya sudah siap dihubungkan.');
-}
+import { openBible } from './bible.js';
 
 export function initToolbar() {
   $('tb-bible').addEventListener('click', openBible);

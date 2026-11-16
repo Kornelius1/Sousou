@@ -31,6 +31,7 @@ prost-reflect = "0.14"
 grafton-ndi = { version = "0.9", optional = true }
 uuid = { version = "1", features = ["v4"] }
 natord = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 
 nokhwa = { version = "0.10", features = ["input-native"] }
 axum = "0.7"
@@ -39,6 +40,10 @@ tokio-stream = { version = "0.1", features = ["sync"] }
 futures-util = "0.3"
 bytes = "1"
 jpeg-encoder = "0.6"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }
+httpmock = "0.7"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

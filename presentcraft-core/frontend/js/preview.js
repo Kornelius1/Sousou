@@ -117,7 +117,7 @@ function layerEl(l) {
     el.style.flexDirection = "column";
     el.style.justifyContent = VALIGN[st.valign] || "center";
     const t = document.createElement("div");
-    t.textContent = l.text || "";
+    SR.fillText(t, l);
     t.style.cssText =
       `white-space:pre-wrap;word-break:break-word;font-family:${st.fontFamily};font-size:${st.fontSize}px;` +
       `color:${st.color};font-weight:${st.bold ? 700 : 400};font-style:${st.italic ? "italic" : "normal"};` +

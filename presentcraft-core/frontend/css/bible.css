@@ -1,0 +1,153 @@
+/* Dialog Alkitab. Ganti fallback variabel sesuai tema di base.css */
+.bible-box {
+  --bb-bg: var(--panel, #1f2023);
+  --bb-field: var(--field, #2a2b2f);
+  --bb-line: var(--line, #3a3b40);
+  --bb-text: var(--text, #d8d9dc);
+  --bb-dim: var(--text-dim, #8d8f96);
+  --bb-hover: rgba(255, 255, 255, 0.06);
+  --bb-sel: rgba(255, 255, 255, 0.16);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(820px, 94vw);
+  max-height: 92vh;
+  overflow: auto;
+  background: var(--bb-bg);
+  color: var(--bb-text);
+  border: 1px solid var(--bb-line);
+  color-scheme: dark;
+}
+.bible-box [hidden] { display: none !important; }
+
+/* scrollbar tipis & monokrom */
+.bible-box,
+.bible-box * {
+  scrollbar-width: thin;
+  scrollbar-color: #55565b transparent;
+}
+
+/* semua kontrol satu tinggi (tidak ikut tinggi dari inputs.css) */
+.bible-box select,
+.bible-box input:not([type="checkbox"]),
+.bible-box .cf-btn {
+  box-sizing: border-box;
+  height: 30px;
+  min-width: 0;
+  padding: 0 10px;
+  line-height: normal;
+  background: var(--bb-field);
+  color: var(--bb-text);
+  border: 1px solid var(--bb-line);
+  border-radius: 4px;
+}
+.bible-box select { padding-right: 4px; }
+.bible-box .cf-btn { padding: 0 16px; }
+.bible-box .cf-btn:hover:not(:disabled) { background: var(--bb-hover); }
+.bible-box .cf-btn:disabled { opacity: 0.45; }
+.bible-box input[type="checkbox"] { accent-color: #9a9ca3; }
+.bible-box input::placeholder { color: var(--bb-dim); opacity: 1; }
+.bible-box mark { background: rgba(255, 214, 102, 0.35); color: inherit; border-radius: 2px; }
+
+/* atas: terjemahan + kotak ketik */
+.bible-top { display: grid; grid-template-columns: 180px 1fr; gap: 8px; }
+.bible-search { position: relative; }
+.bible-search input { width: 100%; }
+.bible-sug {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 220px;
+  overflow: auto;
+  background: var(--bb-field);
+  border: 1px solid var(--bb-line);
+  border-radius: 4px;
+}
+.bible-sugi { padding: 6px 10px; cursor: pointer; }
+.bible-sugi:hover,
+.bible-sugi.on { background: var(--bb-sel); }
+
+/* tiga kolom: Kitab | Pasal | Ayat */
+.bible-cols {
+  display: grid;
+  grid-template-columns: 180px 112px 1fr;
+  gap: 8px;
+  height: clamp(260px, 46vh, 380px);
+}
+.bible-pane {
+  overflow: auto;
+  min-height: 0;
+  background: var(--bb-field);
+  border: 1px solid var(--bb-line);
+  border-radius: 4px;
+}
+.bible-h {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 10px 4px;
+  background: var(--bb-field);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bb-dim);
+}
+.bible-item { padding: 5px 10px; cursor: pointer; }
+.bible-item:hover { background: var(--bb-hover); }
+.bible-item.on { background: var(--bb-sel); font-weight: 600; }
+
+.bible-chapgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(34px, 1fr));
+  gap: 4px;
+  padding: 4px 6px 8px;
+}
+.bible-chap { padding: 5px 0; text-align: center; border-radius: 4px; cursor: pointer; }
+.bible-chap:hover { background: var(--bb-hover); }
+.bible-chap.on { background: var(--bb-sel); font-weight: 600; }
+
+.bible-pane.bible-verses { display: flex; flex-direction: column; overflow: hidden; }
+.bible-vhead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--bb-line);
+}
+.bible-box .bible-vhead .cf-btn { height: 24px; padding: 0 10px; }
+.bible-vtitle { flex: 1; font-weight: 600; }
+.bible-vbody { flex: 1; overflow: auto; padding: 4px; }
+.bible-note { padding: 8px; }
+
+.bible-verse {
+  display: flex;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.4;
+}
+.bible-verse:hover { background: var(--bb-hover); }
+.bible-verse.sel { background: var(--bb-sel); }
+.bible-verse b { min-width: 2em; text-align: right; color: var(--bb-dim); font-weight: 600; }
+
+.bible-hit { padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+.bible-hit:hover { background: var(--bb-hover); }
+.bible-hit b { display: block; font-size: 12px; color: var(--bb-dim); }
+
+/* opsi + footer */
+.bible-opts { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; }
+.bible-group { display: flex; align-items: center; gap: 12px; }
+.bible-opts label { display: flex; align-items: center; gap: 6px; }
+.bible-foot { display: flex; align-items: center; gap: 8px; }
+.bible-sum { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bible-sum.dim { color: var(--bb-dim); }
+
+/* import (dilipat) */
+.bible-imp summary { cursor: pointer; color: var(--bb-dim); }
+.bible-improw { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin: 8px 0 6px; }
+.bible-hint { opacity: 0.75; }
