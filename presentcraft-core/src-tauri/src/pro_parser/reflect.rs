@@ -1,7 +1,7 @@
 use prost_reflect::{DescriptorPool, DynamicMessage, Kind, ReflectMessage, Value};
 use std::sync::OnceLock;
 
-static DESCRIPTORS: &[u8] = include_bytes!("../../pp_descriptors.bin");
+static DESCRIPTORS: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/custom_descriptors.bin"));
 
 pub(super) fn pool() -> &'static DescriptorPool {
     static POOL: OnceLock<DescriptorPool> = OnceLock::new();

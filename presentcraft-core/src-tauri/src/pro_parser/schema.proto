@@ -1,0 +1,219 @@
+syntax = "proto3";
+package rv.data;
+
+enum Action_ActionType {
+  ACTION_TYPE_UNKNOWN = 0;
+  ACTION_TYPE_STAGE_LAYOUT = 1;
+  ACTION_TYPE_MEDIA = 2;
+  ACTION_TYPE_TIMER = 3;
+  ACTION_TYPE_COMMUNICATION = 4;
+  ACTION_TYPE_CLEAR = 5;
+  ACTION_TYPE_PROP = 6;
+  ACTION_TYPE_MASK = 7;
+  ACTION_TYPE_MESSAGE = 8;
+  ACTION_TYPE_SOCIAL_MEDIA = 9;
+  ACTION_TYPE_MULTISCREEN = 10;
+  ACTION_TYPE_PRESENTATION_SLIDE = 11;
+  ACTION_TYPE_FOREGROUND_MEDIA = 12;
+  ACTION_TYPE_BACKGROUND_MEDIA = 13;
+  ACTION_TYPE_PRESENTATION_DOCUMENT = 14;
+  ACTION_TYPE_PROP_SLIDE = 15;
+  ACTION_TYPE_EXTERNAL_PRESENTATION = 17;
+  ACTION_TYPE_AUDIENCE_LOOK = 18;
+  ACTION_TYPE_AUDIO_INPUT = 19;
+  ACTION_TYPE_AUDIO_BIN_PLAYLIST = 20;
+  ACTION_TYPE_MEDIA_BIN_PLAYLIST = 21;
+  ACTION_TYPE_SLIDE_DESTINATION = 22;
+  ACTION_TYPE_MACRO = 23;
+  ACTION_TYPE_CLEAR_GROUP = 24;
+  ACTION_TYPE_CAPTURE = 25;
+  ACTION_TYPE_LIBRARY_PLAYLIST = 26;
+}
+
+enum Media_ScaleBehavior {
+  SCALE_BEHAVIOR_FIT = 0;
+  SCALE_BEHAVIOR_FILL = 1;
+  SCALE_BEHAVIOR_STRETCH = 2;
+  SCALE_BEHAVIOR_CUSTOM = 3;
+}
+
+enum Media_TransportProperties_PlaybackBehavior {
+  PLAYBACK_BEHAVIOR_STOP = 0;
+  PLAYBACK_BEHAVIOR_LOOP = 1;
+  PLAYBACK_BEHAVIOR_LOOP_FOR_COUNT = 2;
+  PLAYBACK_BEHAVIOR_LOOP_FOR_TIME = 3;
+}
+
+message Action {
+  Action_ActionType type = 9;
+  Action_MediaType media = 20;
+  Action_SlideType slide = 23;
+}
+
+message Action_MediaType {
+  Media element = 5;
+}
+
+message Action_SlideType {
+  PresentationSlide presentation = 2;
+}
+
+message Color {
+  float red = 1;
+  float green = 2;
+  float blue = 3;
+  float alpha = 4;
+}
+
+message Cue {
+  UUID uuid = 1;
+  repeated Action actions = 10;
+}
+
+message FileProperties {
+  URL local_url = 1;
+  FileProperties_RemoteProperties remote_properties = 2;
+}
+
+message FileProperties_RemoteProperties {
+  FileProperties_RemoteProperties_ProContent procontent = 1;
+}
+
+message FileProperties_RemoteProperties_ProContent {
+  string download_identifier = 1;
+}
+
+message Graphics_Element {
+  Graphics_Rect bounds = 3;
+  double rotation = 4;
+  double opacity = 5;
+  Graphics_Fill fill = 9;
+  Graphics_Text text = 13;
+}
+
+message Graphics_Fill {
+  bool enable = 4;
+  Color color = 1;
+  Media media = 3;
+}
+
+message Graphics_Point {
+  double x = 1;
+  double y = 2;
+}
+
+message Graphics_Rect {
+  Graphics_Point origin = 1;
+  Graphics_Size size = 2;
+}
+
+message Graphics_Size {
+  double width = 1;
+  double height = 2;
+}
+
+message Graphics_Text {
+  bytes rtf_data = 5;
+}
+
+message Group {
+  UUID uuid = 1;
+  string name = 2;
+  Color color = 3;
+}
+
+message Media {
+  URL url = 2;
+  Media_ImageTypeProperties image = 5;
+  Media_VideoTypeProperties video = 6;
+}
+
+message Media_Audio_Channel {
+  uint32 index = 1;
+  bool muted = 2;
+  double volume = 3;
+  bool compress_limit = 4;
+  repeated Media_Audio_Channel_Output outputs = 5;
+}
+
+message Media_Audio_Channel_Output {
+  int32 channel_index = 2;
+}
+
+message Media_AudioProperties {
+  repeated Media_Audio_Channel audio_channels = 2;
+}
+
+message Media_DrawingProperties {
+  Media_ScaleBehavior scale_behavior = 1;
+  Graphics_Rect custom_image_bounds = 7;
+}
+
+message Media_ImageTypeProperties {
+  Media_DrawingProperties drawing = 1;
+  FileProperties file = 2;
+}
+
+message Media_TransportProperties {
+  Media_TransportProperties_PlaybackBehavior playback_behavior = 12;
+}
+
+message Media_VideoProperties {
+}
+
+message Media_VideoTypeProperties {
+  Media_DrawingProperties drawing = 1;
+  Media_AudioProperties audio = 2;
+  Media_TransportProperties transport = 3;
+  Media_VideoProperties video = 4;
+  FileProperties file = 5;
+}
+
+message Presentation {
+  UUID uuid = 2;
+  string name = 3;
+  UUID selected_arrangement = 10;
+  repeated Presentation_Arrangement arrangements = 11;
+  repeated Presentation_CueGroup cue_groups = 12;
+  repeated Cue cues = 13;
+  Presentation_CCLI ccli = 14;
+}
+
+message Presentation_Arrangement {
+  UUID uuid = 1;
+  repeated UUID group_identifiers = 3;
+}
+
+message Presentation_CCLI {
+  string song_title = 3;
+}
+
+message Presentation_CueGroup {
+  Group group = 1;
+  repeated UUID cue_identifiers = 2;
+}
+
+message PresentationSlide {
+  Slide base_slide = 1;
+}
+
+message Slide {
+  repeated Slide_Element elements = 1;
+  Graphics_Size size = 6;
+}
+
+message Slide_Element {
+  Graphics_Element element = 1;
+}
+
+message URL {
+  URL_LocalRelativePath local = 4;
+}
+
+message URL_LocalRelativePath {
+  string path = 2;
+}
+
+message UUID {
+  string string = 1;
+}
