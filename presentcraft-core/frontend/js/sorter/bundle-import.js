@@ -18,7 +18,7 @@ export async function importFile() {
   const filePath = await openDialog({
     multiple: false,
     filters: [
-      { name: "Presentcraft", extensions: ["zip"] },
+      { name: "Lentera Worship", extensions: ["zip"] },
     ],
   });
   if (!filePath) return;

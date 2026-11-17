@@ -27,9 +27,10 @@ pub fn passage(t: &Translation, r: &Ref) -> Result<Passage, String> {
         .iter()
         .find(|b| b.id == def.id)
         .ok_or_else(|| format!("{name} is not in this translation."))?;
-    let chap = book
-        .chapters
-        .get(r.chapter as usize - 1)
+    let chap = r
+        .chapter
+        .checked_sub(1)
+        .and_then(|idx| book.chapters.get(idx as usize))
         .ok_or_else(|| format!("{name} has no chapter {}.", r.chapter))?;
     let (a, b) = match (r.from, r.to) {
         (None, _) => (1, chap.len() as u32),

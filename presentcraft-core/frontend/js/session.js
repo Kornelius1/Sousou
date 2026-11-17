@@ -7,7 +7,7 @@ import { lib } from "./library.js";
 import * as G from "./groups.js";
 import { emit } from "./bus.js";
 
-const FILTERS = [{ name: "PresentCraft session", extensions: ["ppsession"] }];
+const FILTERS = [{ name: "Lentera Worship session", extensions: ["ppsession"] }];
 
 /** Dialog pilihan cakupan. Resolve { workspace, background } atau null bila dibatalkan. */
 function chooseScope() {

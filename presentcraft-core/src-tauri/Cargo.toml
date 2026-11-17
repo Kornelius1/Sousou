@@ -33,7 +33,7 @@ grafton-ndi = { version = "0.9", optional = true }
 uuid = { version = "1", features = ["v4"] }
 natord = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
-
+rusqlite = { version = "0.32", features = ["bundled"] }
 nokhwa = { version = "0.10", features = ["input-native"] }
 axum = "0.7"
 tokio = { version = "1", features = ["net", "sync"] }

@@ -18,7 +18,11 @@ pub fn save(dir: &Path, t: &Translation) -> Result<(), String> {
     let tmp = dir.join(format!("{id}.json.tmp"));
     fs::write(&tmp, serde_json::to_vec(t).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
     fs::rename(&tmp, dir.join(format!("{id}.json"))).map_err(|e| e.to_string())?;
-    let info = Info { meta: t.meta.clone(), books: t.books.len() };
+    let info = Info { 
+        meta: t.meta.clone(), 
+        books: t.books.len(), 
+        book_ids: t.books.iter().map(|b| b.id.clone()).collect(), 
+    };
     fs::write(
         dir.join(format!("{id}.meta.json")),
         serde_json::to_vec(&info).map_err(|e| e.to_string())?,

@@ -1,17 +1,24 @@
-// The book and chapter columns.
 import { mk } from "./view.js";
 import { BOOKS, bookName } from "./books.js";
+import { translationBooks } from "./importer.js";
 
-/** Book column: Old / New Testament headings and names in the translation's language. */
 export function renderBooks(S, v, act) {
   v.booksPane.replaceChildren();
   S.bookEls = new Map();
-  for (const [title, ot] of [
-    [S.ui.oldTestament, true],
-    [S.ui.newTestament, false],
-  ]) {
+
+  const allowed = translationBooks(v.tr.value);
+  const avail = allowed ? BOOKS.filter((x) => allowed.has(x.code)) : BOOKS;
+
+  const sections = [
+    [S.ui.oldTestament, avail.filter((x) => x.ot)],
+    [S.ui.newTestament, avail.filter((x) => !x.ot && !x.dc)],
+    [S.ui.deuterocanon, avail.filter((x) => x.dc)],
+  ];
+
+  for (const [title, list] of sections) {
+    if (!list.length) continue;
     v.booksPane.append(mk("div", "bible-h", title));
-    for (const b of BOOKS.filter((x) => x.ot === ot)) {
+    for (const b of list) {
       const e = mk("div", "bible-item", bookName(b, S.lang));
       e.addEventListener("click", () => act.goTo(b, 1));
       S.bookEls.set(b.code, e);
@@ -21,7 +28,6 @@ export function renderBooks(S, v, act) {
   markNav(S);
 }
 
-/** Chapter column for the current book. */
 export function renderChaps(S, v, act) {
   v.chapPane.replaceChildren(mk("div", "bible-h", S.ui.chapter));
   S.chapEls = [];
@@ -37,7 +43,6 @@ export function renderChaps(S, v, act) {
   markNav(S);
 }
 
-/** Highlight the current book and chapter and keep them in view. */
 export function markNav(S) {
   const code = S.book && S.book.code;
   S.bookEls?.forEach((e, c) => e.classList.toggle("on", c === code));

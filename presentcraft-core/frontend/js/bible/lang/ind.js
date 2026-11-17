@@ -1,5 +1,6 @@
 // Bahasa Indonesia.
 export default {
+  aliases: ["id", "toba", "bbc", "karo", "btx", "simalungun", "bts", "angkola", "akb"],
   ui: {
     all: "Semua",
     oldTestament: "Perjanjian Lama",
@@ -19,6 +20,7 @@ export default {
     noHits: "Tidak ada ayat yang memuat semua kata itu. Coba kata yang lebih sedikit.",
     example: "Ketik ayat atau kata, mis. Yoh 3:16-18",
     hint: "Pilih kitab dan pasal di kiri, atau ketik ayat atau kata di atas.",
+    deuterocanon: "Deuterokanonika"
   },
   books: `
 GEN=Kejadian|Kej
@@ -87,5 +89,14 @@ JAS=Yakobus|Yak
 3JN=3 Yohanes|3Yoh
 JUD=Yudas|Yud
 REV=Wahyu|Why
+TOB=Tobit|Tob|Tb
+JDT=Yudit|Ydt|Yd
+ESG=Tambahan Ester|Est Yun|Tamb Est|T Est
+WIS=Kebijaksanaan Salomo|Keb|Keb Sal|Kb
+SIR=Yesus bin Sirakh|Sir|Si
+BAR=Barukh|Bar|Br
+S3Y=Tambahan Daniel|Dan Yun|Tamb Dan|T Dan|Doa Azarya
+1MA=1 Makabe|1Mak|1 Mak|1Mk
+2MA=2 Makabe|2Mak|2 Mak|2Mk
 `,
 };

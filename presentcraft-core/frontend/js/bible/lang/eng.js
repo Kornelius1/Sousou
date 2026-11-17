@@ -1,5 +1,6 @@
 // English. Copy this file to add a language (see lang/index.js).
 export default {
+  aliases: ["en"],
   ui: {
     all: "All",
     oldTestament: "Old Testament",
@@ -19,6 +20,7 @@ export default {
     noHits: "No verse contains all of these words. Try fewer words.",
     example: "Type a verse or words, e.g. John 3:16-18",
     hint: "Pick a book and chapter on the left, or type a verse or words above.",
+    deuterocanon: "Deuterocanon",
   },
   books: `
 GEN=Genesis|Gen
@@ -87,5 +89,14 @@ JAS=James|Jas
 3JN=3 John|3Jn
 JUD=Jude
 REV=Revelation|Rev
+TOB=Tobit|Tob|Tb
+JDT=Judith|Jdt|Jth
+ESG=Additions to Esther|AddEsth|Add Esth|EsthGr
+WIS=Wisdom|Wis|Wisdom of Solomon|Wisd
+SIR=Sirach|Sir|Ecclus|Ecclesiasticus
+BAR=Baruch|Bar
+S3Y=Additions to Daniel|PrAzar|Pr Azar|Song of the Three|Sus|Bel
+1MA=1 Maccabees|1Macc|1 Macc|1Mac
+2MA=2 Maccabees|2Macc|2 Macc|2Mac
 `,
 };

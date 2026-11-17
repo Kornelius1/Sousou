@@ -1,13 +1,14 @@
-// Installed translations (select box) and the Download / Import zip buttons.
 import { invoke, openDialog } from "../tauri.js";
 import { setStatus } from "../utils.js";
 import { CATALOG } from "./catalog.js";
+import { resolveLang } from "./lang/index.js";
 import { mk } from "./view.js";
 
-const LANG_OF = new Map(); // translation id -> language code
+const LANG_OF = new Map();
+const BOOKS_OF = new Map();
 
-/** Language of an installed translation (backend's `lang`, else the catalog's, else English). */
 export const translationLang = (id) => LANG_OF.get(id) || "eng";
+export const translationBooks = (id) => BOOKS_OF.get(id) || null;
 
 export async function loadTranslations(v, pick) {
   const keep = v.tr.value;
@@ -19,8 +20,13 @@ export async function loadTranslations(v, pick) {
   }
   v.tr.replaceChildren();
   LANG_OF.clear();
+  BOOKS_OF.clear();
   for (const t of list) {
-    LANG_OF.set(t.id, t.lang || CATALOG.find((c) => c.id === t.id)?.lang || "eng");
+    const rawLang = t.lang || CATALOG.find((c) => c.id === t.id)?.lang || "eng";
+    LANG_OF.set(t.id, resolveLang(rawLang));
+    if (Array.isArray(t.book_ids) && t.book_ids.length) {
+      BOOKS_OF.set(t.id, new Set(t.book_ids));
+    }
     const o = mk("option", null, `${t.name} (${t.books} books)`);
     o.value = t.id;
     v.tr.appendChild(o);

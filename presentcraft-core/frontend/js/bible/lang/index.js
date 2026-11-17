@@ -1,13 +1,8 @@
-// Language registry. To add a language:
-//   1. copy eng.js to lang/<code>.js (code = ISO 639-3, same as `lang` in catalog.js) and translate it
-//   2. import it below and add it to REGISTRY
-// Anything a language file leaves out (a UI label, a book) falls back to English.
 import eng from "./eng.js";
 import ind from "./ind.js";
 
 const REGISTRY = { eng, ind };
 
-/** "GEN=Genesis|Gen" lines -> { GEN: { name: "Genesis", abbr: ["Gen"] } } */
 function parseBooks(text) {
   const out = {};
   for (const line of text.trim().split("\n")) {
@@ -19,12 +14,28 @@ function parseBooks(text) {
   return out;
 }
 
-const LANGS = Object.fromEntries(
-  Object.entries(REGISTRY).map(([code, l]) => [
-    code,
-    { code, ui: { ...eng.ui, ...l.ui }, books: parseBooks(l.books || "") },
-  ]),
-);
+const LANGS = {};
+const ALIAS_MAP = {};
 
-export const getLang = (code) => LANGS[code] || LANGS.eng;
+for (const [code, l] of Object.entries(REGISTRY)) {
+  LANGS[code] = {
+    code,
+    ui: { ...eng.ui, ...l.ui },
+    books: parseBooks(l.books || ""),
+  };
+  ALIAS_MAP[code.toLowerCase()] = code;
+  for (const alias of l.aliases || []) {
+    ALIAS_MAP[alias.toLowerCase()] = code;
+  }
+}
+
+export function resolveLang(raw) {
+  const key = String(raw || "").trim().toLowerCase();
+  if (!key) return "eng";
+  if (ALIAS_MAP[key]) return ALIAS_MAP[key];
+  const base = key.split(/[-_]/)[0];
+  return ALIAS_MAP[base] || "eng";
+}
+
+export const getLang = (code) => LANGS[resolveLang(code)] || LANGS.eng;
 export const allLangs = () => Object.values(LANGS);

@@ -235,12 +235,17 @@ export function openBible() {
       later(() => doSearch(q), immediate, 350);
   }
 
+  function defaultBookForTr() {
+    const code = v.tr.value === "tbdc" ? "TOB" : "JHN";
+    return BOOKS.find((b) => b.code === code) || BOOKS[0];
+  }
+
   function start() {
     if (!v.tr.value) return;
-    const pos = lastPos || {
-      book: BOOKS.find((b) => b.code === "JHN"),
-      chapter: 1,
-    };
+    const isDcTr = v.tr.value === "tbdc";
+    const validLast =
+      lastPos && lastPos.book && (isDcTr ? lastPos.book.dc : !lastPos.book.dc);
+    const pos = validLast ? lastPos : { book: defaultBookForTr(), chapter: 1 };
     goTo(pos.book, pos.chapter);
   }
 
@@ -295,8 +300,16 @@ export function openBible() {
   v.tr.addEventListener("change", () => {
     setLang();
     redraw();
-    if (S.book && S.chapter) goTo(S.book, S.chapter, LIST([...S.sel]));
-    else if (S.hits) dispatch(true);
+    if (S.book && S.chapter) {
+      const isDcTr = v.tr.value === "tbdc";
+      if (isDcTr !== Boolean(S.book.dc)) {
+        goTo(defaultBookForTr(), 1);
+      } else {
+        goTo(S.book, S.chapter, LIST([...S.sel]));
+      }
+    } else if (S.hits) {
+      dispatch(true);
+    }
   });
 
   v.add.addEventListener("click", async () => {

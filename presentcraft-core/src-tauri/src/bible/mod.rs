@@ -43,12 +43,28 @@ pub struct Info {
     #[serde(flatten)]
     pub meta: Meta,
     pub books: usize,
+    #[serde(default)]
+    pub book_ids: Vec<String>,
 }
 
 #[derive(Default)]
 pub struct BibleState {
     pub cache: Mutex<HashMap<String, Arc<Translation>>>,
 }
+
+
+impl BibleState {
+    /// Memuat seluruh terjemahan dari alkitab.sqlite ke dalam cache memori
+    pub fn load_sqlite(&self, db_path: &Path) -> Result<(), String> {
+        let list = sqlite_loader::load_translations_from_sqlite(db_path)?;
+        let mut cache = self.cache.lock().map_err(|e| e.to_string())?;
+        for tr in list {
+            cache.insert(tr.meta.id.clone(), tr);
+        }
+        Ok(())
+    }
+}
+
 
 // ---------------------------------------------------------------- modules
 
@@ -58,6 +74,7 @@ mod store;
 mod reference;
 mod query;
 mod download;
+mod sqlite_loader;
 pub mod commands;
 
 #[allow(unused_imports)]

@@ -167,9 +167,19 @@ pub fn run() {
         .setup(|app| {
             use tauri::Manager;
 
+            let bible_state = bible::BibleState::default();
+            if let Ok(sqlite_path) = app
+                .path()
+                .resolve("resources/alkitab.sqlite", tauri::path::BaseDirectory::Resource)
+            {
+                if let Err(e) = bible_state.load_sqlite(&sqlite_path) {
+                    eprintln!("Peringatan load SQLite Alkitab: {}", e);
+                }
+            }
+            app.manage(bible_state);
+
             let dir = app.path().app_data_dir()?;
             app.manage(lib_commands::LibState::load(&dir));
-            app.manage(bible::BibleState::default());
 
             camera::start_server(app.state::<camera::CameraHub>().inner().clone())?;
 
@@ -178,7 +188,7 @@ pub fn run() {
     "audience",
     tauri::WebviewUrl::App("audience.html".into()),
 )
-.title("PresentCraft - Audience Display")
+.title("Lentera Worship - Audience Display")
 .inner_size(1280.0, 720.0)
 .visible(false)
 .build()?;

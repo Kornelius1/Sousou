@@ -5,5 +5,5 @@ export const openDialog = (opts) => T.dialog.open(opts);
 export const emitEvent = (name, payload) => T.event.emit(name, payload);
 export const listen = (name, cb) => T.event.listen(name, cb);
 export const confirmDialog = (msg) =>
-  T.dialog.confirm(msg, { title: 'PresentCraft', kind: 'warning' });
+  T.dialog.confirm(msg, { title: 'Lentera Worship', kind: 'warning' });
 export const saveDialog = (opts) => T.dialog.save(opts);

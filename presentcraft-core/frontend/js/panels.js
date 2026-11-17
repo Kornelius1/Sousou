@@ -4,7 +4,7 @@ const LIMITS = {
 };
 const SORTER_MIN = 400;
 const COLLAPSED_W = 0;   // sama dengan --lib: 0px / --props: 0px di CSS
-const KEY = 'presentcraft.layout';
+const KEY = 'lentera.layout';
 
 function load() {
   try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; }

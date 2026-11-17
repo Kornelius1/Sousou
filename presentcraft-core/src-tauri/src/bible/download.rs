@@ -17,7 +17,7 @@ pub fn source_url(id: &str) -> Option<&'static str> {
 pub async fn fetch_zip(url: &str, dest: &Path) -> Result<(), String> {
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(120))
-        .user_agent("PresentCraft")
+        .user_agent("LenteraWorship/0.1.0")
         .build()
         .map_err(|e| e.to_string())?;
     let bytes = client

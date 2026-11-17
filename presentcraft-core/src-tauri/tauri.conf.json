@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "PresentCraft",
+  "productName": "Lentera Worship",
   "version": "0.1.0",
-  "identifier": "com.presentcraft.app",
+  "identifier": "com.lentera.worship",
   "build": {
     "frontendDist": "../frontend"
   },
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "PresentCraft - Control Center",
+        "title": "Lentera Worship - Control Center",
         "width": 1280,
         "height": 760,
         "minWidth": 960,
@@ -34,9 +34,6 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
-    }
+    ]
   }
 }

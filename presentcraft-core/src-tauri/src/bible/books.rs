@@ -1,4 +1,3 @@
-
 // ---------------------------------------------------------------- books
 use std::{collections::HashMap, sync::OnceLock};
 
@@ -15,7 +14,8 @@ macro_rules! b {
     };
 }
 
-pub(super) const BOOKS: [BookDef; 66] = [
+pub(super) const BOOKS: [BookDef; 75] = [
+    // Old Testament (0..38)
     b!("GEN", "Kejadian", "Genesis", ["kej", "gen", "ge"]),
     b!("EXO", "Keluaran", "Exodus", ["kel", "exod", "ex"]),
     b!("LEV", "Imamat", "Leviticus", ["im", "lev", "le"]),
@@ -55,6 +55,7 @@ pub(super) const BOOKS: [BookDef; 66] = [
     b!("HAG", "Hagai", "Haggai", []),
     b!("ZEC", "Zakharia", "Zechariah", ["za", "zak", "zech"]),
     b!("MAL", "Maleakhi", "Malachi", []),
+    // New Testament (39..65)
     b!("MAT", "Matius", "Matthew", ["mat", "matt", "mt"]),
     b!("MRK", "Markus", "Mark", ["mrk", "mk", "mar"]),
     b!("LUK", "Lukas", "Luke", ["luk", "lk"]),
@@ -82,6 +83,16 @@ pub(super) const BOOKS: [BookDef; 66] = [
     b!("3JN", "3 Yohanes", "3 John", ["3yoh", "3jhn"]),
     b!("JUD", "Yudas", "Jude", ["yud"]),
     b!("REV", "Wahyu", "Revelation", ["why", "re"]),
+    // Deuterocanonical (66..74)
+    b!("TOB", "Tobit", "Tobit", ["tob", "tb"]),
+    b!("JDT", "Yudit", "Judith", ["ydt", "yd", "jdt", "jth"]),
+    b!("ESG", "Tambahan Ester", "Additions to Esther", ["estyun", "tambest", "test", "addesth", "esthgr"]),
+    b!("WIS", "Kebijaksanaan Salomo", "Wisdom", ["keb", "kebsal", "kb", "wis", "wisdomofsolomon", "wisd"]),
+    b!("SIR", "Yesus bin Sirakh", "Sirach", ["sir", "si", "ecclus", "ecclesiasticus"]),
+    b!("BAR", "Barukh", "Baruch", ["bar", "br"]),
+    b!("S3Y", "Tambahan Daniel", "Additions to Daniel", ["danyun", "tambdan", "tdan", "doaazarya", "prazar", "songofthethree", "sus", "bel"]),
+    b!("1MA", "1 Makabe", "1 Maccabees", ["1mak", "1mk", "1macc", "1mac"]),
+    b!("2MA", "2 Makabe", "2 Maccabees", ["2mak", "2mk", "2macc", "2mac"]),
 ];
 
 /// Lowercase, letters and digits only: "1 Kor." -> "1kor".
