@@ -1,10 +1,10 @@
 [package]
-name = "app"
+name = "lentera-worship"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "Church presentation software for song lyrics, Bible verses, and worship slides"
+authors = ["Kornelius"]
 license = ""
-repository = ""
+repository = "https://github.com/Kornelius1/Sousou"
 edition = "2024"
 rust-version = "1.90"
 

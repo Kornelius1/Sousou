@@ -77,36 +77,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "axum",
- "bytes",
- "futures-util",
- "grafton-ndi",
- "httpmock",
- "jpeg-encoder",
- "log",
- "natord",
- "nokhwa",
- "prost-build",
- "prost-reflect",
- "reqwest 0.12.28",
- "rusqlite",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tokio",
- "tokio-stream",
- "uuid",
- "winreg 0.52.0",
- "zip",
-]
-
-[[package]]
 name = "arbitrary"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2662,6 +2632,36 @@ name = "lazycell"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
+
+[[package]]
+name = "lentera-worship"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "bytes",
+ "futures-util",
+ "grafton-ndi",
+ "httpmock",
+ "jpeg-encoder",
+ "log",
+ "natord",
+ "nokhwa",
+ "prost-build",
+ "prost-reflect",
+ "reqwest 0.12.28",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-log",
+ "tokio",
+ "tokio-stream",
+ "uuid",
+ "winreg 0.52.0",
+ "zip",
+]
 
 [[package]]
 name = "levenshtein"
