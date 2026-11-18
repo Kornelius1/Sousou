@@ -18,6 +18,11 @@
     <img src="docs/images/download-button-en.svg" alt="Download Lentera Worship for Windows" width="300">
   </a>
 </p>
+<p align="center">
+  <img src="https://img.shields.io/github/downloads/Kornelius1/lentera-worship/total?style=flat&label=downloads&labelColor=0A1F3D&color=EA2227" alt="Total downloads">
+  <img src="https://img.shields.io/github/v/release/Kornelius1/lentera-worship?style=flat&label=release&labelColor=0A1F3D&color=F0BE5F" alt="Latest release">
+  <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-0A1F3D?style=flat&labelColor=0A1F3D&color=EA2227" alt="License">
+</p>
 
 ![Lentera Worship screenshot](docs/images/Screenshot1.png)
 
