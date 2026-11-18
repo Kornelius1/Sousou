@@ -1,0 +1,19 @@
+Terjemahan ini untuk memudahkan membaca. Jika ada perbedaan, versi bahasa Inggris yang berlaku.
+
+Aplikasi ini menyertakan library runtime NDI® (Processing.NDI.Lib.x64.dll) dari NDI SDK, yang disediakan oleh Vizrt NDI AB. Library ini dilisensikan di bawah NDI SDK License Agreement (http://ndi.link/ndisdk_license), bukan di bawah lisensi MIT/Apache-2.0 milik aplikasi ini.
+
+Copyright (C) 2023-2026 Vizrt NDI AB. All rights reserved.
+
+Anda setuju bahwa Anda tidak akan:
+(a) memodifikasi perangkat lunak NDI atau bagian apa pun darinya;
+(b) melakukan reverse engineering, membongkar (disassemble), mendekompilasi, atau mengompilasi ulang perangkat lunak NDI atau protokol apa pun yang digunakannya, atau mencoba melakukannya;
+(c) menghindari batasan teknis apa pun pada perangkat lunak NDI; atau
+(d) menghapus, menyamarkan, atau mengubah pemberitahuan atau label hak milik apa pun pada perangkat lunak NDI.
+
+PERANGKAT LUNAK NDI DISEDIAKAN "APA ADANYA" (AS IS). Vizrt NDI AB dan para pemberi lisensinya menyangkal semua garansi dan, sejauh diizinkan oleh hukum yang berlaku, semua tanggung jawab atas kerugian langsung, tidak langsung, insidental, atau konsekuensial yang timbul dari penggunaan aplikasi ini.
+
+Anda akan mematuhi semua hukum dan peraturan pengendalian ekspor yang berlaku, termasuk hukum Amerika Serikat.
+
+Jika Anda mengembangkan produk dengan memakai komponen NDI dari aplikasi ini, Anda wajib mematuhi NDI SDK License Agreement dan mencantumkan ketentuan di bagian ini dalam perjanjian lisensi pengguna akhir Anda sendiri.
+
+NDI® adalah merek dagang terdaftar milik Vizrt NDI AB. Lentera Worship tidak berafiliasi dengan atau didukung oleh Vizrt NDI AB.

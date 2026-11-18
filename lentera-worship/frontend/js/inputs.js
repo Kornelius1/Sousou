@@ -1,5 +1,6 @@
 import { invoke } from "./tauri.js";
 import { syncCamsSoon } from "./cam-usage.js";
+import { ensureNdiTermsIfEnabled } from "./ndi-terms.js";
 
 const NDI_ERRORS = {
   NDI_DISABLED: "This build does not include NDI.",
@@ -300,6 +301,7 @@ async function ndiScan() {
   if (!sel) return;
   sel.innerHTML = '<option value="">Searching for NDI sources…</option>';
   try {
+    await ensureNdiTermsIfEnabled();
     const list = await invoke("ndi_discover");
     const it = cur();
     sel.replaceChildren(

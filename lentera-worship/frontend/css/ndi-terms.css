@@ -1,0 +1,203 @@
+#ndi-terms-dlg {
+  width: min(640px, 92vw);
+  max-height: 88vh;
+  padding: 0;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  background: #1b1b1b;
+  color: #e8e8e8;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+#ndi-terms-dlg[open] { display: flex; flex-direction: column; }
+#ndi-terms-dlg::backdrop { background: rgba(0, 0, 0, 0.65); }
+
+.ndi-terms-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid #2e2e2e;
+}
+.ndi-terms-title { margin: 0; font-size: 16px; font-weight: 600; }
+.ndi-terms-lang { display: flex; align-items: center; gap: 8px; color: #9a9a9a; }
+.ndi-terms-select {
+  background: #262626; color: #e8e8e8; border: 1px solid #3a3a3a;
+  border-radius: 6px; padding: 5px 8px; font-size: 13px;
+}
+
+.ndi-terms-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px; min-height: 0; }
+.ndi-terms-text {
+  white-space: pre-wrap; overflow: auto; max-height: 42vh;
+  padding: 12px 14px; background: #141414; border: 1px solid #2e2e2e; border-radius: 6px;
+  font-size: 12.5px; line-height: 1.55; color: #d6d6d6;
+}
+.ndi-terms-link { font-size: 12px; }
+.ndi-terms-link a { color: #6cb6ff; }
+.ndi-terms-check { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.ndi-terms-note { color: #8a8a8a; font-size: 11.5px; }
+.ndi-terms-declined { margin: 0; color: #ffb4a8; font-size: 12.5px; }
+
+.ndi-terms-foot {
+  display: flex; justify-content: flex-end; gap: 8px;
+  padding: 12px 20px 16px; border-top: 1px solid #2e2e2e;
+}
+.ndi-terms-btn {
+  padding: 7px 16px; border-radius: 6px; border: 1px solid #3a3a3a;
+  background: #262626; color: #e8e8e8; font-size: 13px; cursor: pointer;
+}
+.ndi-terms-btn:hover:not(:disabled) { background: #303030; }
+.ndi-terms-primary { background: #2f6fed; border-color: #2f6fed; color: #fff; }
+.ndi-terms-primary:hover:not(:disabled) { background: #3d7bf5; }
+.ndi-terms-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+
+.ndi-terms-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 30px;
+  line-height: 20px;
+  padding: 0 28px 0 10px;
+  background-color: #262626;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239a9a9a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  color: #e8e8e8;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  color-scheme: dark;
+}
+.ndi-terms-select:hover { border-color: #4a4a4a; }
+.ndi-terms-select:focus-visible {
+  outline: none;
+  border-color: #2f6fed;
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.25);
+}
+
+.ndi-terms-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  background: #262626;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ndi-terms-check input[type="checkbox"]:hover { border-color: #6a6a6a; }
+.ndi-terms-check input[type="checkbox"]::after {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  clip-path: polygon(14% 44%, 0 59%, 40% 100%, 100% 20%, 85% 6%, 40% 70%);
+  transform: scale(0);
+  transition: transform 0.12s;
+}
+.ndi-terms-check input[type="checkbox"]:checked {
+  background: #2f6fed;
+  border-color: #2f6fed;
+}
+.ndi-terms-check input[type="checkbox"]:checked::after { transform: scale(1); }
+.ndi-terms-check input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(47, 111, 237, 0.35);
+}
+
+#ndi-terms-dlg {
+  --bg: #252526;
+  --bg-inset: #1b1b1b;
+  --bg-hover: #3a3a3a;
+  --fg: #ddd;
+  --fg-dim: #999;
+  --accent: #bb86fc;
+
+  border: 0;
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: none;
+  outline: 1px solid rgba(0, 0, 0, 0.4);
+}
+#ndi-terms-dlg::backdrop { background: rgba(0, 0, 0, 0.55); }
+
+.ndi-terms-head,
+.ndi-terms-foot { border: 0; }
+
+.ndi-terms-title { color: #fff; }
+.ndi-terms-link a { color: var(--accent); }
+.ndi-terms-note { color: var(--fg-dim); }
+.ndi-terms-declined { color: #c98a8a; }
+
+.ndi-terms-text {
+  background: var(--bg-inset);
+  border: 0;
+  color: #bbb;
+}
+
+.ndi-terms-select {
+  background-color: var(--bg-inset);
+  color: var(--fg);
+  border: 0;
+}
+.ndi-terms-select:focus-visible {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.ndi-terms-check input[type="checkbox"] {
+  background: var(--bg-inset);
+  border: 1px solid #6a6a6a;
+}
+.ndi-terms-check input[type="checkbox"]::after { background: #121212; }
+.ndi-terms-check input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ndi-terms-check input[type="checkbox"]:focus-visible {
+  box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.35);
+}
+
+.ndi-terms-btn {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 0;
+}
+.ndi-terms-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--fg); }
+.ndi-terms-primary { background: var(--accent); color: #121212; }
+.ndi-terms-primary:hover:not(:disabled) { background: #c99bfd; color: #121212; }
+#ndi-terms-dlg::backdrop { background: rgba(0, 0, 0, 0.55); }
+
+.ndi-terms-head,
+.ndi-terms-foot { border: 0; }
+
+.ndi-terms-text {
+  background: var(--bg-inset);
+  border: 0;
+  color: var(--fg);
+}
+
+.ndi-terms-select {
+  background-color: var(--bg-inset);
+  border: 0;
+}
+
+.ndi-terms-check input[type="checkbox"] {
+  background: var(--bg-inset);
+  border: 1px solid var(--fg-dim);
+}
+.ndi-terms-check input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.ndi-terms-btn {
+  background: transparent;
+  color: var(--fg-dim);
+  border: 0;
+}
+.ndi-terms-btn:hover:not(:disabled) { background: var(--bg-hover); color: var(--fg); }
+.ndi-terms-primary { background: var(--accent); color: #fff; }

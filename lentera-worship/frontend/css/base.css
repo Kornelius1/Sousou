@@ -73,3 +73,4 @@ body {
 #about-dlg form { display: flex; justify-content: flex-end; margin-top: 14px; }
 
 [data-ndi-only][hidden] { display: none !important; }
+
