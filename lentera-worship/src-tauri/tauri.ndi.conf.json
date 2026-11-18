@@ -1,5 +1,6 @@
 {
   "bundle": {
+    "licenseFile": "LICENSE-INSTALLER.txt",
     "resources": {
       "libs/Processing.NDI.Lib.x64.dll": "Processing.NDI.Lib.x64.dll"
     }

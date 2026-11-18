@@ -1,0 +1,1 @@
+cargo tauri build --features ndi --config src-tauri/tauri.ndi.conf.json

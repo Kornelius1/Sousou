@@ -1,0 +1,41 @@
+LENTERA WORSHIP: LICENSE AND NOTICES
+LISENSI DAN PEMBERITAHUAN
+
+1. APPLICATION / APLIKASI
+Lentera Worship is licensed under MIT OR Apache-2.0, at your option.
+Copyright (c) 2026 Kornelius1. Source: https://github.com/Kornelius1/lentera-worship
+Lentera Worship dilisensikan di bawah MIT ATAU Apache-2.0, sesuai pilihan Anda.
+
+2. NDI(R) SOFTWARE / PERANGKAT LUNAK NDI(R)
+This product includes the NDI runtime library (Processing.NDI.Lib.x64.dll)
+from the NDI SDK, provided by Vizrt NDI AB. It is licensed under the NDI SDK
+License Agreement (http://ndi.link/ndisdk_license), not under the license in
+section 1.
+
+Copyright (C) 2023-2026 Vizrt NDI AB. All rights reserved.
+
+By installing or using this product you agree that you will not:
+(a) modify the NDI software or any part of it;
+(b) reverse engineer, disassemble, decompile or recompile the NDI software
+    or any protocols it uses, or attempt to do so;
+(c) circumvent any technical limitations in the NDI software; or
+(d) remove, obscure or alter any proprietary notices or labels in the NDI software.
+
+THE NDI SOFTWARE IS PROVIDED "AS IS". Vizrt NDI AB and its licensors disclaim
+all warranties and, to the extent permitted by applicable law, all liability
+for any direct, indirect, incidental or consequential damages arising from
+the use of this product.
+
+You will comply with all applicable export control laws and regulations,
+including those of the United States, and will not export or re-export this
+product in violation of them.
+
+If you develop products using the NDI components of this product, you must
+comply with the NDI SDK License Agreement and include the terms of this
+section in your own end-user license agreement.
+
+NDI(R) is a registered trademark of Vizrt NDI AB. https://ndi.video
+Lentera Worship is not affiliated with or endorsed by Vizrt NDI AB.
+
+Ringkasan (Indonesia; teks bahasa Inggris di atas yang berlaku untuk NDI):
+Produk ini menyertakan library runtime NDI
