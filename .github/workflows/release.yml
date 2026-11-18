@@ -1,7 +1,6 @@
-name: Release
+name: Release (disabled, builds WITHOUT NDI)
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
