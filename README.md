@@ -40,6 +40,9 @@ We recommend the `-setup.exe` file for most users. The `.msi` is for managed dep
 > Click **More info**, then **Run anyway**. The warning appears because the app
 > is not yet digitally signed (no paid certificate), not because it contains a virus.
 
+> **Code signing:** we have applied to the SignPath Foundation for free code
+> signing. See [Code signing policy](#code-signing-policy).
+
 ### Verify your download
 Each release page lists SHA256 checksums. To check your file in PowerShell:
 
@@ -95,6 +98,22 @@ npm install
 cargo tauri dev          # run in development
 cargo tauri build        # build the installer
 ```
+
+## Privacy
+Lentera Worship does not collect or transmit personal data. The only network
+activity is downloading Bible translations from eBible.org when you choose to,
+and optional NDI output on your local network.
+
+## Code signing policy
+Windows installers are built by GitHub Actions from this public repository.
+We have applied for free code signing from the SignPath Foundation. If
+approved, the statement will read:
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- **Maintainer and release approver:** Kornelius Jonathan Manik
+- The installer bundles the optional NDI runtime, a third-party component
+  described in the [NDI](#ndi) section.
 
 ## Contributing
 Issues and pull requests are welcome.

@@ -36,6 +36,8 @@ Kami menyarankan file `-setup.exe` untuk kebanyakan pengguna. File `.msi` untuk 
 > belum ditandatangani secara digital (belum memakai sertifikat berbayar), bukan
 > karena ada virus.
 
+> **Penandatanganan kode (code signing):** kami telah mengajukan permohonan kepada SignPath Foundation untuk mendapatkan layanan penandatanganan kode secara gratis. Lihat [Kebijakan penandatanganan kode](#code-signing-policy).
+
 ### Verifikasi unduhan
 Setiap halaman rilis mencantumkan checksum SHA256. Untuk memeriksa file kamu di PowerShell:
 
@@ -92,6 +94,17 @@ npm install
 cargo tauri dev          # jalankan untuk pengembangan
 cargo tauri build        # buat installer
 ```
+
+## Privasi
+Lentera Worship tidak mengumpulkan atau mengirimkan data pribadi. Satu-satunya aktivitas jaringan yang terjadi adalah pengunduhan terjemahan Alkitab dari eBible.org (atas pilihan pengguna) serta penggunaan fitur *output* NDI pada jaringan lokal Anda (bersifat opsional).
+
+## Kebijakan penandatanganan kode (*code signing*)
+*Installer* untuk Windows dibuat melalui GitHub Actions dari repositori publik ini. Kami telah mengajukan permohonan untuk mendapatkan layanan penandatanganan kode gratis dari SignPath Foundation. Jika disetujui, akan tercantum pernyataan berikut:
+
+Layanan penandatanganan kode gratis disediakan oleh [SignPath.io](https://signpath.io), dengan sertifikat dari [SignPath Foundation](https://signpath.org).
+
+- **Pengelola dan pemberi persetujuan rilis:** Kornelius Jonathan Manik
+- *Installer* ini menyertakan *runtime* NDI (opsional), yaitu komponen pihak ketiga yang dijelaskan pada bagian [NDI](#ndi).
 
 ## Kontribusi
 Issue dan pull request sangat diterima.
