@@ -38,6 +38,6 @@ export async function importFile() {
     if (slides.length) emit("bundle:imported");
   } catch (error) {
     console.error(error);
-    showMessage(`Gagal memuat: ${String(error)}`, "#ff6b6b");
+    showMessage(`Failed to load: ${String(error)}`, "#ff6b6b");
   }
 }

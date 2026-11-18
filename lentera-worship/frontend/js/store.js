@@ -67,7 +67,7 @@ export function createStore({
       const store = structuredClone({ groups: s.groups });
       chain = chain
         .then(() => invoke(saveCmd, { store }))
-        .catch((err) => console.warn(`gagal menyimpan ${name}:`, err));
+        .catch((err) => console.warn(`failed to save ${name}:`, err));
     }, 300);
   }
   function changed() {
@@ -84,7 +84,7 @@ export function createStore({
     try {
       store = await invoke(loadCmd);
     } catch (err) {
-      console.warn(`gagal memuat ${name}:`, err);
+      console.warn(`failed to load ${name}:`, err);
     }
     s.groups = store && Array.isArray(store.groups) ? store.groups : [];
     selFirst();

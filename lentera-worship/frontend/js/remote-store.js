@@ -39,7 +39,7 @@ export function createRemoteStore({ name, prefix }) {
         if (s.gid !== prevG || s.iid !== prevI) emit(evSel);
         return r.result;
       } catch (err) {
-        console.warn(`gagal ${cmd} (${name}):`, err);
+        console.warn(`failed ${cmd} (${name}):`, err);
         return fallback;
       }
     });
@@ -52,7 +52,7 @@ export function createRemoteStore({ name, prefix }) {
     try {
       store = await invoke(`${prefix}_get`);
     } catch (err) {
-      console.warn(`gagal memuat ${name}:`, err);
+      console.warn(`failed to load ${name}:`, err);
     }
     s.groups = store && Array.isArray(store.groups) ? store.groups : [];
     s.gid = s.groups.length ? s.groups[0].id : null;
@@ -139,7 +139,7 @@ export function createRemoteStore({ name, prefix }) {
         emit(evChanged);
         return true;
       } catch (err) {
-        console.warn(`gagal update_item (${name}):`, err);
+        console.warn(`failed to update item (${name}):`, err);
         return false;
       }
     });

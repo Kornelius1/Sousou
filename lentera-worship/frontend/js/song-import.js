@@ -186,7 +186,7 @@ export async function importSongFiles(files) {
       if (await addSongParts(title, parts)) added++;
       else failed++;
     } catch (err) {
-      console.warn("song import failed:", f.name, err);
+      console.warn("failed to import song:", f.name, err);
       failed++;
     }
   }

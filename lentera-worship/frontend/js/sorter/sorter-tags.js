@@ -60,7 +60,7 @@ export function openTagMenu(e, i) {
       ],
     });
   } else {
-    entries.push({ label: "Tag (slide belum ada di library)", disabled: true });
+    entries.push({ label: "Tag (The slide is not yet in the library.)", disabled: true });
   }
 
   showPopup(entries, { x: e.clientX, y: e.clientY });

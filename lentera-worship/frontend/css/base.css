@@ -57,3 +57,19 @@ body {
 *::-webkit-scrollbar-thumb { background: #4a4a4a; border-radius: 2px; }
 *::-webkit-scrollbar-thumb:hover { background: #8a8a8a; }
 *::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---------- About dialog ---------- */
+#about-dlg {
+  width: 380px; max-width: calc(100vw - 32px); padding: 16px 18px 14px;
+  background: #252526; color: #ddd; font-size: 12px; line-height: 1.5;
+  border: 1px solid #454545; border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .7);
+}
+#about-dlg::backdrop { background: rgba(0, 0, 0, .55); }
+#about-dlg h2 { margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #fff; }
+#about-dlg h3 { margin: 14px 0 4px; font-size: 12px; font-weight: 600; color: #fff; }
+#about-dlg p { margin: 4px 0; color: #bbb; }
+#about-dlg a { color: #bb86fc; text-decoration: underline; }
+#about-dlg form { display: flex; justify-content: flex-end; margin-top: 14px; }
+
+[data-ndi-only][hidden] { display: none !important; }

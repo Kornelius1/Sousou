@@ -37,7 +37,7 @@ export function initDropzone() {
   const hover = (e) =>
     panel.classList.toggle("dragover", over(e.payload && e.payload.position));
   const safe = (p) =>
-    p.catch((err) => console.warn("Drag & drop tidak tersedia:", err));
+    p.catch((err) => console.warn("Drag and drop is not available:", err));
   safe(listen("tauri://drag-enter", hover));
   safe(listen("tauri://drag-over", hover));
   safe(listen("tauri://drag-leave", () => panel.classList.remove("dragover")));

@@ -156,14 +156,14 @@ export function initMessagePanel() {
     try {
       await Msg.showMessage(read(), auto());
     } catch (err) {
-      console.error("Show message gagal:", err);
+      console.error("Failed to show message:", err);
     }
   };
   f("mg-hide").onclick = async () => {
     try {
       await Msg.hideMessage();
     } catch (err) {
-      console.error("Hide message gagal:", err);
+      console.error("Failed to hide the message:", err);
     }
   };
   //   f("mg-show").onclick = () => Msg.showMessage(read(), auto());

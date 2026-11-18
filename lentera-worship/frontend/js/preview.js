@@ -70,7 +70,7 @@ function inputBgEl(bg) {
     .then((u) => {
       img.src = u;
     })
-    .catch((e) => console.warn("Preview kamera gagal:", e));
+    .catch((e) => console.warn("Failed to preview camera:", e));
   return img;
 }
 

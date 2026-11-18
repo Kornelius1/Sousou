@@ -1,4 +1,5 @@
 use serde::Serialize;
+use std::path::PathBuf;
 
 const DLL: &str = "Processing.NDI.Lib.x64.dll";
 
@@ -10,7 +11,7 @@ pub struct NdiSource {
 #[derive(Serialize)]
 pub struct NdiStatus {
     enabled: bool,   // build ini dikompilasi dengan fitur ndi
-    installed: bool, // runtime ditemukan
+    installed: bool, // DLL NDI ditemukan (dibundel atau runtime sistem)
 }
 
 #[cfg(windows)]
@@ -33,13 +34,43 @@ fn registry_env(_: &str) -> Option<String> {
     None
 }
 
-/// Env proses dulu (app dibuka setelah pemasangan), lalu registry (baru dipasang).
-fn runtime_dir() -> Option<std::path::PathBuf> {
+fn exe_dir() -> Option<PathBuf> {
+    std::env::current_exe().ok()?.parent().map(|d| d.to_path_buf())
+}
+
+/// DLL yang dibundel: harus berada di folder yang sama dengan .exe.
+fn bundled_dir() -> Option<PathBuf> {
+    let dir = exe_dir()?;
+    dir.join(DLL).is_file().then_some(dir)
+}
+
+/// Runtime NDI terpasang di sistem (cadangan, berguna di mesin pengembangan).
+fn system_dir() -> Option<PathBuf> {
     let raw = std::env::var("NDI_RUNTIME_DIR_V6")
         .ok()
         .or_else(|| registry_env("NDI_RUNTIME_DIR_V6"))?;
-    let dir = std::path::PathBuf::from(raw);
+    let dir = PathBuf::from(raw);
     dir.join(DLL).is_file().then_some(dir)
+}
+
+/// Prioritas: DLL bundel dulu, lalu runtime sistem.
+fn runtime_dir() -> Option<PathBuf> {
+    bundled_dir().or_else(system_dir)
+}
+
+/// Hanya untuk runtime sistem: tambahkan foldernya ke PATH satu kali saja.
+/// DLL bundel tidak perlu ini karena folder .exe sudah masuk jalur pencarian DLL.
+#[cfg(feature = "ndi")]
+fn prepare_dll_path(dir: &std::path::Path) {
+    use std::sync::Once;
+    static ONCE: Once = Once::new();
+    ONCE.call_once(|| {
+        if exe_dir().as_deref() == Some(dir) {
+            return;
+        }
+        let old = std::env::var("PATH").unwrap_or_default();
+        unsafe { std::env::set_var("PATH", format!("{};{old}", dir.display())) };
+    });
 }
 
 #[tauri::command]
@@ -50,11 +81,13 @@ pub fn ndi_status() -> NdiStatus {
     }
 }
 
-/// URL dikunci di sini: frontend tidak bisa menyuruh Rust membuka alamat sembarang.
+/// Membuka halaman resmi NDI. URL dikunci di sini: frontend tidak bisa
+/// menyuruh Rust membuka alamat sembarang. Tautan ini juga memenuhi
+/// kewajiban menampilkan link ndi.video di dekat pengaturan NDI.
 #[tauri::command]
 pub fn ndi_open_download() -> Result<(), String> {
     std::process::Command::new("cmd")
-        .args(["/C", "start", "", "https://ndi.video/tools/"])
+        .args(["/C", "start", "", "https://ndi.video/"])
         .spawn()
         .map(|_| ())
         .map_err(|e| e.to_string())
@@ -68,15 +101,16 @@ pub async fn ndi_discover() -> Result<Vec<NdiSource>, String> {
 
     let dir = runtime_dir().ok_or("NDI_RUNTIME_MISSING")?;
     tauri::async_runtime::spawn_blocking(move || {
-        let old = std::env::var("PATH").unwrap_or_default();
-        unsafe { std::env::set_var("PATH", format!("{};{old}", dir.display())) };
+        prepare_dll_path(&dir);
 
         let ndi = NDI::new().map_err(|e| e.to_string())?;
         let opts = FinderOptions::builder().show_local_sources(true).build();
         let finder = Finder::new(&ndi, &opts).map_err(|e| e.to_string())?;
-        finder.wait_for_sources(Duration::from_millis(2000));
+        finder
+            .wait_for_sources(Duration::from_millis(2000))
+            .map_err(|e| e.to_string())?;
         let sources = finder
-            .get_sources(Duration::from_millis(500))
+            .sources(Duration::from_millis(500))
             .map_err(|e| e.to_string())?;
         Ok(sources.into_iter().map(|s| NdiSource { name: s.name }).collect())
     })

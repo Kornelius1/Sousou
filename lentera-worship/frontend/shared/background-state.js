@@ -37,7 +37,7 @@ export async function loadBackground() {
   try {
     current = normalize(await invoke('load_background_state'));
   } catch (err) {
-    console.warn('gagal memuat state background:', err);
+    console.warn('failed to load background state:', err);
     current = null;
   }
   return current;
@@ -46,7 +46,7 @@ export async function loadBackground() {
 function persist(state) {
   saveChain = saveChain
     .then(() => invoke('save_background_state', { state }))
-    .catch((err) => console.warn('gagal menyimpan state background:', err));
+    .catch((err) => console.warn('failed to save background state:', err));
   return saveChain;
 }
 

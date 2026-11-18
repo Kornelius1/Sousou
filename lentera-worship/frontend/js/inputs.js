@@ -1,6 +1,11 @@
 import { invoke } from "./tauri.js";
 import { syncCamsSoon } from "./cam-usage.js";
 
+const NDI_ERRORS = {
+  NDI_DISABLED: "This build does not include NDI.",
+  NDI_RUNTIME_MISSING: "NDI files not found. Please reinstall the app.",
+};
+
 const $ = (id) => document.getElementById(id);
 const dlg = $("inputs-dlg");
 
@@ -15,11 +20,13 @@ const cur = () => drafts.find((i) => i.id === selId);
 
 /* ---------- Device ---------- */
 async function listDevices() {
-  const cams = (await invoke("cam_list").catch(() => [])).map((c) => ({
-    deviceId: c.name,
-    label: c.name,
-    kind: "videoinput",
-  }));
+  const cams = (await invoke("cam_list").catch(() => []))
+    .filter((c) => !/^NDI Webcam/i.test(c.name))
+    .map((c) => ({
+      deviceId: c.name,
+      label: c.name,
+      kind: "videoinput",
+    }));
   return { cams };
 }
 
@@ -106,8 +113,8 @@ function renderPicker(it) {
   box.replaceChildren();
   const p = document.createElement("p");
   p.textContent = devs.cams.length
-    ? "Pilih sumber video"
-    : "Tidak ada kamera terdeteksi";
+    ? "Select a video source"
+    : "No camera detected";
   box.append(p);
   const add = (icon, label, fn) => {
     const b = document.createElement("button");
@@ -121,10 +128,10 @@ function renderPicker(it) {
     box.append(b);
   };
   devs.cams.forEach((d) =>
-    add("fa-video", d.label || "Kamera", () => chooseCam(it, d)),
+    add("fa-video", d.label || "Camera", () => chooseCam(it, d)),
   );
   if (ndiEnabled)
-    add("fa-network-wired", "NDI (sumber di jaringan)", () => {
+    add("fa-network-wired", "NDI (network source)", () => {
       it.pickNdi = true;
       loadFields();
     });
@@ -227,17 +234,17 @@ async function apply(it) {
       if (selId === it.id) showCam(r.url);
     }
   } catch (err) {
-    console.warn("Input gagal dibuka:", err);
+    console.warn("Failed to open input:", err);
     const why =
       {
-        NotReadableError: "perangkat sedang dipakai / tidak tersedia",
-        NotAllowedError: "izin ditolak",
-        NotFoundError: "perangkat tidak ditemukan",
-        OverconstrainedError: "perangkat tidak cocok",
+        NotReadableError: "device is in use / unavailable",
+        NotAllowedError: "permission denied",
+        NotFoundError: "device not found",
+        OverconstrainedError: "device does not match the requested settings",
       }[err.name] ||
       err.name ||
       "error";
-    if (selId === it.id) $("in-res").textContent = "Gagal membuka: " + why;
+    if (selId === it.id) $("in-res").textContent = "Failed to open: " + why;
   }
 }
 
@@ -262,31 +269,20 @@ async function ndiRefresh() {
     renderPicker(cur());
     return;
   }
-  ndiEnabled = true;
+  ndiEnabled = st.installed;
   box.hidden = false;
   renderPicker(cur());
 
   if (!st.installed) {
     box.innerHTML = `
       <b>NDI Input</b>
-      <small>Untuk memakai sumber NDI, pasang NDI Tools (gratis) sekali saja:</small>
-      <ol style="margin:0;padding-left:18px;font-size:12px;color:#bbb">
-        <li>Klik <b>Unduh NDI Tools</b></li>
-        <li>Pasang seperti biasa (Next → Install)</li>
-        <li>Kembali ke sini, otomatis terdeteksi</li>
-      </ol>
-      <div style="display:flex;gap:6px">
-        <button id="in-ndi-dl">Unduh NDI Tools</button>
-        <button id="in-ndi-recheck">Periksa lagi</button>
-      </div>${NDI_NOTE}`;
-    $("in-ndi-dl").onclick = () => invoke("ndi_open_download").catch(() => {});
-    $("in-ndi-recheck").onclick = ndiRefresh;
+      <small>NDI files not found. Please reinstall the app.</small>${NDI_NOTE}`;
   } else {
     box.innerHTML = `
-      <b>NDI Input <span style="color:#3c9;font-weight:normal">● terpasang</span></b>
+      <b>NDI Input <span style="color:#3c9;font-weight:normal">● installed</span></b>
       <div style="display:flex;gap:6px">
         <select id="in-ndi-list" style="flex:1"></select>
-        <button id="in-ndi-scan">Cari</button>
+        <button id="in-ndi-scan">Scan</button>
       </div>${NDI_NOTE}`;
     $("in-ndi-scan").onclick = ndiScan;
     ndiScan();
@@ -302,26 +298,23 @@ async function ndiRefresh() {
 async function ndiScan() {
   const sel = $("in-ndi-list");
   if (!sel) return;
-  sel.innerHTML = '<option value="">Mencari sumber NDI…</option>';
+  sel.innerHTML = '<option value="">Searching for NDI sources…</option>';
   try {
     const list = await invoke("ndi_discover");
     const it = cur();
-    sel.innerHTML =
-      '<option value="">- Tidak dipakai -</option>' +
-      list.map((s) => `<option value="${s.name}">${s.name}</option>`).join("");
+    sel.replaceChildren(
+      new Option("- Not used -", ""),
+      ...list.map((s) => new Option(s.name, s.name)),
+    );
     if (!list.length)
-      sel.options[0].textContent = "Tidak ada sumber NDI di jaringan";
+      sel.options[0].textContent = "No NDI sources on the network";
     sel.value = it?.ndi ?? "";
     sel.onchange = () => {
       const c = cur();
       if (c) c.ndi = sel.value || null;
     };
   } catch (e) {
-    sel.innerHTML = `<option value="">Gagal: ${String(e)}</option>`;
+    const msg = NDI_ERRORS[String(e)] ?? "Failed: " + String(e);
+    sel.replaceChildren(new Option(msg, ""));
   }
 }
-
-// Pengguna kembali dari installer -> deteksi otomatis
-window.addEventListener("focus", () => {
-  if (dlg.open) ndiRefresh();
-});

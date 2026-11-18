@@ -14,6 +14,7 @@ import { createBlankSlide, itemToSlide } from "./slide-model.js";
 import { decorateCard, openTagMenu, initSorterTags } from "./sorter-tags.js";
 import { initSorterNav } from "./sorter-nav.js";
 import { initGridNav } from "../grid-nav.js";
+import { syncCamsSoon } from "../cam-usage.js";
 
 // Kompatibilitas: file lain yang masih mengimpor createBlankSlide dari sorter.js tetap jalan.
 // Setelah semua impor diubah ke slide-model.js, baris ini boleh dihapus.
@@ -249,6 +250,7 @@ export function showGroupSlides(g) {
     .filter(
       (it) =>
         it.kind === "slide" ||
+        it.kind === "input" ||
         ((it.kind === "image" || it.kind === "video") &&
           it.origin !== "bundle"),
     )
@@ -265,6 +267,8 @@ export function showGroupSlides(g) {
     [],
     g ? g.name : "",
   );
+  syncCamsSoon();
+  
 }
 
 export function initSorter() {

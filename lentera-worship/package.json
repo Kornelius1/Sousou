@@ -1,4 +1,17 @@
 {
+  "name": "lentera-worship",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Presentation software for song lyrics, Bible verses, and worship slides",
+  "license": "MIT OR Apache-2.0",
+  "author": "Kornelius1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kornelius1/lentera-worship.git"
+  },
+  "scripts": {
+    "tauri": "tauri"
+  },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.4"
   },

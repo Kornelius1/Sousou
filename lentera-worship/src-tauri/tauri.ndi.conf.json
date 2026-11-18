@@ -1,0 +1,7 @@
+{
+  "bundle": {
+    "resources": {
+      "libs/Processing.NDI.Lib.x64.dll": "Processing.NDI.Lib.x64.dll"
+    }
+  }
+}

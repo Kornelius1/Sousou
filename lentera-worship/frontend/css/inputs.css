@@ -62,6 +62,7 @@
   display: flex; flex-direction: column; gap: 10px;
 }
 .in-body > section { display: flex; flex-direction: column; gap: 10px; }
+.in-body > * { flex: none; }
 
 .in-foot {
   display: flex; justify-content: flex-end; gap: 8px;
@@ -70,9 +71,11 @@
 
 /* ---------- Daftar input ---------- */
 .in-list-wrap { background: var(--d-panel); border-radius: 8px; overflow: hidden; }
-.in-list { list-style: none; margin: 0; padding: 4px; min-height: 76px; max-height: 120px; overflow-y: auto; }
+.in-list { list-style: none; margin: 0; padding: 4px; min-height: 0; max-height: 120px; overflow-y: auto; }
+.in-list:empty { min-height: 44px; }
+.in-body > * { flex: none; }
 .in-list:empty::before {
-  content: "Belum ada input. Klik + untuk menambah.";
+  content: "No input yet. Click + to add.";
   display: block; padding: 10px 8px; color: var(--d-dim);
 }
 .in-list li { padding: 6px 8px; border-radius: 5px; cursor: pointer; }
@@ -345,3 +348,6 @@ body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
 #props input[type="range"]::-moz-range-progress { height: 2px; border-radius: 1px; background: #bbb; }
 #props input[type="range"]::-moz-range-thumb { width: 10px; height: 10px; border: 0; border-radius: 50%; background: #ddd; }
 #props input[type="range"]:hover::-webkit-slider-thumb { background: #fff; transform: scale(1.2); }
+
+/* hapus kalau audio sudah dipakai */
+#inputs-dlg [hidden] { display: none !important; } 

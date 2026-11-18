@@ -67,7 +67,7 @@
         el.dataset.cam = name;
         el.src = u;
       })
-      .catch((err) => console.warn("Input gagal dibuka:", err));
+      .catch((err) => console.warn("Failed to open input:", err));
   }
 
   // hentikan video dan lepas kamera di dalam root sebelum dibuang

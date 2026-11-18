@@ -1,20 +1,21 @@
 // Mengirim payload slide ke jendela audience.
 import { $, setStatus } from "./utils.js";
 import { state } from "./state.js";
-import { convertFileSrc, emitEvent, invoke } from "./tauri.js"
+import { convertFileSrc, emitEvent, invoke } from "./tauri.js";
 
 export function emitPayload(payload) {
   emitEvent("update-slide-event", payload).catch((err) =>
-    console.error("Gagal memperbarui audience display:", err),
+    console.error("Failed to update audience display:", err),
   );
 }
 
 export function toPayload(slide) {
   const layers = [...(slide.layers || [])]
-    .sort((a, b) => a.z - b.z)
+    .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
     .map((l) => ({
       ...l,
-      src: l.path && l.status === "OK" ? convertFileSrc(l.path) : null,
+      src:
+        l.path && l.status === "OK" ? convertFileSrc(l.path) : (l.src ?? null),
     }));
   const firstMedia = layers.find((l) => l.src);
   return {
@@ -68,12 +69,12 @@ document.addEventListener("click", async (e) => {
         emitPayload(toPayload(state.slides[i]));
       setStatus(
         external
-          ? "Audience: layar kedua (fullscreen)."
-          : "Audience: window uji (1 monitor).",
+          ? "Audience: second screen (fullscreen)."
+          : "Audience: test window (1 monitor).",
       );
     }
   } catch (err) {
     console.error(err);
-    setStatus("Gagal membuka audience: " + err);
+    setStatus("Failed to open audience: " + err);
   }
 });

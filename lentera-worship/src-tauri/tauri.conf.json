@@ -21,19 +21,35 @@
       }
     ],
     "security": {
-      "csp": null,
-      "assetProtocol": { "enable": true, "scope": ["$APPCACHE/**", "$HOME/**"] }
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/**",
+          "$DOWNLOAD/**",
+          "$VIDEO/**",
+          "$PICTURE/**",
+          "$DOCUMENT/**",
+          "$DESKTOP/**"
+        ]
+      }
     }
   },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
-  }
+ "bundle": {
+  "active": true,
+  "targets": "all",
+  "publisher": "Kornelius1",
+  "copyright": "Copyright (c) 2026 Kornelius1",
+  "category": "Productivity",
+  "shortDescription": "Presentation software for song lyrics, Bible verses, and worship slides",
+  "longDescription": "Presentation software for song lyrics, Bible verses, and worship slides. Free and open source.",
+  "license": "MIT OR Apache-2.0",
+  "icon": [
+    "icons/32x32.png",
+    "icons/128x128.png",
+    "icons/128x128@2x.png",
+    "icons/icon.icns",
+    "icons/icon.ico"
+  ]
+}
 }

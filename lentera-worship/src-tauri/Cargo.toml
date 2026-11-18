@@ -2,9 +2,9 @@
 name = "lentera-worship"
 version = "0.1.1"
 description = "Presentation software for song lyrics, Bible verses, and worship slides"
-authors = ["Kornelius"]
-license = ""
-repository = "https://github.com/Kornelius1/Sousou"
+authors = ["Kornelius1"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Kornelius1/lentera-worship"
 edition = "2024"
 rust-version = "1.90"
 

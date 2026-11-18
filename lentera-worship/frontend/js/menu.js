@@ -4,6 +4,7 @@ import { refreshThumbBackgrounds } from "./sorter/sorter.js";
 import { importFile } from "./sorter/bundle-import.js";
 import { resetConfirmations } from "./confirm.js";
 import { exportSession, importSession } from "./session.js";
+import { openAbout } from "./about.js";
 
 function togglePane(id, cls) {
   const el = $(id);
@@ -117,6 +118,8 @@ const MENUS = [
           setStatus("Confirmations enabled again.");
         },
       },
+      { sep: true },
+      { label: "About Lentera Worship", run: () => openAbout() },
     ],
   },
 ];

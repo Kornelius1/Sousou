@@ -12,6 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Verify tag matches versions
+        shell: pwsh
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          $tag = $env:TAG.TrimStart('v')
+          $tauri = (Get-Content lentera-worship/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $npm = (Get-Content lentera-worship/package.json -Raw | ConvertFrom-Json).version
+          $cargo = (Select-String -Path lentera-worship/src-tauri/Cargo.toml -Pattern '^version\s*=\s*"([^"]+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          $bad = @($tauri, $npm, $cargo) | Where-Object { $_ -ne $tag }
+          if ($bad) { throw "Version mismatch: tag=$tag tauri=$tauri npm=$npm cargo=$cargo" }
+
       - uses: dtolnay/rust-toolchain@39008827e6b4319a349e9a42dfc90579dd25f1ca # stable
         with:
           toolchain: stable
@@ -20,9 +32,10 @@ jobs:
         with:
           workspaces: lentera-worship/src-tauri
 
-      - run: cargo install tauri-cli --version "=2.12.3" --locked
+      - run: cargo install tauri-cli --version "=2.12.4" --locked
 
-      - uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
+      - id: tauri
+        uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -31,3 +44,29 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Lentera Worship ${{ github.ref_name }}'
           releaseDraft: false
+
+      - name: Checksums and release notes
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          ARTIFACT_PATHS: ${{ steps.tauri.outputs.artifactPaths }}
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          $paths = $env:ARTIFACT_PATHS | ConvertFrom-Json | Where-Object { $_ -match '\.(exe|msi)$' }
+          $lines = foreach ($p in $paths) {
+            $h = (Get-FileHash $p -Algorithm SHA256).Hash
+            "$h  $(Split-Path $p -Leaf)"
+          }
+          $lines | Set-Content SHA256SUMS.txt -Encoding ascii
+
+          $rows = Get-Content SHA256SUMS.txt | ForEach-Object {
+            $hash, $name = $_ -split '\s+', 2
+            '| `' + $name + '` | `' + $hash + '` |'
+          }
+          $table = "| File | SHA256 |`n|---|---|`n" + ($rows -join "`n")
+          $notes = (Get-Content .github/release-notes.md -Raw).Replace('{{VERSION}}', $version).Replace('{{CHECKSUMS}}', $table)
+          Set-Content release-notes.md $notes -Encoding utf8
+
+          gh release edit $env:TAG --notes-file release-notes.md
+          gh release upload $env:TAG SHA256SUMS.txt --clobber

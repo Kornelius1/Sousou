@@ -33,6 +33,7 @@ import { initTransitionUi } from "./transition-ui.js";
 import { setTransition } from "../shared/transition-state.js";
 import "./songs.js";
 import "./song-import.js";
+import * as G from "./groups.js";
 
 /* ---- Slider: isi --fill supaya trek yang terisi ikut posisi gagang ---- */
 const setFill = (el) => {

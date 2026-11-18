@@ -198,7 +198,8 @@
               <span id="pv-time">0:00 / 0:00</span>
             </div>
             <div class="pv-controls">
-              <button class="pv-btn" id="pv-restart" title="Restart from beginning" aria-label="Restart from beginning"></button>
+              <button class="pv-btn" id="pv-restart" title="Restart from beginning"
+                aria-label="Restart from beginning"></button>
               <button class="pv-btn pill" id="pv-back" title="Rewind 5 seconds">-5s</button>
               <button class="pv-btn primary" id="pv-toggle" title="Play / Pause (clicking preview also works)"
                 aria-label="Play / Pause"></button>
@@ -340,7 +341,7 @@
                 transform="translate(0 1)" />
             </svg>
             <b>Drag files here</b>
-            <span>or click to upload (video / image)</span>   
+            <span>or click to upload (video / image)</span>
           </div>
         </div>
       </section>
@@ -363,7 +364,7 @@
     <header class="in-head">
       <div class="in-tabs" role="tablist">
         <button data-tab="video" class="on" role="tab">Video</button>
-        <button data-tab="audio" role="tab">Audio</button>
+        <button data-tab="audio" role="tab" hidden>Audio</button>
       </div>
     </header>
 
@@ -391,7 +392,7 @@
           <div class="row"><span>Format</span><b id="v-format" class="val">SDR</b></div>
         </div>
 
-        <div class="grp">
+        <div class="grp" hidden>
           <label class="row"><span>Audio Source</span><select id="v-audio"></select></label>
           <label class="row"><span>Audio Delay</span>
             <span class="unit"><input id="v-delay" type="number" min="0" max="5000" step="10"
@@ -437,7 +438,7 @@
         </div>
       </section>
 
-      <div class="grp">
+      <div class="grp" hidden>
         <label class="row"><span>Audio Transition</span>
           <span class="slide"><input id="in-trans" type="range" min="0" max="5" step="0.1" value="1" /><output
               id="in-trans-o">1,0s</output></span>
@@ -452,6 +453,28 @@
       <button id="in-close" type="button" class="primary">Done</button>
     </footer>
   </dialog>
+
+  <dialog id="about-dlg">
+    <h2>Lentera Worship</h2>
+    <p>Version <span id="about-ver"></span></p>
+    <p>Free and open source software, licensed under MIT OR Apache-2.0.</p>
+
+    <div data-ndi-only hidden>
+      <h3>Third-party components</h3>
+      <p>
+        NDI® support uses the NDI SDK by Vizrt NDI AB.
+        NDI® is a registered trademark of Vizrt NDI AB.
+        <a href="#" data-ndi-link>ndi.video</a>
+      </p>
+      <p>
+        The bundled NDI library (Processing.NDI.Lib.x64.dll) is licensed under
+        NDI’s own terms, not under MIT or Apache-2.0.
+      </p>
+    </div>
+
+    <form method="dialog"><button class="cf-btn">Close</button></form>
+  </dialog>
+
   <script src="shared/input-player.js"></script>
   <script src="shared/cam-source.js"></script>
   <script src="shared/slide-renderer.js"></script>
