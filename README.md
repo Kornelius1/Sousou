@@ -13,6 +13,12 @@
   Free and open source.
 </p>
 
+<p align="center">
+  <a href="https://github.com/Kornelius1/lentera-worship/releases/latest">
+    <img src="docs/images/download-button-en.svg" alt="Download Lentera Worship for Windows" width="300">
+  </a>
+</p>
+
 ![Lentera Worship screenshot](docs/images/Screenshot1.png)
 
 ## Features
