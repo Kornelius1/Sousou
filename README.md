@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/iamges/logo.png" alt="Lentera Worship logo" width="120">
+  <img src="docs/images/logo.png" alt="Lentera Worship logo" width="120">
 </p>
 
 <h1 align="center">Lentera Worship</h1>
