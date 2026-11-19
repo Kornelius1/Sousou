@@ -10,7 +10,8 @@ import { isBackgroundVisible } from "../shared/background-state.js";
 const SR = window.SlideRenderer;
 const pvHost = $("pv-host");
 const pv = { dir: 0, raf: 0, loop: null, rate: 1 }; // dir: 1 putar, 0 jeda; loop null = ikut layer
-const bgNow = () => state.bgPreview || (isBackgroundVisible() ? state.bg : null);
+const bgNow = () =>
+  state.bgPreview || (isBackgroundVisible() ? state.bg : null);
 let stage = null;
 let stageW = 1366;
 let bgHolder = null;
@@ -19,7 +20,8 @@ let buildSeq = 0;
 const readyMedia = (el) =>
   new Promise((res) => {
     if (el.tagName === "IMG") {
-      if (el.decode) el.decode().then(res, res);
+      if (el.dataset.live || !el.getAttribute("src")) res();
+      else if (el.decode) el.decode().then(res, res);
       else if (el.complete) res();
       else el.onload = el.onerror = res;
     } else if (el.readyState >= 2) res();
@@ -66,11 +68,18 @@ function inputBgEl(bg) {
   img.style.cssText =
     `position:absolute;inset:0;width:100%;height:100%;` +
     `object-fit:${bg.scale === "fit" ? "contain" : "cover"};display:block`;
-  window.CamSource.url(bg.input.label)
-    .then((u) => {
-      img.src = u;
-    })
-    .catch((e) => console.warn("Failed to preview camera:", e));
+  if (typeof bg.input?.ndi === "string" && bg.input.ndi && window.NdiSource) {
+    bgDispose = window.NdiSource.attach(img, bg.input.ndi, {
+      width: 640,
+      slot: "pv-bg",
+    });
+  } else {
+    window.CamSource.url(bg.input.label)
+      .then((u) => {
+        img.src = u;
+      })
+      .catch((e) => console.warn("Failed to preview camera:", e));
+  }
   return img;
 }
 
@@ -81,7 +90,7 @@ function backgroundEl(bg) {
   el.style.cssText = `position:absolute;inset:0;overflow:hidden;opacity:${bg.opacity ?? 1}`;
   if (bg.kind === "color") el.style.background = bg.src;
   else if (bg.kind === "input") {
-    if (bg.input?.media === "video" && !bg.input.ndi) el.append(inputBgEl(bg));
+    if (bg.input?.media === "video" || bg.input?.ndi) el.append(inputBgEl(bg));
   } else
     el.append(
       mediaEl(bg.kind, convertFileSrc(bg.src), {
@@ -124,7 +133,16 @@ function layerEl(l) {
       `text-align:${st.align}`;
     el.append(t);
   } else if (l.kind === "input") {
-    if (l.input?.media === "video" && !l.input.ndi && window.CamSource) {
+    if (typeof l.input?.ndi === "string" && l.input.ndi && window.NdiSource) {
+      const img = document.createElement("img");
+      img.dataset.live = "1";
+      img.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${FIT[l.scale] || "contain"};display:block`;
+      img._stopNdi = window.NdiSource.attach(img, l.input.ndi, {
+        width: 640,
+        slot: "pv-fg",
+      });
+      el.append(img);
+    } else if (l.input?.media === "video" && !l.input.ndi && window.CamSource) {
       const img = document.createElement("img");
       img.dataset.live = "1";
       img.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${FIT[l.scale] || "contain"};display:block`;
@@ -151,7 +169,7 @@ function syncBackground(bg) {
     ? [
         bg.kind,
         bg.src,
-        bg.input?.deviceId || bg.input?.label || "",
+        bg.input?.ndi || bg.input?.deviceId || bg.input?.label || "",
         bg.loop,
         bg.scale,
       ].join("|")
@@ -213,7 +231,14 @@ function buildStage(slide) {
 
   const seq = ++buildSeq;
   const media = fresh.flatMap((e) => [...e.querySelectorAll("img, video")]);
-  const dropOld = () => old.forEach((c) => c.remove());
+  const dropOld = () =>
+    old.forEach((c) => {
+      c.querySelectorAll("img[data-live]").forEach((im) => {
+        im.dataset.dead = "1";
+        im._stopNdi?.();
+      });
+      c.remove();
+    });
   if (!media.length) dropOld();
   else
     Promise.race([

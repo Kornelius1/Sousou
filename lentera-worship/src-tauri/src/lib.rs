@@ -227,6 +227,8 @@ if let Some(main) = app.get_webview_window("main") {
             ndi::ndi_discover,
             ndi::ndi_status,
             ndi::ndi_open_download,
+            ndi::ndi_preview_start,
+            ndi::ndi_preview_stop,
             camera::cam_list, camera::cam_start, camera::cam_stop,
             lib_commands::library_get,
             lib_commands::library_create_group,

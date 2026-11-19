@@ -3,6 +3,13 @@
 (function () {
   const ROTATION_SIGN = -1; // jika rotasi miring ke arah salah, ubah ke 1
 
+  const OUT = { w: 1920, h: 1080 };
+  function setOutput(w, h) {
+    if (!(w > 0 && h > 0)) return;
+    OUT.w = w;
+    OUT.h = h;
+  }
+
   const TEXT_DEFAULTS = {
     fontFamily: "Arial, sans-serif",
     fontSize: 54,
@@ -83,6 +90,10 @@
     if (root.matches && root.matches("img[data-live]")) cams.push(root);
     cams.forEach((im) => {
       im.dataset.dead = "1";
+      if (im._stopNdi) {
+        im._stopNdi();
+        delete im._stopNdi;
+      }
       if (im.dataset.cam && window.CamSource) {
         window.CamSource.release(im.dataset.cam);
         delete im.dataset.cam;
@@ -232,18 +243,32 @@
 
   function inputElement(layer, preview) {
     const inp = layer.input || {};
-    let el;
+    if (
+      !preview &&
+      typeof inp.ndi === "string" &&
+      inp.ndi &&
+      window.NdiSource
+    ) {
+      const el = document.createElement("img");
+      el.dataset.live = "1";
+      el.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${objectFitFor(layer.scale)};`;
+      el._stopNdi = window.NdiSource.attach(el, inp.ndi, {
+        width: 1920,
+        slot: "aud-fg",
+      });
+      return el;
+    }
     if (preview || inp.media !== "video" || inp.ndi || !window.CamSource) {
-      el = document.createElement("div");
+      const el = document.createElement("div");
       el.style.cssText =
         "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
         "background:#0b2a5a;color:#9db4d8;font:14px sans-serif;text-align:center;";
       el.textContent = "Input: " + (inp.name || "Video");
-    } else {
-      el = document.createElement("img");
-      el.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${objectFitFor(layer.scale)};`;
-      attachCam(el, inp.label, () => false);
+      return el;
     }
+    const el = document.createElement("img");
+    el.style.cssText = `position:absolute;inset:0;width:100%;height:100%;object-fit:${objectFitFor(layer.scale)};`;
+    attachCam(el, inp.label, () => false);
     return el;
   }
 
@@ -355,13 +380,23 @@
     const group = document.createElement("div");
     group.style.cssText =
       "position:absolute;inset:0;isolation:isolate;will-change:transform,opacity;";
-    group.append(...next.childNodes);
+
+    // isi slide: ukuran asli slide, diskalakan fit ke kanvas output
+    const k = Math.min(OUT.w / w, OUT.h / h);
+    const tx = (OUT.w - w * k) / 2;
+    const ty = (OUT.h - h * k) / 2;
+    const fitBox = document.createElement("div");
+    fitBox.style.cssText =
+      `position:absolute;left:0;top:0;width:${w}px;height:${h}px;` +
+      `transform-origin:0 0;transform:translate(${tx}px,${ty}px) scale(${k});`;
+    fitBox.append(...next.childNodes);
+    group.append(fitBox);
     group.dataset.txt = media.length ? "" : "1";
 
     const olds = [...stage.children];
-    stage.style.width = w + "px";
-    stage.style.height = h + "px";
-    stage.style.overflow = "hidden"; // slide yang bergeser tidak keluar kanvas
+    stage.style.width = OUT.w + "px";
+    stage.style.height = OUT.h + "px";
+    stage.style.overflow = "hidden";
     stage.appendChild(group);
     fitStage(stage);
 
@@ -508,7 +543,7 @@
       return;
     }
 
-    const key = bg.kind + "|" + bg.src;
+    const key = bg.kind + "|" + bg.src + "|" + (bg.input?.ndi || "");
     const prev = bgState.get(layer);
     if (prev && prev.key === key && layer.firstElementChild) {
       applyBackgroundSettings(layer, layer.firstElementChild, bg, preview);
@@ -527,7 +562,24 @@
       el.style.background = bg.src;
     } else if (bg.kind === "input") {
       const inp = bg.input || {};
-      if (preview || inp.media !== "video" || inp.ndi || !window.CamSource) {
+      if (
+        !preview &&
+        typeof inp.ndi === "string" &&
+        inp.ndi &&
+        window.NdiSource
+      ) {
+        el = document.createElement("img");
+        el.dataset.live = "1";
+        el._stopNdi = window.NdiSource.attach(el, inp.ndi, {
+          width: 1920,
+          slot: "aud-bg",
+        });
+      } else if (
+        preview ||
+        inp.media !== "video" ||
+        inp.ndi ||
+        !window.CamSource
+      ) {
         el = document.createElement("div");
         el.style.cssText =
           "display:flex;align-items:center;justify-content:center;background:#0b2a5a;" +
@@ -555,6 +607,7 @@
       const url = toUrl(bg.src);
       el.src = bg.kind === "video" && preview ? url + "#t=0.1" : url;
     }
+
     if (!el) {
       el = document.createElement("div");
       el.style.background = "#111";
@@ -625,5 +678,6 @@
     ROTATION_SIGN,
     setTransition,
     getTransition: () => ({ ...T }),
+    setOutput,
   };
 })();
