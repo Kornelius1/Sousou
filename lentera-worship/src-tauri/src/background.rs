@@ -29,6 +29,20 @@ impl Background {
         if self.src.is_empty() || !KINDS.contains(&self.kind.as_str()) {
             return None;
         }
+
+        // image/video: src adalah path file lokal; buang kalau file sudah tidak ada
+        if matches!(self.kind.as_str(), "image" | "video") {
+            let is_url = self.src.starts_with("http://")
+                || self.src.starts_with("https://")
+                || self.src.starts_with("blob:")
+                || self.src.starts_with("data:")
+                || self.src.starts_with("asset:");
+            if !is_url && !std::path::Path::new(&self.src).is_file() {
+                return None;
+            }
+        }
+
+
         if self.kind == "input" {
             let ok = self.input.as_ref()
                 .and_then(|i| i.get("media"))
