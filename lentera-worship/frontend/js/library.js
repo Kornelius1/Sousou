@@ -1,6 +1,6 @@
 import { state } from "./state.js";
 import { emit, on } from "./bus.js";
-import { setStatus } from "./utils.js";
+import { $, setStatus } from "./utils.js";
 import { LIB_FILTER, libKindOf } from "./media.js";
 import { createTree } from "./tree.js";
 import { pick } from "./background-panel.js";
@@ -10,6 +10,74 @@ import { itemName } from "./store.js";
 import { createRemoteStore } from "./remote-store.js";
 
 export const lib = createRemoteStore({ name: "lib", prefix: "library" });
+
+let query = "";
+let findBox = null;
+const lc = (s) => String(s || "").toLowerCase();
+
+function visibleGroups() {
+  const q = lc(query).trim();
+  if (!q) return lib.s.groups;
+  const out = [];
+  for (const g of lib.s.groups) {
+    if (lc(g.name).includes(q)) {
+      out.push(g); // nama grup cocok: tampilkan semua itemnya
+      continue;
+    }
+    const items = g.items.filter(
+      (it) => lc(itemName(it)).includes(q) || lc(textOf(it)).includes(q),
+    );
+    if (items.length) out.push({ ...g, items });
+  }
+  return out;
+}
+
+function applyFind() {
+  if (query.trim()) for (const g of visibleGroups()) tree.openGroup(g.id);
+  renderLibrary();
+}
+
+export function openLibraryFind() {
+  findBox.hidden = false;
+  findBox.focus();
+  findBox.select();
+}
+
+function closeFind() {
+  query = "";
+  findBox.value = "";
+  findBox.hidden = true;
+  applyFind();
+  $("lib-list").focus();
+}
+
+function initFind() {
+  findBox = document.createElement("input");
+  findBox.type = "text";
+  findBox.id = "lib-find";
+  findBox.placeholder = "Find in library…";
+  findBox.autocomplete = "off";
+  findBox.spellcheck = false;
+  findBox.hidden = true;
+  $("lib-list").before(findBox);
+
+  findBox.addEventListener("input", () => {
+    query = findBox.value;
+    applyFind();
+  });
+  findBox.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeFind();
+  });
+  findBox.addEventListener("blur", () => {
+    if (!findBox.value.trim()) closeFind(); // kosong + kehilangan fokus = sembunyi
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "f") return;
+    if (document.querySelector("dialog[open]")) return; // jangan ganggu dialog/editor
+    e.preventDefault();
+    openLibraryFind();
+  });
+}
 
 let tree = null;
 let syncing = false;
@@ -40,6 +108,21 @@ async function withSyncAsync(fn) {
   } finally {
     syncing = false;
   }
+}
+
+export async function deleteActiveSlide() {
+  const i = state.activeIndex;
+  const s = state.slides[i];
+  if (!s) return setStatus("Select a slide first.");
+  if (!s.itemId || !shownGid)
+    return setStatus("This slide is not stored in the library.");
+
+  // pindahkan seleksi ke tetangga dulu, supaya setelah refresh slide aktif tidak hilang
+  const next = state.slides[i + 1] ?? state.slides[i - 1];
+  if (next?.itemId) lib.selectItem(shownGid, next.itemId);
+
+  await lib.removeItem(shownGid, s.itemId);
+  setStatus("Slide deleted.");
 }
 
 export function refreshGrid() {
@@ -211,8 +294,8 @@ export function initLibrary() {
     },
     events: ["lib-changed", "lib-selection"],
     openByDefault: [],
-    groups: () => lib.s.groups,
-    readOnly: () => false,
+    groups: visibleGroups,
+    readOnly: () => !!query.trim(),
     sel: () => ({ gid: lib.s.gid, iid: lib.s.iid }),
     itemName,
     filters: LIB_FILTER,
@@ -294,4 +377,12 @@ export function initLibrary() {
       .join("\n");
     withSyncAsync(() => lib.updateItem(gid, itemId, { slide: next }));
   });
+  $("slide-grid").addEventListener("keydown", (e) => {
+    if (e.key === "Delete") {
+      e.preventDefault();
+      deleteActiveSlide();
+    }
+  });
+
+  initFind();
 }

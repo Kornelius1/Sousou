@@ -36,6 +36,7 @@ import "./song-import.js";
 import "./settings.js";
 import { loadOutput, saveOutput } from "../shared/output-state.js";
 import { emitPayload, toPayload } from "./audience.js";
+import { openLaunchFile, initSessionTracking } from "./session.js";
 
 /* ---- Slider: isi --fill supaya trek yang terisi ikut posisi gagang ---- */
 const setFill = (el) => {
@@ -159,3 +160,6 @@ renderPreview();
 fillAll();
 on("groups-changed", syncCamsSoon);
 on("lib-changed", syncCamsSoon);
+
+await initSessionTracking();
+await openLaunchFile();

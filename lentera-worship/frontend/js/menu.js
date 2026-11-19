@@ -3,16 +3,54 @@ import { state } from "./state.js";
 import { refreshThumbBackgrounds } from "./sorter/sorter.js";
 import { importFile } from "./sorter/bundle-import.js";
 import { resetConfirmations } from "./confirm.js";
-import { exportSession, importSession } from "./session.js";
 import { openAbout } from "./about.js";
 import { openSettings } from "./settings.js";
 import { resetSizes } from "./resizer.js";
+import { openLibraryFind, deleteActiveSlide } from "./library.js";
+import {
+  newWindow,
+  saveSession,
+  saveSessionAs,
+  exportSession,
+  importSession,
+  openSessionPath,
+  getRecent,
+  clearRecent,
+  baseName,
+  autosaveOn,
+  setAutosave,
+} from "./session.js";
+
+const win = window.__TAURI__.window.getCurrentWindow();
+
+const REPO = "https://github.com/Kornelius1/lentera-worship";
+
+const openUrl = (url) => async () => {
+  try {
+    await window.__TAURI__.opener.openUrl(url);
+  } catch (err) {
+    console.error("openUrl gagal:", err);
+    setStatus("Tidak bisa membuka link.");
+  }
+};
 
 function togglePane(id, cls) {
   const el = $(id);
   el.hidden = !el.hidden;
   if (cls) $("workspace").classList.toggle(cls, el.hidden);
 }
+
+// Theme
+const THEME_KEY = "pc.theme";
+function setTheme(t) {
+  document.documentElement.dataset.theme = t;
+  try {
+    localStorage.setItem(THEME_KEY, t);
+  } catch {}
+}
+try {
+  setTheme(localStorage.getItem(THEME_KEY) || "dark");
+} catch {}
 
 const toggleHidden = (id) => () => {
   $(id).hidden = !$(id).hidden;
@@ -47,46 +85,81 @@ function resetLayout() {
 const MENUS = [
   {
     label: "File",
-    items: [
-      { label: "Import file…", key: "Ctrl+O", run: () => importFile() },
-      { sep: true },
-      { label: "New group", run: press("lib-new") },
-      { label: "Add files to group…", run: press("lib-add") },
-      { sep: true },
-      { label: "Add song…", run: press("lib-song") },
-      { label: "Import songs…", run: press("lib-import-song") },
-      { sep: true },
-      { label: "Import session…", run: () => importSession() },
-      { label: "Export session…", run: () => exportSession() },
-    ],
+    get items() {
+      const recent = getRecent();
+      return [
+        { label: "New window", key: "Ctrl+N", run: () => newWindow() },
+        { label: "Open session…", key: "Ctrl+O", run: () => importSession() },
+        {
+          label: "Open recent",
+          disabled: !recent.length,
+          submenu: [
+            ...recent.map((p) => ({
+              label: baseName(p),
+              title: p, // path lengkap muncul saat hover
+              run: () => openSessionPath(p),
+            })),
+            { sep: true },
+            { label: "Clear recent", run: () => clearRecent() },
+          ],
+        },
+        { label: "Save session", key: "Ctrl+S", run: () => saveSession() },
+        {
+          label: "Save session as…",
+          key: "Ctrl+Shift+S",
+          run: () => saveSessionAs(),
+        },
+        { label: "Export session…", run: () => exportSession() },
+        { sep: true },
+        { label: "Import file…", run: () => importFile() },
+        { sep: true },
+        { label: "New group", run: press("lib-new") },
+        { label: "Add files to group…", run: press("lib-add") },
+        { sep: true },
+        { label: "Add song…", run: press("lib-song") },
+        { label: "Import songs…", run: press("lib-import-song") },
+        { sep: true },
+        {
+          label: "Autosave",
+          checked: () => autosaveOn(),
+          run: () => setAutosave(!autosaveOn()),
+        },
+        { sep: true },
+        { label: "Exit", key: "Ctrl+Q", run: () => win.close() },
+      ];
+    },
   },
   {
     label: "Edit",
-    items: [{ label: "Edit slide…", key: "Enter", run: press("tb-edit") }],
+    items: [
+      { label: "Edit slide…", key: "Enter", run: press("tb-edit") },
+      { label: "Delete slide", key: "Del", run: () => deleteActiveSlide() },
+      { label: "Find…", key: "Ctrl+F", run: () => openLibraryFind() },
+    ],
   },
   {
     label: "View",
     items: [
-      {
-        label: "Media Library",
-        checked: visible("library"),
-        run: () => togglePane("library", "no-lib"),
-      },
-      {
-        label: "Properties Panel",
-        checked: visible("props"),
-        run: () => togglePane("props", "no-props"),
-      },
-      {
-        label: "Background Panel",
-        checked: visible("media-panel"),
-        run: toggleHidden("media-panel"),
-      },
-      {
-        label: "Message Panel",
-        checked: visible("msg-panel"),
-        run: toggleHidden("msg-panel"),
-      },
+      // {
+      //   label: "Media Library",
+      //   checked: visible("library"),
+      //   run: () => togglePane("library", "no-lib"),
+      // },
+      // {
+      //   label: "Properties Panel",
+      //   checked: visible("props"),
+      //   run: () => togglePane("props", "no-props"),
+      // },
+      // {
+      //   label: "Background Panel",
+      //   checked: visible("media-panel"),
+      //   run: toggleHidden("media-panel"),
+      // },
+      // {
+      //   label: "Message Panel",
+      //   checked: visible("msg-panel"),
+      //   run: toggleHidden("msg-panel"),
+      // },
       {
         label: "Bible & Transitions Bar",
         checked: visible("toolbar"),
@@ -102,10 +175,17 @@ const MENUS = [
         },
       },
       { sep: true },
+      {
+        label: "Fullscreen",
+        key: "F11",
+        run: () =>
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "F11" })),
+      },
+      { sep: true },
       { label: "Zoom in slides", run: press("zoom-in") },
       { label: "Zoom out slides", run: press("zoom-out") },
       { sep: true },
-      { label: "Reset layout", run: resetLayout},
+      { label: "Reset layout", run: resetLayout },
     ],
   },
   {
@@ -131,6 +211,10 @@ const MENUS = [
   {
     label: "Help",
     items: [
+      { label: "Check for updates", run: openUrl(REPO + "/releases/latest") },
+      { label: "User guide", run: openUrl(REPO + "#readme") },
+      { label: "Report an issue", run: openUrl(REPO + "/issues/new") },
+      { sep: true },
       {
         label: "Reset confirmation dialogs",
         run: () => {
@@ -147,18 +231,20 @@ const MENUS = [
 const wraps = [];
 let openMenu = -1;
 
-function fillDropdown(dd, menu) {
-  dd.replaceChildren();
-  for (const it of menu.items) {
+function fillItems(parent, items) {
+  for (const it of items) {
     if (it.sep) {
       const s = document.createElement("div");
       s.className = "dd-sep";
-      dd.appendChild(s);
+      parent.appendChild(s);
       continue;
     }
+
     const b = document.createElement("button");
     b.className = "dd-item";
     b.disabled = !!it.disabled;
+    if (it.title) b.title = it.title;
+
     const chk = document.createElement("span");
     chk.className = "chk";
     chk.textContent = it.checked && it.checked() ? "✓" : "";
@@ -166,14 +252,33 @@ function fillDropdown(dd, menu) {
     lab.textContent = it.label;
     const key = document.createElement("span");
     key.className = "dd-key";
-    key.textContent = it.key || "";
+    if (it.submenu) key.classList.add("dd-arrow");
+    else key.textContent = it.key || "";
     b.append(chk, lab, key);
-    b.addEventListener("click", () => {
-      closeMenus();
-      if (it.run) it.run();
-    });
-    dd.appendChild(b);
+
+    if (it.submenu && !it.disabled) {
+      const wrap = document.createElement("div");
+      wrap.className = "dd-sub";
+      const sub = document.createElement("div");
+      sub.className = "dd-submenu";
+      fillItems(sub, it.submenu);
+      // klik pada induk submenu tidak menutup menu
+      b.addEventListener("click", (e) => e.stopPropagation());
+      wrap.append(b, sub);
+      parent.appendChild(wrap);
+    } else {
+      b.addEventListener("click", () => {
+        closeMenus();
+        if (it.run) it.run();
+      });
+      parent.appendChild(b);
+    }
   }
+}
+
+function fillDropdown(dd, menu) {
+  dd.replaceChildren();
+  fillItems(dd, menu.items);
 }
 
 function setOpen(mi) {
@@ -205,5 +310,20 @@ export function initMenu() {
   });
   document.addEventListener("mousedown", (e) => {
     if (!e.target.closest(".menu")) closeMenus();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    if (document.querySelector("dialog[open]")) return;
+    const k = e.key.toLowerCase();
+    if (k === "s") {
+      e.preventDefault();
+      e.shiftKey ? saveSessionAs() : saveSession();
+    } else if (k === "n") {
+      e.preventDefault();
+      newWindow();
+    } else if (k === "o") {
+      e.preventDefault();
+      importSession();
+    }
   });
 }

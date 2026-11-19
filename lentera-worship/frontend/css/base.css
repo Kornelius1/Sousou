@@ -121,3 +121,48 @@ body {
   object-fit: contain;
   -webkit-user-drag: none;
 }
+
+#lib-find {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 12px);
+  margin: 6px;
+  padding: 4px 8px;
+  font: inherit;
+  color: #ddd;
+  background: #1b1b1b;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 0;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#lib-find::placeholder { color: #777; }
+#lib-find:focus { border-color: var(--accent); }
+
+/* ---------- submenu ---------- */
+.dd-sub { position: relative; }
+.dd-sub > .dd-item { width: 100%; }
+.dd-submenu {
+  display: none; position: absolute; left: 100%; top: -4px;
+  min-width: 220px; max-width: 360px; z-index: 101;
+  background: #252526; border: 0; outline: 1px solid rgba(0, 0, 0, .4);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .6); padding: 4px 0;
+}
+.dd-sub:hover > .dd-submenu { display: block; }
+.dd-sub:hover > .dd-item:not(:disabled) { background: var(--accent); color: var(--on-accent); }
+.dd-sub:hover > .dd-item:not(:disabled) .dd-key { color: var(--on-accent); }
+.dd-submenu .dd-item > span:nth-child(2) {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.dd-arrow {
+  align-self: center;
+  flex: none;
+  width: 6px;
+  height: 10px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='10' viewBox='0 0 6 10'%3E%3Cpath d='M1 1l4 4-4 4' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='10' viewBox='0 0 6 10'%3E%3Cpath d='M1 1l4 4-4 4' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.dd-item:disabled .dd-arrow { opacity: .5; }
