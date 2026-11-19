@@ -96,3 +96,28 @@ body {
 #about-dlg form { display: flex; justify-content: flex-end; margin-top: 14px; }
 
 [data-ndi-only][hidden] { display: none !important; }
+
+#titlebar {
+  display: flex; align-items: center; flex: none; height: 30px;
+  background: #1b1b1b; border-bottom: 1px solid #2a2a2a; user-select: none;
+}
+#titlebar #menubar { flex: none; background: none; border-bottom: 0; }
+#tb-drag { flex: 1; height: 100%; }
+#win-ctl { display: flex; height: 100%; }
+#win-ctl button {
+  display: grid; place-items: center; width: 46px; height: 100%; padding: 0;
+  border: 0; background: none; color: #ddd; cursor: default;
+}
+#win-ctl button:hover { background: #333; }
+#win-ctl button.close:hover { background: #e81123; color: #fff; }
+#win-ctl svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1; }
+#win-max .ic-res { display: none; }
+#win-max.maxed .ic-max { display: none; }
+#win-max.maxed .ic-res { display: block; }
+
+#app-logo {
+  width: 16px; height: 16px; flex: none;
+  margin: 0 6px 0 10px;
+  object-fit: contain;
+  -webkit-user-drag: none;
+}

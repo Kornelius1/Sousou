@@ -54,6 +54,14 @@ const applyOutputRatio = () => {
   document.documentElement.style.setProperty("--out-ar", String(r));
 };
 
+const win = window.__TAURI__.window.getCurrentWindow();
+const maxBtn = document.getElementById("win-max");
+document.getElementById("win-min").onclick = () => win.minimize();
+maxBtn.onclick = () => win.toggleMaximize();
+document.getElementById("win-close").onclick = () => win.close();
+const syncMax = async () =>
+  maxBtn.classList.toggle("maxed", await win.isMaximized());
+
 // slider digeser pengguna
 document.addEventListener("input", (e) => {
   if (e.target.matches('input[type="range"]')) setFill(e.target);
@@ -111,25 +119,38 @@ if (!hadGroups) migrateBackground(state.bg);
 // Semua yang bergantung pada grup dan background dipanggil setelah keduanya dimuat.
 initExplorer();
 initBackgroundPanel();
+
 window.__TAURI__.event.listen("audience-ready", () => {
   saveOutput(loadOutput());
   setTransition({});
   setBackgroundVisible(isBackgroundVisible());
   broadcastMessage();
 });
+
 window.__TAURI__.event.listen("output-changed", () => {
+  applyOutputRatio();
   state.slides.forEach((_, i) => renderThumb(i));
   const i = state.liveIndex;
   if (i >= 0 && !state.blanked && state.slides[i])
     emitPayload(toPayload(state.slides[i]));
 });
-window.__TAURI__.event.listen("output-changed", applyOutputRatio);
+
+let wasMax = false;
 window.addEventListener("keydown", async (e) => {
   if (e.key !== "F11") return;
   e.preventDefault();
-  const w = window.__TAURI__.window.getCurrentWindow();
-  await w.setFullscreen(!(await w.isFullscreen()));
+  if (await win.isFullscreen()) {
+    await win.setFullscreen(false);
+    if (wasMax) await win.maximize();
+  } else {
+    wasMax = await win.isMaximized();
+    if (wasMax) await win.unmaximize();
+    await win.setFullscreen(true);
+  }
 });
+
+window.addEventListener("resize", syncMax);
+syncMax();
 syncPanel(state.bg);
 refreshThumbBackgrounds();
 renderLibrary();

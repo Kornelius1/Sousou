@@ -17,7 +17,31 @@
 
 <body>
   <div id="app">
-    <nav id="menubar"></nav>
+    <header id="titlebar">
+      <img id="app-logo" src="icons/app.png" alt="" data-tauri-drag-region />
+      <nav id="menubar"></nav>
+      <div id="tb-drag" data-tauri-drag-region></div>
+      <div id="win-ctl">
+        <button id="win-min" aria-label="Minimize">
+          <svg viewBox="0 0 10 10">
+            <path d="M0 5h10" />
+          </svg>
+        </button>
+        <button id="win-max" aria-label="Maximize">
+          <svg class="ic-max" viewBox="0 0 10 10">
+            <rect x=".5" y=".5" width="9" height="9" />
+          </svg>
+          <svg class="ic-res" viewBox="0 0 10 10">
+            <path d="M2.5 2.5V.5h7v7h-2M.5 2.5h7v7h-7z" />
+          </svg>
+        </button>
+        <button id="win-close" class="close" aria-label="Close">
+          <svg viewBox="0 0 10 10">
+            <path d="M0 0l10 10M10 0L0 10" />
+          </svg>
+        </button>
+      </div>
+    </header>
 
     <main id="workspace">
       <!-- ================= LIBRARY (media) ================= -->
