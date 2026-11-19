@@ -162,6 +162,7 @@ fn toggle_audience(app: tauri::AppHandle) -> Result<bool, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .manage(camera::CameraHub::default())
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
