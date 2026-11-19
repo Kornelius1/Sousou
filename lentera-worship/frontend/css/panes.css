@@ -71,11 +71,12 @@
 #props .body > .f:first-child + h4 { margin-top: 14px; }
 .f { display: grid; grid-template-columns: 86px 1fr; gap: 6px 8px; align-items: center; }
 .f label { color: #aaa; }
-.f input[type=number], #p-layer {
+.f input[type=number] {
   width: 100%; box-sizing: border-box; background: #2d2d2e; color: #ddd;
   border: 0; border-radius: 6px; padding: 4px 8px; height: 26px; font: inherit;
 }
-.f input[type=number]:focus-visible, #p-layer:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--accent, #e5a64b); }
+.f input[type=number]:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--accent, #e5a64b); }
+.f select { width: 100%; }
 .f input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
 .btnrow { display: flex; gap: 4px; }
 .tg { flex: 1; background: #2d2d2e; color: #ccc; border: 0; border-radius: 4px; padding: 4px 0; font: inherit; cursor: pointer; }

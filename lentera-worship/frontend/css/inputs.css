@@ -11,14 +11,6 @@
 
   /* layout */
   --libW: 240px; --propsW: 300px; --bgW: 240px; --msgW: 300px; --bottomH: 260px;
-
-  /* dropdown (satu sumber gaya) */
-  --sel-bg: #1b1b1b;
-  --sel-text: #ddd;
-  --sel-border: transparent;
-  --sel-border-hover: #555;
-  --sel-font: 11px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
-  --sel-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* ---------- Variabel & dasar dialog / mixer / message ---------- */
@@ -248,46 +240,48 @@
 #msg-body .mg-item > button:last-child { background: none; color: var(--d-dim); padding: 6px 8px; }
 #msg-body .mg-item > button:last-child:hover { color: var(--d-hi); background: var(--d-hover); }
 
-/* ============ Dropdown seragam ============ */
-select,
-.tr-f select,
-#inputs-dlg select,
-#msg-body select {
+/* ============ Dropdown seragam (patokan: dropdown Alkitab) ============ */
+:root {
+  --sel-h: 30px;
+  --sel-bg: #1b1b1b;
+  --sel-bg-hover: #202020;
+  --sel-text: #ddd;
+  --sel-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+select {
   appearance: none;
   -webkit-appearance: none;
+  box-sizing: border-box;
+  height: var(--sel-h);
+  min-width: 0;
+  padding: 0 28px 0 10px;
   background-color: var(--sel-bg);
   background-image: var(--sel-arrow);
   background-repeat: no-repeat;
-  background-position: right 8px center;
+  background-position: right 10px center;
   color: var(--sel-text);
-  border: 1px solid var(--sel-border);
-  border-radius: 4px;
-  padding: 3px 24px 3px 8px;
-  font: var(--sel-font);
+  border: 0;
+  border-radius: 6px;
+  font: 13px/normal system-ui, -apple-system, "Segoe UI", sans-serif;
   text-transform: none;
   letter-spacing: 0;
-  height: 24px;
-  box-sizing: border-box;
   cursor: pointer;
   color-scheme: dark;
 }
-/* di dalam panel inset, field dibuat sedikit lebih terang */
-#inputs-dlg select { background-color: var(--d-field); }
-select:hover, .tr-f select:hover, #inputs-dlg select:hover, #msg-body select:hover { border-color: var(--sel-border-hover); }
-select:focus-visible, .tr-f select:focus-visible, #inputs-dlg select:focus-visible, #msg-body select:focus-visible {
-  outline: none; border-color: var(--accent);
-}
-select:disabled, #inputs-dlg select:disabled { opacity: .4; cursor: not-allowed; }
+select:hover { background-color: var(--sel-bg-hover); }
+select:focus-visible,
+select:disabled { opacity: .4; cursor: not-allowed; }
+select option { background: #2d2d2e; color: var(--sel-text); }
 
+/* lebar per konteks */
 #inputs-dlg select { width: 230px; max-width: 100%; }
 #in-ndi-box select { width: auto; flex: 1; }
-#msg-body select { width: 100%; }
+#msg-body select  { width: 100%; }
 
 /* ============ Toolbar transisi ============ */
 .tr-f {
   display: inline-flex; align-items: center; gap: 8px;
-  margin-left: 12px; padding-left: 12px;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
   color: #999; font-size: 11px;
   text-transform: uppercase; letter-spacing: .06em;
 }
@@ -396,23 +390,4 @@ body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
 /* hapus kalau audio sudah dipakai */
 #inputs-dlg [hidden] { display: none !important; }
 
-/* select transisi di toolbar: lebih terang dari latar supaya terlihat */
-.tr-f select {
-  background-color: #2d2d2e;
-  border: 1px solid #3f3f41;
-  color: #ddd;
-}
-.tr-f select:hover {
-  background-color: #353537;
-  border-color: #5a5a5d;
-}
-.tr-f select:focus-visible {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
-
-/* daftar pilihan yang terbuka */
-.tr-f select option {
-  background: #2d2d2e;
-  color: #ddd;
-}
+.tr-f select { --sel-h: 26px; }
