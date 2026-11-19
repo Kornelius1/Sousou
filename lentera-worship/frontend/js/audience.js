@@ -10,15 +10,21 @@ export function emitPayload(payload) {
   );
 }
 
+const isUrl = (v) =>
+  typeof v === "string" &&
+  /^(https?:|asset:|http:\/\/asset\.localhost|blob:|data:)/i.test(v);
+
 export function toPayload(slide) {
   const out = loadOutput();
   const layers = [...(slide.layers || [])]
     .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
-    .map((l) => ({
-      ...l,
-      src:
-        l.path && l.status === "OK" ? convertFileSrc(l.path) : (l.src ?? null),
-    }));
+    .map((l) => {
+      const candidate =
+        l.path && l.status === "OK" ? l.path : (l.src ?? null);
+      const src =
+        !candidate || isUrl(candidate) ? candidate : convertFileSrc(candidate);
+      return { ...l, src };
+    });
   const firstMedia = layers.find((l) => l.src);
   return {
     content: slide.content,

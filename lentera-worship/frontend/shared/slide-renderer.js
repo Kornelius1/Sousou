@@ -214,7 +214,13 @@
   function mediaElement(layer, mode) {
     const isVideo = layer.kind === "video";
     const el = document.createElement(isVideo ? "video" : "img");
-    el.src = isVideo && mode ? layer.src + "#t=0.1" : layer.src;
+    const rawSrc = layer.src || layer.path || "";
+    const resolvedSrc =
+      /^(https?:|asset:|http:\/\/asset\.localhost|blob:|data:)/i.test(rawSrc)
+        ? rawSrc
+        : toUrl(rawSrc);
+    el.src =
+      isVideo && mode && resolvedSrc ? resolvedSrc + "#t=0.1" : resolvedSrc;
     el.style.position = "absolute";
 
     if (layer.inner) {

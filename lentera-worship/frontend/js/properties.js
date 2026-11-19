@@ -25,8 +25,8 @@ function fillProps() {
   $("props-empty").hidden = has;
   $("props-body").hidden = !has;
   $("props-empty").textContent = slide
-    ? "The slide doesn't have layers"
-    : "Select a slide..";
+    ? "This slide has no layers."
+    : "Select a slide first.";
   if (has) fillFields();
 }
 

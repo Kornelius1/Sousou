@@ -1,7 +1,6 @@
 // Entry point: inisialisasi semua modul. Tidak ada logika bisnis di sini.
 import {
   onBackgroundChange,
-  loadBackground,
   setBackgroundVisible,
   isBackgroundVisible,
   onBackgroundVisible,
@@ -22,7 +21,7 @@ import {
 import { initProperties } from "./properties.js";
 import { initLibrary, renderLibrary, lib, refreshGrid } from "./library.js";
 import { initBackgroundPanel, syncPanel } from "./background-panel.js";
-import { loadGroups, migrateBackground } from "./groups.js";
+import { loadGroups } from "./groups.js";
 import { initExplorer } from "./explorer.js";
 import { syncCamsSoon } from "./cam-usage.js";
 import { on } from "./bus.js";
@@ -113,9 +112,7 @@ await onBackgroundVisible((v) => {
   syncPanel(state.bg);
 });
 
-state.bg = await loadBackground();
-const hadGroups = await loadGroups();
-if (!hadGroups) migrateBackground(state.bg);
+await loadGroups();
 
 // Semua yang bergantung pada grup dan background dipanggil setelah keduanya dimuat.
 initExplorer();

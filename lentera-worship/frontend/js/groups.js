@@ -30,23 +30,41 @@ export const addFiles = (gid, paths) => store.addFiles(gid, paths, kindOf);
 
 // ---------- khusus background ----------
 export const newItem = (src, kind) => ({
-  id: uid(), src, kind, loop: true, mute: true, scale: "fill", opacity: 1, added: Date.now(),
+  id: uid(),
+  src,
+  kind,
+  loop: true,
+  mute: true,
+  scale: "fill",
+  opacity: 1,
+  added: Date.now(),
 });
 
 export function addColor(gid, colorHex) {
   const g = findGroup(gid);
   if (!g) return null;
-  const item = { ...newItem(colorHex, "color"), loop: false, mute: true, scale: "fill" };
+  const item = {
+    ...newItem(colorHex, "color"),
+    loop: false,
+    mute: true,
+    scale: "fill",
+  };
   g.items.push(item);
   store.changed();
   return item;
 }
 
 export function migrateBackground(bg) {
-  const items = [];
-  if (bg && bg.src && bg.kind) {
-    items.push({ ...newItem(bg.src, bg.kind), loop: bg.loop, mute: bg.mute, scale: bg.scale, opacity: bg.opacity });
-  }
+  if (!bg || !bg.src || !bg.kind) return;
+  const items = [
+    {
+      ...newItem(bg.src, bg.kind),
+      loop: bg.loop,
+      mute: bg.mute,
+      scale: bg.scale,
+      opacity: bg.opacity,
+    },
+  ];
   s.groups = [{ id: uid(), name: "Umum", items }];
   s.gid = s.groups[0].id;
   s.iid = null;

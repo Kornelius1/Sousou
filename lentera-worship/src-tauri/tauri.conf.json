@@ -27,6 +27,7 @@
         "enable": true,
         "scope": [
           "$APPDATA/**",
+          "$TEMP/**",
           "$DOWNLOAD/**",
           "$VIDEO/**",
           "$PICTURE/**",
