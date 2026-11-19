@@ -12,7 +12,7 @@ import { initToolbar, initShortcuts } from "./toolbar.js";
 import {
   initSorter,
   refreshThumbBackgrounds,
-  initBlankDeck,
+  renderThumb,
 } from "./sorter/sorter.js";
 import {
   initPreview,
@@ -35,6 +35,7 @@ import "./songs.js";
 import "./song-import.js";
 import "./settings.js";
 import { loadOutput, saveOutput } from "../shared/output-state.js";
+import { emitPayload, toPayload } from "./audience.js";
 
 /* ---- Slider: isi --fill supaya trek yang terisi ikut posisi gagang ---- */
 const setFill = (el) => {
@@ -45,6 +46,13 @@ const setFill = (el) => {
 };
 const fillAll = (root = document) =>
   root.querySelectorAll('input[type="range"]').forEach(setFill);
+
+const applyOutputRatio = () => {
+  const o = loadOutput();
+  // dibatasi supaya LED wall 32:9 tidak membuat tile terlalu pipih
+  const r = Math.min(Math.max(o.w / o.h, 1), 2.4);
+  document.documentElement.style.setProperty("--out-ar", String(r));
+};
 
 // slider digeser pengguna
 document.addEventListener("input", (e) => {
@@ -81,6 +89,7 @@ initMessagePanel();
 initResizer();
 initTransitionUi();
 fillAll();
+applyOutputRatio();
 
 // Listener dipasang sebelum membaca disk, agar event yang datang saat startup tidak terlewat.
 await onBackgroundChange((bg) => {
@@ -108,6 +117,13 @@ window.__TAURI__.event.listen("audience-ready", () => {
   setBackgroundVisible(isBackgroundVisible());
   broadcastMessage();
 });
+window.__TAURI__.event.listen("output-changed", () => {
+  state.slides.forEach((_, i) => renderThumb(i));
+  const i = state.liveIndex;
+  if (i >= 0 && !state.blanked && state.slides[i])
+    emitPayload(toPayload(state.slides[i]));
+});
+window.__TAURI__.event.listen("output-changed", applyOutputRatio);
 syncPanel(state.bg);
 refreshThumbBackgrounds();
 renderLibrary();

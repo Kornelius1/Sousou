@@ -5,6 +5,7 @@ const preset = document.getElementById("out-preset");
 const custom = document.getElementById("out-custom");
 const ow = document.getElementById("out-w");
 const oh = document.getElementById("out-h");
+const save = document.getElementById("out-save");
 
 function show() {
   const o = loadOutput();
@@ -17,17 +18,29 @@ function show() {
 }
 
 preset.addEventListener("change", () => {
-  if (preset.value === "custom") {
+  custom.hidden = preset.value !== "custom";
+  if (preset.value !== "custom") {
+    const [w, h] = preset.value.split("x").map(Number);
+    ow.value = w;
+    oh.value = h;
+  }
+});
+
+save.addEventListener("click", async () => {
+  const w = parseInt(ow.value),
+    h = parseInt(oh.value);
+  if (!(w >= 320 && h >= 240)) {
     custom.hidden = false;
+    ow.focus();
     return;
   }
-  const [w, h] = preset.value.split("x").map(Number);
-  custom.hidden = true;
-  saveOutput({ w, h });
+  await saveOutput({ w, h });
+  dlg.close();
 });
 
 const applyCustom = () => {
-  const w = parseInt(ow.value), h = parseInt(oh.value);
+  const w = parseInt(ow.value),
+    h = parseInt(oh.value);
   if (w >= 320 && h >= 240) saveOutput({ w, h });
 };
 ow.addEventListener("change", applyCustom);

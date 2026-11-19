@@ -1,6 +1,10 @@
 import { $ } from "./utils.js";
 import { loadTransition, setTransition } from "../shared/transition-state.js";
 
+const MS = [150, 300, 500, 800];
+const nearest = (v) =>
+  MS.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a));
+
 export function initTransitionUi() {
   const t = loadTransition();
   for (const [id, key] of [
@@ -10,11 +14,13 @@ export function initTransitionUi() {
     ["tr-ms-bg", "msBg"],
   ]) {
     const el = $(id);
-    el.value = String(t[key]);
+    const isMs = key.startsWith("ms");
+    el.value = isMs
+      ? String(nearest(Number(t[key] ?? t.ms ?? 300)))
+      : String(t[key] ?? "fade");
+    if (el.selectedIndex < 0) el.value = isMs ? "300" : "fade";
     el.addEventListener("change", () =>
-      setTransition({
-        [key]: key.startsWith("ms") ? Number(el.value) : el.value,
-      }),
+      setTransition({ [key]: isMs ? Number(el.value) : el.value }),
     );
   }
 }

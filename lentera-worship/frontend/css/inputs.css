@@ -270,7 +270,7 @@ select {
   color-scheme: dark;
 }
 select:hover { background-color: var(--sel-bg-hover); }
-select:focus-visible,
+select:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--accent); }
 select:disabled { opacity: .4; cursor: not-allowed; }
 select option { background: #2d2d2e; color: var(--sel-text); }
 
@@ -278,13 +278,6 @@ select option { background: #2d2d2e; color: var(--sel-text); }
 #inputs-dlg select { width: 230px; max-width: 100%; }
 #in-ndi-box select { width: auto; flex: 1; }
 #msg-body select  { width: 100%; }
-
-/* ============ Toolbar transisi ============ */
-.tr-f {
-  display: inline-flex; align-items: center; gap: 8px;
-  color: #999; font-size: 11px;
-  text-transform: uppercase; letter-spacing: .06em;
-}
 
 /* ============ Layout yang bisa diubah ukurannya ============ */
 #app { display: flex !important; flex-direction: column; height: 100vh; }
@@ -390,4 +383,21 @@ body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
 /* hapus kalau audio sudah dipakai */
 #inputs-dlg [hidden] { display: none !important; }
 
-.tr-f select { --sel-h: 26px; }
+/* ============ Toolbar transisi ============ */
+#toolbar select {
+  --sel-bg: #2d2d2e;        /* beda dari latar bar #1b1b1b supaya kotaknya terlihat */
+  --sel-bg-hover: #353535;
+  --sel-h: 26px;            /* muat di bar 32px */
+}
+#tb-grp-trans { display: flex; align-items: center; }
+.tr-f {
+  display: flex; align-items: center; gap: 6px;
+  color: #999; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.tr-f + .tr-f {
+  margin-left: 12px; padding-left: 12px;
+  border-left: 1px solid #303030;
+}
+#tr-fg, #tr-bg { width: 112px; }
+#tr-ms-fg, #tr-ms-bg { width: 88px; }

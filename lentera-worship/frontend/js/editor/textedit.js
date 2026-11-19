@@ -5,8 +5,10 @@ import { ed, L, q, fireEd } from "./session.js";
 import { boxStyle, renderPreview } from "./canvas.js";
 import { push } from "./history.js";
 import { state } from "../state.js";
+import { loadOutput } from "../../shared/output-state.js";
 
-const readTxt = (txt) => (txt.contentEditable === "plaintext-only" ? txt.textContent : txt.innerText);
+const readTxt = (txt) =>
+  txt.contentEditable === "plaintext-only" ? txt.textContent : txt.innerText;
 
 // Dipanggil juga oleh ResizeObserver di index.js saat ukuran kanvas berubah.
 export function styleEditBox() {
@@ -17,7 +19,8 @@ export function styleEditBox() {
   Object.assign(box.style, boxStyle(l));
   const st = styleOf(l);
   const slide = state.slides[ed.items[ed.cur].index];
-  const k = q(".ed-canvas").clientWidth / (slide.slide_width || 1366);
+  const sw = slide.slide_width || loadOutput().w;
+  const k = q(".ed-canvas").clientWidth / sw;
   Object.assign(txt.style, {
     fontFamily: st.fontFamily,
     fontSize: st.fontSize * k + "px",
@@ -26,7 +29,9 @@ export function styleEditBox() {
     fontStyle: st.italic ? "italic" : "normal",
     textAlign: st.align || "left",
   });
-  box.style.justifyContent = { top: "flex-start", middle: "center", bottom: "flex-end" }[st.valign] || "flex-start";
+  box.style.justifyContent =
+    { top: "flex-start", middle: "center", bottom: "flex-end" }[st.valign] ||
+    "flex-start";
 }
 
 function placeCaret(txt, x, y) {
@@ -91,7 +96,11 @@ export function startEdit(i, cx, cy) {
   });
   txt.addEventListener("paste", (e) => {
     e.preventDefault();
-    document.execCommand("insertText", false, e.clipboardData.getData("text/plain"));
+    document.execCommand(
+      "insertText",
+      false,
+      e.clipboardData.getData("text/plain"),
+    );
   });
   txt.focus();
   placeCaret(txt, cx, cy);

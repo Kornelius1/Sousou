@@ -1,8 +1,9 @@
-// Model slide: membuat objek slide. Tanpa DOM, tanpa event.
 import { buildMediaLayer } from "../layers.js";
 import { itemName } from "../store.js";
+import { loadOutput } from "../../shared/output-state.js";
 
 export function createBlankSlide(slideNumber = 1) {
+  const out = loadOutput();
   return {
     slide_number: slideNumber,
     group_name: null,
@@ -12,11 +13,12 @@ export function createBlankSlide(slideNumber = 1) {
   };
 }
 
-/** Ubah item library (it) di grup (g) menjadi objek slide bernomor n. */
 export function itemToSlide(it, g, n) {
-  const orig = it.kind === "slide" ? it.slide : null; // objek slide asli dari bundel
+  const orig = it.kind === "slide" ? it.slide : null;
   return {
     ...createBlankSlide(n),
+    // slide dari bundel tanpa ukuran tetap memakai default lama, bukan ukuran output
+    ...(orig ? { slide_width: 1366, slide_height: 768 } : null),
     ...(orig || {}),
     slide_number: n,
     folder_name: g.name,

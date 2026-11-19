@@ -20,7 +20,9 @@ export function payloadFor(k, hideIdx = -1) {
 function renderPreviewNow() {
   if (!ed.root) return;
   const host = q(".ed-render");
-  SR.renderThumbnail(host, payloadFor(ed.cur, ed.editing ? ed.editing.i : -1));
+  const p = payloadFor(ed.cur, ed.editing ? ed.editing.i : -1);
+  q(".ed-canvas").style.setProperty("--ar", p.width / p.height);
+  SR.renderThumbnail(host, p);
   if (host._bg) SR.renderBackground(host._bg, ed.showBg ? state.bg : null, { preview: true });
 }
 

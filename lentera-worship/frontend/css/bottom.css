@@ -83,7 +83,7 @@
 .bgt { border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #1e1e1e; cursor: pointer; }
 .bgt:hover { background: #2a2a2a; }
 .bgt.sel { border-color: var(--select-color); }
-.bgt-thumb { position: relative; aspect-ratio: 16 / 9; background: #000; overflow: hidden; isolation: isolate; }
+.bgt-thumb { position: relative; aspect-ratio: var(--out-ar, 1.7778); background: #000; overflow: hidden; isolation: isolate; }
 .bgt-layer { position: absolute; inset: 0; overflow: hidden; }
 .bgt-cap { margin-top: 3px; font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -204,7 +204,3 @@ body.ex-dragging, body.ex-dragging * { user-select: none !important; -webkit-use
 /* bingkai merah tipis di item yang tayang */
 .bgt.live .bgt-thumb,
 .card.live .thumb { box-shadow: 0 0 0 2px #ff3b30; }
-
-#tb-grp-trans { display: flex; gap: 10px; align-items: center; }
-.tr-f { display: flex; gap: 4px; align-items: center; font-size: 11px; opacity: .85; }
-.tr-f select { font-size: 11px; }

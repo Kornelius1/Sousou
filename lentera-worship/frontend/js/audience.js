@@ -2,6 +2,7 @@
 import { $, setStatus } from "./utils.js";
 import { state } from "./state.js";
 import { convertFileSrc, emitEvent, invoke } from "./tauri.js";
+import { loadOutput } from "../shared/output-state.js";
 
 export function emitPayload(payload) {
   emitEvent("update-slide-event", payload).catch((err) =>
@@ -10,6 +11,7 @@ export function emitPayload(payload) {
 }
 
 export function toPayload(slide) {
+  const out = loadOutput();
   const layers = [...(slide.layers || [])]
     .sort((a, b) => (a.z ?? 0) - (b.z ?? 0))
     .map((l) => ({
@@ -21,8 +23,8 @@ export function toPayload(slide) {
   return {
     content: slide.content,
     mediaPath: firstMedia ? firstMedia.src : null,
-    width: slide.slide_width || 1366,
-    height: slide.slide_height || 768,
+    width: slide.slide_width || out.w,
+    height: slide.slide_height || out.h,
     layers,
   };
 }

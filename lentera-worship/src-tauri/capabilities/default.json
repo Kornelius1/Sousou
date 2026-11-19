@@ -6,6 +6,6 @@
     "main", "audience"
   ],
   "permissions": [
-    "core:default", "core:event:default", "dialog:default"
+    "core:default", "core:event:default", "dialog:default", "core:window:allow-set-fullscreen", "core:window:allow-is-fullscreen"
   ]
 }

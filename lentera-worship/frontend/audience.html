@@ -16,11 +16,11 @@
     }
 
     #bg-layer {
-      position: fixed;
-      inset: 0;
+      position: absolute;
       z-index: 0;
       overflow: hidden;
       pointer-events: none;
+      transform-origin: 0 0;
     }
 
     #stage {
@@ -40,7 +40,7 @@
   <script src="shared/slide-renderer.js"></script>
   <script src="shared/message-renderer.js"></script>
   <script src="shared/message-overlay.js"></script>
-    <script type="module">
+  <script type="module">
     import {
       loadBackground,
       onBackgroundChange,
@@ -57,12 +57,29 @@
     const stage = document.getElementById('stage');
     const layer = document.getElementById('bg-layer');
 
-    const o = loadOutput();
-    SR.setOutput(o.w, o.h);
+    let out = loadOutput();
+    SR.setOutput(out.w, out.h);
+
+    function layoutBg() {
+      const s = Math.min(window.innerWidth / out.w, window.innerHeight / out.h);
+      Object.assign(layer.style, {
+        width: out.w + 'px',
+        height: out.h + 'px',
+        left: (window.innerWidth - out.w * s) / 2 + 'px',
+        top: (window.innerHeight - out.h * s) / 2 + 'px',
+        transform: `scale(${s})`,
+      });
+    }
+    layoutBg();
 
     let lastPayload = { width: 1366, height: 768, layers: [] };
     renderSlide(stage, lastPayload);
-    window.addEventListener('resize', () => fitStage(stage));
+    window.addEventListener('resize', () => {
+      fitStage(stage);
+      layoutBg();
+    });
+
+
 
     await window.__TAURI__.event.listen('update-slide-event', (e) => {
       lastPayload = e.payload;
@@ -71,7 +88,9 @@
 
     // Ukuran output diganti dari Settings: render ulang slide yang sedang tampil.
     await window.__TAURI__.event.listen('output-changed', (e) => {
-      SR.setOutput(e.payload.w, e.payload.h);
+      out = { w: e.payload.w, h: e.payload.h };
+      SR.setOutput(out.w, out.h);
+      layoutBg();
       renderSlide(stage, lastPayload);
     });
 
@@ -90,6 +109,13 @@
     const saved = await loadBackground();
     if (!gotEvent) renderBackground(layer, saved);
     await window.__TAURI__.event.emit('audience-ready');
+
+    window.addEventListener('keydown', async (e) => {
+      if (e.key !== 'F11') return;
+      e.preventDefault();
+      const w = window.__TAURI__.window.getCurrentWindow();
+      await w.setFullscreen(!(await w.isFullscreen()));
+    });
   </script>
 </body>
 

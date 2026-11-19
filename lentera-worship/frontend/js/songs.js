@@ -2,6 +2,7 @@
 import { setStatus } from "./utils.js";
 import { lib } from "./library.js";
 import { resolveTag } from "./tags.js";
+import { loadOutput } from "../shared/output-state.js";
 
 const SECTION = /^\s*\[\s*(.+?)\s*\]\s*$/;
 
@@ -82,6 +83,8 @@ export function splitLyrics(raw, perSlide = 0) {
 }
 
 function verseItem(n, part) {
+  const out = loadOutput();
+  const k = out.w / 1366; // font default 54px dirancang untuk lebar 1366
   const text = part.lines.join("\n");
   const tag = part.name ? resolveTag(part.name) : null;
   return {
@@ -89,6 +92,8 @@ function verseItem(n, part) {
     ...(tag ? { tag } : {}),
     slide: {
       slide_number: n,
+      slide_width: out.w,
+      slide_height: out.h,
       group_name: tag?.name ?? null,
       group_color: tag?.color ?? null,
       content: text,
@@ -108,7 +113,7 @@ function verseItem(n, part) {
           stop_on_clear: null,
           color: null,
           text,
-          style: null,
+          style: { fontSize: Math.round(54 * k) },
         },
       ],
     },
