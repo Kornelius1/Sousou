@@ -5,25 +5,35 @@ const PAIR = { libW: "bgW", bgW: "libW", propsW: "msgW", msgW: "propsW" }; // di
 const CENTER_MIN = 320;
 
 let size = { ...DEF };
-try { Object.assign(size, JSON.parse(localStorage.getItem(KEY)) || {}); } catch {}
+try {
+  Object.assign(size, JSON.parse(localStorage.getItem(KEY)) || {});
+} catch {}
 
 const root = document.documentElement;
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(size)); } catch {} };
-const paint = () => { for (const k in size) root.style.setProperty("--" + k, size[k] + "px"); };
+const save = () => {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(size));
+  } catch {}
+};
+const paint = () => {
+  for (const k in size) root.style.setProperty("--" + k, size[k] + "px");
+};
 
 function limit(key, v) {
   if (key === "bottomH") {
     const max = innerHeight - 260; // sisakan ruang untuk menubar, workspace, toolbar
     return Math.max(MIN.bottomH, Math.min(v, max));
   }
-  const other = key.startsWith("lib") || key === "bgW" ? size.propsW : size.libW;
+  const other =
+    key.startsWith("lib") || key === "bgW" ? size.propsW : size.libW;
   const max = innerWidth - other - CENTER_MIN - 12;
   return Math.max(MIN[key], Math.min(v, max));
 }
 
 function set(key, v, linked) {
   size[key] = Math.round(limit(key, v));
-  if (linked && PAIR[key]) size[PAIR[key]] = Math.round(limit(PAIR[key], size[key]));
+  if (linked && PAIR[key])
+    size[PAIR[key]] = Math.round(limit(PAIR[key], size[key]));
   paint();
 }
 
@@ -42,7 +52,8 @@ function handle(key, dir, ref) {
     const start = key === "bottomH" ? e.clientY : e.clientX;
     const base = size[key];
     const move = (ev) => {
-      const d = key === "bottomH" ? -(ev.clientY - start) : sign * (ev.clientX - start);
+      const d =
+        key === "bottomH" ? -(ev.clientY - start) : sign * (ev.clientX - start);
       set(key, base + d, !ev.altKey);
     };
     const up = () => {
@@ -76,4 +87,13 @@ export function initResizer() {
     for (const k in size) size[k] = Math.round(limit(k, size[k]));
     paint();
   });
+}
+
+export function resetSizes() {
+  size = { ...DEF };
+  for (const k in size) size[k] = Math.round(limit(k, size[k])); // jaga kalau jendela kecil
+  paint();
+  try {
+    localStorage.removeItem(KEY);
+  } catch {}
 }

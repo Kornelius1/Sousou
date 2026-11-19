@@ -6,6 +6,7 @@ import { resetConfirmations } from "./confirm.js";
 import { exportSession, importSession } from "./session.js";
 import { openAbout } from "./about.js";
 import { openSettings } from "./settings.js";
+import { resetSizes } from "./resizer.js";
 
 function togglePane(id, cls) {
   const el = $(id);
@@ -21,9 +22,25 @@ const pressed = (id) => () => $(id).getAttribute("aria-pressed") === "true";
 const press = (id) => () => $(id).click(); // reuse the existing button, so logic isn't duplicated
 
 function resetLayout() {
+  // 1. tampilkan semua panel
   for (const id of ["library", "props", "media-panel", "msg-panel", "toolbar"])
     $(id).hidden = false;
   $("workspace").classList.remove("no-lib", "no-props");
+
+  // 2. kembalikan ukuran panel
+  resetSizes();
+
+  // 3. kembalikan slider zoom (default dari HTML)
+  for (const [id, val] of [
+    ["zoom", 200],
+    ["bg-zoom", 160],
+  ]) {
+    const el = $(id);
+    el.value = val;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
   setStatus("Layout reset.");
 }
 
@@ -88,7 +105,7 @@ const MENUS = [
       { label: "Zoom in slides", run: press("zoom-in") },
       { label: "Zoom out slides", run: press("zoom-out") },
       { sep: true },
-      { label: "Reset layout", run: resetLayout },
+      { label: "Reset layout", run: resetLayout},
     ],
   },
   {
