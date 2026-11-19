@@ -1,7 +1,6 @@
 use std::fs::{self, File};
 use std::io::{self, BufReader};
 use std::path::Path;
-use tauri::Manager;
 
 mod pro_parser;
 mod commands;
@@ -14,6 +13,7 @@ mod jsonfile;
 mod background;
 mod lib_commands;
 mod bible;
+mod data_dir;
 // mod lyrics;
 use pro_parser::{parse_pro_file, parse_pro_file_with, MediaResolver, Slide};
 
@@ -80,10 +80,7 @@ fn load_presentation_bundle(app: tauri::AppHandle, file_path: String) -> Result<
         .map(|c| if c.is_alphanumeric() || c == ' ' || c == '-' || c == '_' { c } else { '_' })
         .collect();
 
-    let cache_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?
+    let cache_dir = data_dir::data_dir(&app)?
         .join("bundles")
         .join(safe);
 
@@ -179,40 +176,42 @@ pub fn run() {
             }
             app.manage(bible_state);
 
-            let dir = app.path().app_data_dir()?;
+            // folder data: terisolasi (temp) untuk window baru, app_data_dir untuk window utama
+            let dir = data_dir::data_dir(app.handle())?;
             app.manage(lib_commands::LibState::load(&dir));
 
             camera::start_server(app.state::<camera::CameraHub>().inner().clone())?;
 
             let audience = tauri::WebviewWindowBuilder::new(
-    app,
-    "audience",
-    tauri::WebviewUrl::App("audience.html".into()),
-)
-.title("Lentera Worship - Audience Display")
-.inner_size(1280.0, 720.0)
-.visible(false)
-.build()?;
+                app,
+                "audience",
+                tauri::WebviewUrl::App("audience.html".into()),
+            )
+            .title("Lentera Worship - Audience Display")
+            .inner_size(1280.0, 720.0)
+            .visible(false)
+            .build()?;
 
-// klik X pada window audience hanya menyembunyikan, tidak menghancurkannya
-let a = audience.clone();
-audience.on_window_event(move |ev| {
-    if let tauri::WindowEvent::CloseRequested { api, .. } = ev {
-        api.prevent_close();
-        let _ = a.set_fullscreen(false);
-        let _ = a.hide();
-    }
-});
+            // klik X pada window audience hanya menyembunyikan, tidak menghancurkannya
+            let a = audience.clone();
+            audience.on_window_event(move |ev| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = ev {
+                    api.prevent_close();
+                    let _ = a.set_fullscreen(false);
+                    let _ = a.hide();
+                }
+            });
 
-
-if let Some(main) = app.get_webview_window("main") {
-    let h = app.handle().clone();
-    main.on_window_event(move |ev| {
-        if let tauri::WindowEvent::CloseRequested { .. } = ev {
-            h.exit(0);
-        }
-    });
-}
+            // keluar hanya setelah window utama benar-benar dihancurkan
+            // (JS menunda penutupan lewat onCloseRequested untuk dialog simpan)
+            if let Some(main) = app.get_webview_window("main") {
+                let h = app.handle().clone();
+                main.on_window_event(move |ev| {
+                    if let tauri::WindowEvent::Destroyed = ev {
+                        h.exit(0);
+                    }
+                });
+            }
 
             Ok(())
         })
@@ -225,12 +224,17 @@ if let Some(main) = app.get_webview_window("main") {
             commands::save_background_state,
             commands::load_groups,
             commands::save_groups,
+            commands::new_window,
+            commands::launch_file,
+            commands::is_isolated,
             ndi::ndi_discover,
             ndi::ndi_status,
             ndi::ndi_open_download,
             ndi::ndi_preview_start,
             ndi::ndi_preview_stop,
-            camera::cam_list, camera::cam_start, camera::cam_stop,
+            camera::cam_list,
+            camera::cam_start,
+            camera::cam_stop,
             lib_commands::library_get,
             lib_commands::library_create_group,
             lib_commands::library_rename_group,
@@ -250,7 +254,7 @@ if let Some(main) = app.get_webview_window("main") {
             bible::commands::bible_passage,
             bible::commands::bible_search,
             bible::commands::bible_import_usfm,
-            bible::commands::bible_download_usfm, 
+            bible::commands::bible_download_usfm,
             bible::commands::bible_remove,
             // lyrics::lyrics_status,
             // lyrics::lyrics_set_key,
@@ -258,6 +262,11 @@ if let Some(main) = app.get_webview_window("main") {
             // lyrics::lyrics_search,
             // lyrics::lyrics_get,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, event| {
+            if let tauri::RunEvent::Exit = event {
+                data_dir::cleanup();
+            }
+        });
 }
