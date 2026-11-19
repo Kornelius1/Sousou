@@ -40,41 +40,52 @@
   <script src="shared/slide-renderer.js"></script>
   <script src="shared/message-renderer.js"></script>
   <script src="shared/message-overlay.js"></script>
-  <script type="module">
+    <script type="module">
     import {
       loadBackground,
       onBackgroundChange,
       onBackgroundVisible,
     } from './shared/background-state.js';
     import { onTransition, getTransition } from './shared/transition-state.js';
+    import { loadOutput } from './shared/output-state.js';
 
     await onTransition(() => { });
 
     const T = getTransition;
-    const { renderSlide, fitStage, renderBackground } = window.SlideRenderer;
+    const SR = window.SlideRenderer;
+    const { renderSlide, fitStage, renderBackground } = SR;
     const stage = document.getElementById('stage');
     const layer = document.getElementById('bg-layer');
 
-    // Slide dulu: layar hitam awal, lalu listener, supaya tidak ada event yang terlewat.
-    renderSlide(stage, { width: 1366, height: 768, layers: [] });
+    const o = loadOutput();
+    SR.setOutput(o.w, o.h);
+
+    let lastPayload = { width: 1366, height: 768, layers: [] };
+    renderSlide(stage, lastPayload);
     window.addEventListener('resize', () => fitStage(stage));
-    await window.__TAURI__.event.listen('update-slide-event', (e) => renderSlide(stage, e.payload, { type: T().fg, ms: T().ms }));
 
-    window.SlideRenderer.setTransition(getTransition());  
-    onTransition((t) => window.SlideRenderer.setTransition(t));
+    await window.__TAURI__.event.listen('update-slide-event', (e) => {
+      lastPayload = e.payload;
+      renderSlide(stage, lastPayload);
+    });
 
-    // Mata background: hanya menyembunyikan layer background di layar audience.
-    // visibility:hidden membuat video tetap berjalan, jadi saat dibuka lagi tidak mulai dari awal.
+    // Ukuran output diganti dari Settings: render ulang slide yang sedang tampil.
+    await window.__TAURI__.event.listen('output-changed', (e) => {
+      SR.setOutput(e.payload.w, e.payload.h);
+      renderSlide(stage, lastPayload);
+    });
+
+    SR.setTransition(getTransition());
+    onTransition((t) => SR.setTransition(t));
+
     await onBackgroundVisible((v) => {
       layer.style.visibility = v ? '' : 'hidden';
     });
 
-    // Background: pasang listener sebelum membaca disk, agar perubahan yang
-    // datang saat startup tidak tertimpa hasil baca yang lebih lama.
     let gotEvent = false;
     await onBackgroundChange((bg) => {
       gotEvent = true;
-      renderBackground(layer, bg, { transition: { type: T().bg, ms: T().ms } });
+      renderBackground(layer, bg);
     });
     const saved = await loadBackground();
     if (!gotEvent) renderBackground(layer, saved);

@@ -6,6 +6,7 @@ import { on } from "./events.js";
 import { toPayload } from "./audience.js";
 import { convertFileSrc } from "./tauri.js";
 import { isBackgroundVisible } from "../shared/background-state.js";
+import { loadOutput } from "../shared/output-state.js";
 
 const SR = window.SlideRenderer;
 const pvHost = $("pv-host");
@@ -200,8 +201,9 @@ function buildStage(slide) {
   const p = slide
     ? toPayload(slide)
     : { content: "", mediaPath: null, width: 1366, height: 768, layers: [] };
-  stageW = p.width;
-  pvHost.style.aspectRatio = `${p.width} / ${p.height}`;
+  const out = loadOutput();
+  stageW = out.w;
+  pvHost.style.aspectRatio = `${out.w} / ${out.h}`;
 
   if (!stage || stage.parentNode !== pvHost) {
     pvHost.replaceChildren();
@@ -213,20 +215,26 @@ function buildStage(slide) {
     stage.append(bgHolder);
     pvHost.append(stage);
   }
-  stage.style.cssText = `width:${p.width}px;height:${p.height}px;overflow:hidden`;
+  stage.style.cssText = `width:${out.w}px;height:${out.h}px;overflow:hidden`;
 
   const old = [...stage.children].filter((c) => c !== bgHolder);
 
   syncBackground(bgNow());
 
-  const fresh = [];
+  // isi slide: ukuran asli slide, di-fit ke kanvas output
+  const k = Math.min(out.w / p.width, out.h / p.height);
+  const tx = (out.w - p.width * k) / 2;
+  const ty = (out.h - p.height * k) / 2;
+  const fitBox = document.createElement("div");
+  fitBox.style.cssText =
+    `position:absolute;left:0;top:0;width:${p.width}px;height:${p.height}px;` +
+    `transform-origin:0 0;transform:translate(${tx}px,${ty}px) scale(${k});`;
   for (const l of state.blanked ? [] : p.layers) {
     const el = layerEl(l);
-    if (el) {
-      stage.append(el);
-      fresh.push(el);
-    }
+    if (el) fitBox.append(el);
   }
+  stage.append(fitBox);
+  const fresh = [fitBox];
   applyScale();
 
   const seq = ++buildSeq;
@@ -429,4 +437,5 @@ export function initPreview() {
   on("slide:shown", () => renderPreview());
   on("blank:changed", () => renderPreview({ keep: true }));
   pvUi();
+  window.__TAURI__.event.listen("output-changed", () => renderPreview({ keep: true }));
 }

@@ -3,7 +3,7 @@
 #toolbar .sp { flex: 1; }
 .tb { background: #2d2d2d; color: #ddd; border: 1px solid #3a3a3a; border-radius: 3px; padding: 3px 12px; font: inherit; cursor: pointer; }
 .tb:hover { background: #3a3a3a; }
-.tb.on { background: #bb86fc; color: #121212; border-color: #bb86fc; }
+.tb.on { background: #e5a64b; color: #121212; border-color: #e5a64b; }
 .tb kbd { color: #888; font: inherit; margin-left: 4px; }
 .tb.on kbd { color: #333; }
 #tb-bible:hover { background: #28507f; }
@@ -56,7 +56,7 @@
 }
 #bg-drop svg { width: 28px; height: 28px; fill: currentColor; margin-bottom: 2px; }
 #bg-drop b { font-size: 12px; font-weight: 600; color: #bbb; }
-#bg-drop:hover { border-color: #bb86fc; color: #bbb; background: #242424; }
+#bg-drop:hover { border-color: #e5a64b; color: #bbb; background: #242424; }
 #bg-drop:focus-visible, #media-panel.dragover #bg-drop { border-color: #ccc; color: #ddd; background: #242424; }
 #bg-stage:hover #bg-replace { opacity: 1; }
 #media-panel.dragover #bg-stage { outline: 2px dashed #ccc; outline-offset: -2px; }

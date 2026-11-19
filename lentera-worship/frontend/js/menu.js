@@ -5,6 +5,7 @@ import { importFile } from "./sorter/bundle-import.js";
 import { resetConfirmations } from "./confirm.js";
 import { exportSession, importSession } from "./session.js";
 import { openAbout } from "./about.js";
+import { openSettings } from "./settings.js";
 
 function togglePane(id, cls) {
   const el = $(id);
@@ -106,6 +107,8 @@ const MENUS = [
       },
       { sep: true },
       { label: "Bible…", run: press("tb-bible") },
+      { sep: true },
+      { label: "Settings…", run: () => openSettings() },
     ],
   },
   {

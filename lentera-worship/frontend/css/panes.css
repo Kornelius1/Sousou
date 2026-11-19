@@ -1,26 +1,26 @@
 .pane-title {
   display: flex; align-items: center; gap: 8px;
-  height: 34px; box-sizing: border-box; padding: 0 14px;   /* tinggi tetap, tidak ikut isi */
-  background: #1b1b1b; border-bottom: 1px solid #2a2a2a;
-  color: hsl(0, 0%, 100%); font-weight: 600; flex-shrink: 0;
+  height: 34px; box-sizing: border-box; padding: 0 14px;
+  background: #1b1b1b; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: #fff; font-weight: 600; flex-shrink: 0;
 }
 
 .pane-title .sp { flex: 1; }
 .pane-title label { color: #999; font-weight: 400; display: flex; gap: 6px; align-items: center; }
 
 /* ---------- pustaka media (kiri) ---------- */
-#library { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-right: 1px solid #2a2a2a; overflow: hidden; }
+#library { display: flex; flex-direction: column; min-height: 0; background: #1b1b1b; border-right: 1px solid rgba(255, 255, 255, 0.06); overflow: hidden; }
 #lib-body { flex: 1; overflow: auto; padding: 0 8px 10px; }
-#lib-body h4 { margin: 12px 0 6px; color: #03dac6; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+#lib-body h4 { margin: 12px 0 6px; color: var(--accent, #e5a64b); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
 .lib-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-.lib-item { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 4px; padding: 4px; min-width: 0; }
-.lib-item.active { border-color: var(--select-color); }
+.lib-item { background: #252526; border: 2px solid transparent; border-radius: 4px; padding: 4px; min-width: 0; }
+.lib-item.active { border-color: var(--accent, #e5a64b); }
 .lib-thumb { aspect-ratio: 16 / 9; background: #000; overflow: hidden; border-radius: 2px; }
 .lib-thumb img, .lib-thumb video { width: 100%; height: 100%; object-fit: cover; display: block; }
 .lib-name { font-size: 11px; color: #bbb; margin: 3px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lib-btns { display: flex; gap: 3px; }
-.lib-btns button { flex: 1; background: #2d2d2d; color: #ccc; border: 0; border-radius: 3px; padding: 3px 0; font: inherit; font-size: 11px; cursor: pointer; }
-.lib-btns button:hover { background: #bb86fc; color: #121212; }
+.lib-btns button { flex: 1; background: #2d2d2e; color: #ccc; border: 0; border-radius: 3px; padding: 3px 0; font: inherit; font-size: 11px; cursor: pointer; }
+.lib-btns button:hover { background: var(--accent, #e5a64b); color: #121212; }
 .lib-btns button.x { flex: 0 0 24px; }
 
 /* ---------- slide sorter (tengah) ---------- */
@@ -30,12 +30,12 @@
   display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--thumb, 200px), 1fr));
 }
 #slide-grid > .empty { grid-column: 1 / -1; color: #888; font-style: italic; }
-#warn-slot details.warnings { background: #2b2417; border-left: 5px solid #ffb74d; padding: 8px 14px; color: #ffcc80; font-size: 12px; }
+#warn-slot details.warnings { background: #2b2417; border-left: 4px solid #ffb74d; padding: 8px 14px; color: #ffcc80; font-size: 12px; }
 #warn-slot summary { cursor: pointer; font-weight: 600; }
 #warn-slot ul { margin: 6px 0 0; padding-left: 20px; }
 
-.card { position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #1e1e1e; outline: none; }
-.card:hover { background: #2a2a2a; }
+.card { position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 4px; padding: 4px; background: #252526; outline: none; }
+.card:hover { background: #2d2d2e; }
 .thumb {
   position: relative; width: 100%; overflow: hidden; isolation: isolate;
   background: repeating-conic-gradient(#2c2c2c 0 25%, #1c1c1c 0 50%) 0 0 / 16px 16px;
@@ -45,12 +45,11 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ---------- background (panel bawah): judul tetap, grid bisa di-scroll ---------- */
+/* ---------- background (panel bawah) ---------- */
 #bg-detail { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 #bg-detail > .pane-title { flex: none; }
 #bg-detail > #bg-slides { flex: 1; min-height: 0; overflow-y: auto; }
 
-/* ukuran thumbnail mengikuti slider (--bgt diisi JS), sama seperti #slide-grid */
 #bg-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--bgt, 160px), 1fr));
@@ -62,30 +61,31 @@
 /* ---------- properties + preview (kanan) ---------- */
 #props {
   display: flex; flex-direction: column; min-height: 0; background: #1b1b1b;
-  border-left: 1px solid #2a2a2a; overflow: hidden;
+  border-left: 1px solid rgba(255, 255, 255, 0.06); overflow: hidden;
   --bg2: #262626; --bg3: #353535; --line: #303030;
   --txt: #cdcdcd; --dim: #868686; --hi: #f4f4f4;
 }
 #props-scroll { flex: 1; overflow: auto; min-height: 0; padding: 10px 0 14px; }
 #props .body { padding: 0 14px; }
-#props h4 { margin: 16px 0 8px; color: #03dac6; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+#props h4 { margin: 16px 0 8px; color: var(--accent, #e5a64b); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
 #props .body > .f:first-child + h4 { margin-top: 14px; }
 .f { display: grid; grid-template-columns: 86px 1fr; gap: 6px 8px; align-items: center; }
 .f label { color: #aaa; }
 .f input[type=number], #p-layer {
-  width: 100%; box-sizing: border-box; background: #2d2d2d; color: #cdcdcd;
-  border: 1px solid #3a3a3a; border-radius: 3px; padding: 4px 6px; font: inherit;
+  width: 100%; box-sizing: border-box; background: #2d2d2e; color: #ddd;
+  border: 0; border-radius: 6px; padding: 4px 8px; height: 26px; font: inherit;
 }
+.f input[type=number]:focus-visible, #p-layer:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--accent, #e5a64b); }
 .f input[type=color] { width: 40px; height: 26px; border: 0; background: none; padding: 0; }
 .btnrow { display: flex; gap: 4px; }
-.tg { flex: 1; background: #2d2d2d; color: #ccc; border: 1px solid #3a3a3a; border-radius: 3px; padding: 4px 0; font: inherit; cursor: pointer; }
-.tg:hover { background: #3a3a3a; }
-.tg.on { background: hsl(300, 100%, 100%); color: #121212; border-color: hsl(270, 100%, 99%); }
+.tg { flex: 1; background: #2d2d2e; color: #ccc; border: 0; border-radius: 4px; padding: 4px 0; font: inherit; cursor: pointer; }
+.tg:hover { background: #3a3a3a; color: #fff; }
+.tg.on { background: var(--accent, #e5a64b); color: #121212; }
 .tg:disabled { opacity: .4; pointer-events: none; }
 .muted { color: #888; font-style: italic; padding: 0 14px; }
 
-#preview { flex-shrink: 0; border-top: 1px solid #888; padding: 8px 14px 12px; background: #1b1b1b; }
-.pv-title { color: hsl(0, 0%, 100%); font-weight: 600; margin-bottom: 6px; }
+#preview { flex-shrink: 0; border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 8px 14px 12px; background: #1b1b1b; }
+.pv-title { color: #fff; font-weight: 600; margin-bottom: 6px; }
 #pv-host { position: relative; overflow: hidden; background: #000; cursor: pointer; }
 #pv-time { white-space: nowrap; font-variant-numeric: tabular-nums; color: #aaa; font-size: 11px; min-width: 64px; text-align: right; }
 #pv-host .pv-stage { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
@@ -95,19 +95,20 @@
 .pv-controls { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px; }
 .pv-btn {
   display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0; flex: none;
-  background: #2d2d2d; color: #ccc; border: 1px solid #3a3a3a; border-radius: 4px;
+  background: #2d2d2e; color: #ccc; border: 0; border-radius: 6px;
   font: inherit; font-size: 10px; font-weight: 600; cursor: pointer;
   transition: background .12s, transform .08s;
 }
 .pv-btn svg { width: 12px; height: 12px; fill: currentColor; display: block; }
 .pv-btn.pill { padding: 0 8px; }
-.pv-btn:hover:not(:disabled) { background: #3d3d3d; }
+.pv-btn:hover:not(:disabled) { background: #3a3a3a; color: #fff; }
 .pv-btn:active:not(:disabled) { transform: scale(.94); }
-.pv-btn.on { background: #e0e0e0; color: #121212; border-color: #e0e0e0; }
+.pv-btn.on { background: var(--accent, #e5a64b); color: #121212; }
 .pv-btn:disabled { opacity: .35; cursor: default; }
-.pv-btn.primary { min-width: 34px; height: 26px; background: #e0e0e0; color: #121212; border-color: #e0e0e0; }
+.pv-btn.primary { min-width: 34px; height: 26px; background: var(--accent, #e5a64b); color: #121212; }
 .pv-btn.primary svg { width: 14px; height: 14px; }
-.pv-btn.primary:hover:not(:disabled) { background: #fff; }
+.pv-btn.primary:hover:not(:disabled) { background: #f0b866; color: #121212; }
+.pv-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(229, 166, 75, 0.35); }
 
 #pv-host.empty::after {
   content: "";
@@ -120,7 +121,7 @@
 
 /* ---------- kartu slide ---------- */
 #slide-grid .card { outline: none; border: 2px solid transparent; }
-#slide-grid .card.active { border-color: var(--select-color); }
+#slide-grid .card.active { border-color: var(--accent, #e5a64b); }
 #slide-grid .card:focus-visible:not(.active) { border-color: rgba(255, 255, 255, 0.4); }
 .card .cap {
   display: flex;
@@ -151,32 +152,31 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-.card.tagged { background: color-mix(in srgb, var(--tag-color) 16%, #1e1e1e); }
+.card.tagged { background: color-mix(in srgb, var(--tag-color) 16%, #252526); }
 .card.tagged .cap { border-left-color: var(--tag-color); }
 
-/* ---------- kontrol di judul panel: ukuran thumbnail + mata ---------- */
+/* ---------- kontrol di judul panel ---------- */
 .zoom-ctl { display: flex; align-items: center; gap: 4px; }
 .zoom-lbl { color: #888; font-weight: 400; line-height: 1; margin-right: 4px; }
 
-.pane-sep { width: 1px; height: 12px; margin: 0 4px; background: #333; flex: none; }
+.pane-sep { width: 1px; height: 12px; margin: 0 4px; background: rgba(255, 255, 255, 0.1); flex: none; }
 
-/* tombol ikon: mata (.clear-btn), edit, zoom +/- */
 .clear-btn, .zoom-btn {
   width: 22px; height: 22px; padding: 0; flex: none;
   display: grid; place-items: center;
   border: 0; background: none; cursor: pointer;
 }
-.clear-btn { color: #999; }
+.clear-btn { color: #999; border-radius: 3px; }
 .zoom-btn  { color: #aaa; border-radius: 3px; }
 .clear-btn svg, .zoom-btn svg { width: 15px; height: 15px; display: block; grid-area: 1 / 1; }
 
-.clear-btn:focus-visible { outline: 1px solid #777; outline-offset: 1px; }
+.clear-btn:hover:not(:disabled) { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.clear-btn[aria-pressed="true"] { color: var(--accent, #e5a64b); }
+.clear-btn:focus-visible, .zoom-btn:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--accent, #e5a64b); }
 .zoom-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); color: #fff; }
 .zoom-btn:active:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
 .zoom-btn:disabled { color: #555; cursor: default; }
-.zoom-btn:focus-visible { outline: 1px solid #aaa; outline-offset: 1px; }
 
-/* tampil = mata terbuka, dikosongkan/disembunyikan = mata terpejam */
 .clear-btn .eye-closed { display: none; }
 .clear-btn[aria-pressed="true"] .eye-open { display: none; }
 .clear-btn[aria-pressed="true"] .eye-closed { display: block; }
@@ -190,7 +190,7 @@ input[type="range"] {
   width: var(--range-w); max-width: 100%;
   height: 18px; margin: 0; flex: none;
   background: transparent; cursor: pointer;
-  --fill: 0%;                 /* diisi JS */
+  --fill: 0%;
 }
 input[type="range"]:focus { outline: none; }
 input[type="range"]:disabled { opacity: .35; cursor: default; }
@@ -215,7 +215,6 @@ input[type="range"]:active::-webkit-slider-thumb { background: #fff; transform: 
 input[type="range"]:hover::-moz-range-thumb,
 input[type="range"]:active::-moz-range-thumb { background: #fff; }
 input[type="range"]:focus-visible::-webkit-slider-thumb,
-input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px rgba(255, 255, 255, .35); }
+input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px rgba(229, 166, 75, .35); }
 
-/* seek preview: gaya sama, lebarnya mengisi baris */
 #pv-seek { flex: 1; width: auto; min-width: 0; --fill: var(--p, 0%); }

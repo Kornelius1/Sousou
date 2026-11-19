@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="css/inputs.css" />
   <link rel="stylesheet" href="css/bible.css" />
   <link rel="stylesheet" href="css/song.css" />
+  <link rel="stylesheet" href="css/settings.css" />
 </head>
 
 <body>
@@ -452,6 +453,25 @@
       <button id="in-cancel" type="button">Cancel</button>
       <button id="in-close" type="button" class="primary">Done</button>
     </footer>
+  </dialog>
+
+  <dialog id="settings-dlg">
+    <h2>Settings</h2>
+    <h3>Audience output</h3>
+    <label class="row"><span>Resolution</span>
+      <select id="out-preset">
+        <option value="1920x1080">16:9 Full HD (1920×1080)</option>
+        <option value="3840x2160">16:9 4K (3840×2160)</option>
+        <option value="1920x1200">16:10 (1920×1200)</option>
+        <option value="1024x768">4:3 (1024×768)</option>
+        <option value="custom">Custom (LED wall)…</option>
+      </select>
+    </label>
+    <div class="row" id="out-custom" hidden>
+      <input id="out-w" type="number" min="320" max="16384" step="1" /> ×
+      <input id="out-h" type="number" min="240" max="16384" step="1" />
+    </div>
+    <form method="dialog"><button class="cf-btn">Close</button></form>
   </dialog>
 
   <dialog id="about-dlg">

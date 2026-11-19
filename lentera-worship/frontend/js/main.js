@@ -33,7 +33,8 @@ import { initTransitionUi } from "./transition-ui.js";
 import { setTransition } from "../shared/transition-state.js";
 import "./songs.js";
 import "./song-import.js";
-import * as G from "./groups.js";
+import "./settings.js";
+import { loadOutput, saveOutput } from "../shared/output-state.js";
 
 /* ---- Slider: isi --fill supaya trek yang terisi ikut posisi gagang ---- */
 const setFill = (el) => {
@@ -102,6 +103,7 @@ if (!hadGroups) migrateBackground(state.bg);
 initExplorer();
 initBackgroundPanel();
 window.__TAURI__.event.listen("audience-ready", () => {
+  saveOutput(loadOutput());
   setTransition({});
   setBackgroundVisible(isBackgroundVisible());
   broadcastMessage();
