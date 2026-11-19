@@ -107,3 +107,7 @@
   outline: none;
   box-shadow: 0 0 0 2px rgba(229, 166, 75, 0.35);
 }
+
+#settings-dlg .cf-btns {
+  padding: 0 18px 16px;
+}

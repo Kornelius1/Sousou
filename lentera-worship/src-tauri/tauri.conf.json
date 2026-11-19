@@ -11,6 +11,7 @@
     "windows": [
       {
         "label": "main",
+        "decorations": false ,
         "title": "Lentera Worship - Control Center",
         "width": 1280,
         "height": 760,

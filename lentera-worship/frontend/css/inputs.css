@@ -385,9 +385,9 @@ body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
 
 /* ============ Toolbar transisi ============ */
 #toolbar select {
-  --sel-bg: #2d2d2e;        /* beda dari latar bar #1b1b1b supaya kotaknya terlihat */
-  --sel-bg-hover: #353535;
-  --sel-h: 26px;            /* muat di bar 32px */
+  --sel-bg: #1b1b1b;
+  --sel-bg-hover: #202020;
+  --sel-h: 26px;
 }
 #tb-grp-trans { display: flex; align-items: center; }
 .tr-f {
@@ -395,9 +395,6 @@ body.rz-drag iframe, body.rz-drag video { pointer-events: none; }
   color: #999; font-size: 11px;
   text-transform: uppercase; letter-spacing: .06em;
 }
-.tr-f + .tr-f {
-  margin-left: 12px; padding-left: 12px;
-  border-left: 1px solid #303030;
-}
+.tr-f + .tr-f { margin-left: 20px; }
 #tr-fg, #tr-bg { width: 112px; }
 #tr-ms-fg, #tr-ms-bg { width: 88px; }

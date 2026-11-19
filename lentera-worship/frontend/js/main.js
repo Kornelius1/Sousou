@@ -124,6 +124,12 @@ window.__TAURI__.event.listen("output-changed", () => {
     emitPayload(toPayload(state.slides[i]));
 });
 window.__TAURI__.event.listen("output-changed", applyOutputRatio);
+window.addEventListener("keydown", async (e) => {
+  if (e.key !== "F11") return;
+  e.preventDefault();
+  const w = window.__TAURI__.window.getCurrentWindow();
+  await w.setFullscreen(!(await w.isFullscreen()));
+});
 syncPanel(state.bg);
 refreshThumbBackgrounds();
 renderLibrary();

@@ -3,9 +3,19 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": [
-    "main", "audience"
+    "main",
+    "audience"
   ],
   "permissions": [
-    "core:default", "core:event:default", "dialog:default", "core:window:allow-set-fullscreen", "core:window:allow-is-fullscreen"
+    "core:default",
+    "core:event:default",
+    "dialog:default",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-is-fullscreen",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-is-maximized"
   ]
 }
