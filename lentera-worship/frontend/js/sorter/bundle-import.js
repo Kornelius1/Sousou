@@ -18,7 +18,7 @@ export async function importFile() {
   const filePath = await openDialog({
     multiple: false,
     filters: [
-      { name: "Lentera Worship", extensions: ["zip"] },
+      { name: "ProPresenter", extensions: ["probundle"] },
     ],
   });
   if (!filePath) return;
