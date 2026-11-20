@@ -1,6 +1,7 @@
-name: Release (disabled, builds WITHOUT NDI)
+name: Release
 on:
-  workflow_dispatch:
+  push:
+    tags: ['v*']
 
 permissions:
   contents: write
@@ -33,6 +34,32 @@ jobs:
 
       - run: cargo install tauri-cli --version "=2.12.4" --locked
 
+      - name: Download encrypted NDI runtime
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.NDI_REPO_TOKEN }}
+        run: |
+          New-Item -ItemType Directory -Force lentera-worship/ndi | Out-Null
+          gh release download ndi-runtime-v1 `
+            --repo Kornelius1/lentera-private `
+            --pattern "*.gpg" `
+            --dir lentera-worship/ndi `
+            --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Failed to download NDI runtime" }
+
+      - name: Decrypt NDI runtime
+        shell: pwsh
+        env:
+          NDI_PASSPHRASE: ${{ secrets.NDI_DLL_PASSPHRASE }}
+        run: |
+          $env:PATH += ";C:\Program Files\Git\usr\bin"
+          New-Item -ItemType Directory -Force lentera-worship/src-tauri/libs | Out-Null
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$env:NDI_PASSPHRASE" `
+            --output lentera-worship/src-tauri/libs/Processing.NDI.Lib.x64.dll `
+            --decrypt lentera-worship/ndi/Processing.NDI.Lib.x64.dll.gpg
+          if ($LASTEXITCODE -ne 0) { throw "Failed to decrypt NDI runtime" }
+          if (-not (Test-Path lentera-worship/src-tauri/libs/Processing.NDI.Lib.x64.dll)) { throw "DLL missing after decrypt" }
+
       - id: tauri
         uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
         env:
@@ -43,6 +70,7 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Lentera Worship ${{ github.ref_name }}'
           releaseDraft: false
+          args: --features ndi --config src-tauri/tauri.ndi.conf.json
 
       - name: Checksums and release notes
         shell: pwsh
@@ -69,3 +97,14 @@ jobs:
 
           gh release edit $env:TAG --notes-file release-notes.md
           gh release upload $env:TAG SHA256SUMS.txt --clobber
+
+  # Aktifkan setelah PR winget 0.1.3 merged dan secret WINGET_TOKEN dibuat.
+  # winget:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: vedantmgoyal9/winget-releaser@v2   # idealnya pin ke SHA
+  #       with:
+  #         identifier: Kornelius1.LenteraWorship   # samakan dengan PackageIdentifier di manifest
+  #         installers-regex: '-setup\.exe$'
+  #         token: ${{ secrets.WINGET_TOKEN }}

@@ -24,15 +24,26 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-0A1F3D?style=flat&labelColor=0A1F3D&color=EA2227" alt="License">
 </p>
 
-![Lentera Worship screenshot](docs/images/Screenshot1.png)
+![Lentera Worship workspace with a worship service loaded](docs/images/screenshot2.png)
 
 ## Features
+
 - 🎵 **Song lyrics**: display lyrics slide by slide
 - 📖 **Bible verses**: show scripture during the service
 - 🖥️ **Projector view**: a clean output screen for the projector
 - 📡 **NDI® output**: send the output over the network to NDI-compatible software ([ndi.video](https://ndi.video))
 
+<p align="center">
+  <img src="docs/images/screenshot1.png" alt="Empty workspace, ready to build a service" width="49%">
+  <img src="docs/images/screenshot2.png" alt="Workspace with songs and verses in the service order" width="49%">
+</p>
+<p align="center">
+  <img src="docs/images/screenshot3.png" alt="Projector output window" width="49%">
+  <img src="docs/images/screenshot4.png" alt="Bible verse view" width="49%">
+</p>
+
 ## Download (Windows)
+
 Get the latest installer from the [Releases page](https://github.com/Kornelius1/lentera-worship/releases/latest).
 We recommend the `-setup.exe` file for most users. The `.msi` is for managed deployment.
 
@@ -44,6 +55,7 @@ We recommend the `-setup.exe` file for most users. The `.msi` is for managed dep
 > signing. See [Code signing policy](#code-signing-policy).
 
 ### Verify your download
+
 Each release page lists SHA256 checksums. To check your file in PowerShell:
 
 ```powershell
@@ -53,24 +65,27 @@ Get-FileHash .\<file-name> -Algorithm SHA256
 Compare the result with the checksum on the release page.
 
 ## Content and copyright
+
 The license below covers the application code only. Song lyrics and Bible
 translations may be protected by copyright. Make sure you have the right to use
 any content you add.
 
 ## Bible translations
+
 The app downloads Bible translations from [eBible.org](https://ebible.org). Each keeps its own license:
 
-| Translation | License |
-|---|---|
-| TSI (Terjemahan Sederhana Indonesia) | CC BY-SA 4.0 |
-| BFA (Alkitab Gratis untuk Semua) | CC BY-SA 4.0 |
-| BSB (Berean Standard Bible) | Public domain |
-| WEB (World English Bible) | Public domain |
+| Translation                          | License       |
+| ------------------------------------ | ------------- |
+| TSI (Terjemahan Sederhana Indonesia) | CC BY-SA 4.0  |
+| BFA (Alkitab Gratis untuk Semua)     | CC BY-SA 4.0  |
+| BSB (Berean Standard Bible)          | Public domain |
+| WEB (World English Bible)            | Public domain |
 
 The app uses the internet to download these translations. Their licenses are
 separate from this project's MIT OR Apache-2.0 license.
 
 ## NDI
+
 NDI output is optional when building from source (`--features ndi`). Release
 installers include it and bundle the NDI runtime (`Processing.NDI.Lib.x64.dll`)
 from the NDI SDK by Vizrt NDI AB. That library is licensed under the
@@ -88,6 +103,7 @@ cargo tauri build --features ndi --config src-tauri/tauri.ndi.conf.json
 ```
 
 ## Build from source
+
 Requirements: [Rust](https://rustup.rs) 1.90 or newer, [Node.js](https://nodejs.org),
 and the Tauri CLI.
 
@@ -100,11 +116,13 @@ cargo tauri build        # build the installer
 ```
 
 ## Privacy
+
 Lentera Worship does not collect or transmit personal data. The only network
 activity is downloading Bible translations from eBible.org when you choose to,
 and optional NDI output on your local network.
 
 ## Code signing policy
+
 Windows installers are built by GitHub Actions from this public repository.
 We have applied for free code signing from the SignPath Foundation. If
 approved, the statement will read:
@@ -116,9 +134,11 @@ Free code signing provided by [SignPath.io](https://signpath.io), certificate by
   described in the [NDI](#ndi) section.
 
 ## Contributing
+
 Issues and pull requests are welcome.
 
 ## License
+
 Licensed under either of
 
 - [Apache License, Version 2.0](LICENSE-APACHE)
@@ -127,10 +147,12 @@ Licensed under either of
 at your option.
 
 ### Contribution
+
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in this project, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
 ## Third-party
+
 - [Font Awesome Free](https://fontawesome.com/license/free): icons CC BY 4.0, fonts SIL OFL 1.1, code MIT.
 - NDI runtime: see the NDI section above.

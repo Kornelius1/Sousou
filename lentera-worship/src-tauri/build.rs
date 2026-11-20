@@ -10,5 +10,10 @@ fn main() {
         .compile_protos(&["src/pro_parser/schema.proto"], &["src/pro_parser/"])
         .expect("Gagal mengompilasi schema.proto");
 
+    println!("cargo:rerun-if-changed=icons/icon.ico");
+    println!("cargo:rerun-if-changed=icons/icon.png");
+    println!("cargo:rerun-if-changed=tauri.conf.json");
+    println!("cargo:rerun-if-changed=tauri.ndi.conf.json");
+
     tauri_build::build();
 }
