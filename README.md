@@ -24,7 +24,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-0A1F3D?style=flat&labelColor=0A1F3D&color=EA2227" alt="License">
 </p>
 
-![Lentera Worship workspace with a worship service loaded](docs/images/screenshot2.png)
+![Lentera Worship workspace with a worship service loaded](docs/images/Screenshot2.png)
 
 ## Features
 
@@ -34,12 +34,12 @@
 - 📡 **NDI® output**: send the output over the network to NDI-compatible software ([ndi.video](https://ndi.video))
 
 <p align="center">
-  <img src="docs/images/screenshot1.png" alt="Empty workspace, ready to build a service" width="49%">
-  <img src="docs/images/screenshot2.png" alt="Workspace with songs and verses in the service order" width="49%">
+  <img src="docs/images/Screenshot1.png" alt="Empty workspace, ready to build a service" width="49%">
+  <img src="docs/images/Screenshot2.png" alt="Workspace with songs and verses in the service order" width="49%">
 </p>
 <p align="center">
-  <img src="docs/images/screenshot3.png" alt="Projector output window" width="49%">
-  <img src="docs/images/screenshot4.png" alt="Bible verse view" width="49%">
+  <img src="docs/images/Screenshot3.png" alt="Projector output window" width="49%">
+  <img src="docs/images/Screenshot4.png" alt="Bible verse view" width="49%">
 </p>
 
 ## Download (Windows)
