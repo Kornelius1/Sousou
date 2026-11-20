@@ -84,9 +84,13 @@ jobs:
           $version = $env:TAG.TrimStart('v')
           $paths = @($env:ARTIFACT_PATHS | ConvertFrom-Json | Where-Object { $_ -match '\.(exe|msi)$' })
           if ($paths.Count -eq 0) { throw "No installer artifacts found" }
-          $lines = foreach ($p in $paths) {
-            $h = (Get-FileHash $p -Algorithm SHA256).Hash
-            "$h  $(Split-Path $p -Leaf)"
+          $files = foreach ($p in $paths) {
+            $dest = Join-Path $env:RUNNER_TEMP ((Split-Path $p -Leaf).Replace(' ', '.'))
+            Copy-Item $p $dest
+            $dest
+          }
+          $lines = foreach ($f in $files) {
+            "$((Get-FileHash $f -Algorithm SHA256).Hash)  $(Split-Path $f -Leaf)"
           }
           $lines | Set-Content SHA256SUMS.txt -Encoding ascii
 
@@ -102,7 +106,7 @@ jobs:
             --title "Lentera Worship $env:TAG" `
             --notes-file release-notes.md `
             --verify-tag `
-            @($paths) SHA256SUMS.txt
+            @($files) SHA256SUMS.txt
           if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
 
   # Aktifkan setelah PR winget 0.1.3 merged dan secret WINGET_TOKEN dibuat.
