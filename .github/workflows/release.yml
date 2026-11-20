@@ -72,12 +72,9 @@ jobs:
         with:
           projectPath: lentera-worship
           tauriScript: cargo tauri
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Lentera Worship ${{ github.ref_name }}'
-          releaseDraft: false
           args: --features ndi --config src-tauri/tauri.ndi.conf.json
 
-      - name: Checksums and release notes
+      - name: Checksums and create release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -85,7 +82,8 @@ jobs:
           ARTIFACT_PATHS: ${{ steps.tauri.outputs.artifactPaths }}
         run: |
           $version = $env:TAG.TrimStart('v')
-          $paths = $env:ARTIFACT_PATHS | ConvertFrom-Json | Where-Object { $_ -match '\.(exe|msi)$' }
+          $paths = @($env:ARTIFACT_PATHS | ConvertFrom-Json | Where-Object { $_ -match '\.(exe|msi)$' })
+          if ($paths.Count -eq 0) { throw "No installer artifacts found" }
           $lines = foreach ($p in $paths) {
             $h = (Get-FileHash $p -Algorithm SHA256).Hash
             "$h  $(Split-Path $p -Leaf)"
@@ -100,8 +98,12 @@ jobs:
           $notes = (Get-Content .github/release-notes.md -Raw).Replace('{{VERSION}}', $version).Replace('{{CHECKSUMS}}', $table)
           Set-Content release-notes.md $notes -Encoding utf8
 
-          gh release edit $env:TAG --notes-file release-notes.md
-          gh release upload $env:TAG SHA256SUMS.txt --clobber
+          gh release create $env:TAG `
+            --title "Lentera Worship $env:TAG" `
+            --notes-file release-notes.md `
+            --verify-tag `
+            @($paths) SHA256SUMS.txt
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
 
   # Aktifkan setelah PR winget 0.1.3 merged dan secret WINGET_TOKEN dibuat.
   # winget:
@@ -112,4 +114,4 @@ jobs:
   #       with:
   #         identifier: Kornelius1.LenteraWorship   # samakan dengan PackageIdentifier di manifest
   #         installers-regex: '-setup\.exe$'
-  #         token: ${{ secrets.WINGET_TOKEN }}
+          # token: 
