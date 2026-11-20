@@ -34,31 +34,36 @@ jobs:
 
       - run: cargo install tauri-cli --version "=2.12.4" --locked
 
-      - name: Download encrypted NDI runtime
+      - name: Fetch and decrypt NDI SDK
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.NDI_REPO_TOKEN }}
-        run: |
-          New-Item -ItemType Directory -Force lentera-worship/ndi | Out-Null
-          gh release download ndi-runtime-v1 `
-            --repo Kornelius1/lentera-private `
-            --pattern "*.gpg" `
-            --dir lentera-worship/ndi `
-            --clobber
-          if ($LASTEXITCODE -ne 0) { throw "Failed to download NDI runtime" }
-
-      - name: Decrypt NDI runtime
-        shell: pwsh
-        env:
           NDI_PASSPHRASE: ${{ secrets.NDI_DLL_PASSPHRASE }}
         run: |
+          if ([string]::IsNullOrEmpty($env:NDI_PASSPHRASE)) { throw "NDI_DLL_PASSPHRASE is empty" }
           $env:PATH += ";C:\Program Files\Git\usr\bin"
+
+          gh release download ndi-sdk-v1 --repo Kornelius1/lentera-private `
+            --pattern "*.gpg" --dir $env:RUNNER_TEMP --clobber
+          if ($LASTEXITCODE -ne 0) { throw "Download failed" }
+
+          $pf = Join-Path $env:RUNNER_TEMP "pp.txt"
+          [System.IO.File]::WriteAllText($pf, $env:NDI_PASSPHRASE.Trim())
+          $zip = Join-Path $env:RUNNER_TEMP "ndi-sdk.zip"
+          gpg --batch --yes --pinentry-mode loopback --passphrase-file $pf `
+            --output $zip --decrypt (Join-Path $env:RUNNER_TEMP "ndi-sdk.zip.gpg")
+          $code = $LASTEXITCODE
+          Remove-Item $pf -Force
+          if ($code -ne 0) { throw "Decrypt failed" }
+
+          $sdk = "C:\Program Files\NDI\NDI 6 SDK"
+          New-Item -ItemType Directory -Force $sdk | Out-Null
+          Expand-Archive -Path $zip -DestinationPath $sdk -Force
+
           New-Item -ItemType Directory -Force lentera-worship/src-tauri/libs | Out-Null
-          gpg --batch --yes --pinentry-mode loopback --passphrase "$env:NDI_PASSPHRASE" `
-            --output lentera-worship/src-tauri/libs/Processing.NDI.Lib.x64.dll `
-            --decrypt lentera-worship/ndi/Processing.NDI.Lib.x64.dll.gpg
-          if ($LASTEXITCODE -ne 0) { throw "Failed to decrypt NDI runtime" }
-          if (-not (Test-Path lentera-worship/src-tauri/libs/Processing.NDI.Lib.x64.dll)) { throw "DLL missing after decrypt" }
+          Copy-Item "$sdk\Bin\x64\Processing.NDI.Lib.x64.dll" lentera-worship/src-tauri/libs/
+
+          "NDI_SDK_DIR=$sdk" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
 
       - id: tauri
         uses: tauri-apps/tauri-action@84b9d35b5fc46c1e45415bdb6144030364f7ebc5 # action-v0.6.2
