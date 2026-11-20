@@ -1,6 +1,6 @@
 [package]
 name = "lentera-worship"
-version = "0.1.3"
+version = "0.1.4"
 description = "Presentation software for song lyrics, Bible verses, and worship slides"
 authors = ["Kornelius1"]
 license = "MIT OR Apache-2.0"
