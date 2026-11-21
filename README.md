@@ -24,7 +24,7 @@
   <img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-0A1F3D?style=flat&labelColor=0A1F3D&color=EA2227" alt="License">
 </p>
 
-![Lentera Worship workspace with a worship service loaded](docs/images/Screenshot2.png)
+https://github.com/user-attachments/assets/32560184-0c6a-4723-b1fb-b0bafa9bbd0c
 
 ## Features
 
